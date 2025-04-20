@@ -1,21 +1,35 @@
 {
   "expo": {
-    "name": "AAngLogistics",
-    "slug": "AAngLogistics",
+    "name": "AAng Logistics",
+    "slug": "AAng-Logistics",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": {
+        "dark": "./assets/icons/ios/Dark.png",
+        "light": "./assets/icons/ios/Light.png",
+        "tinted": "./assets/icons/ios/Tinted.png"
+      },
+      "bundleIdentifier": "com.AAngLogistics",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "foregroundImage": "./assets/icons/android/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "splash": {
+        "image": "./assets/splash/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#000000"
+      },
+      "package": "com.AAngLogistics"
     },
     "web": {
       "bundler": "metro",
@@ -27,15 +41,31 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/splash/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#000000"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "fc46b4cb-5fc5-4c6c-929b-392d484af562"
+      }
     }
   }
 }
