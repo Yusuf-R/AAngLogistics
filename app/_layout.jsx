@@ -15,13 +15,8 @@ import Animated, {
     withRepeat,
     Easing,
 } from "react-native-reanimated";
-import SessionManager from "../lib/SessionManager";
 
 SplashScreen.preventAutoHideAsync();
-SplashScreen.setOptions({
-    duration: 100,
-    fade: true,
-});
 
 function CustomSplashScreen({ onFinish }) {
     const animationRef = useRef(null);
@@ -143,35 +138,25 @@ export default function RootLayout() {
         }
     }, [fontsLoaded, fontsError]);
 
-    useEffect(() => {
-        if (splashFinished) {
-            SessionManager.check();
-        }
-    }, [splashFinished]);
-
     const handleSplashFinish = () => {
-        setTimeout(() => {
-            setSplashFinished(true);
-        }, 200);
+        setSplashFinished(true);
     };
 
-    if (!fontsLoaded && !fontsError) {
-        return null;
-    }
-
-    if (!splashFinished) {
-        return <CustomSplashScreen onFinish={handleSplashFinish} />;
-    }
+    const ready = splashFinished && fontsLoaded;
 
     return (
         <GluestackUIProvider mode="light">
-            <Stack
-                screenOptions={{
-                    headerStyle: { backgroundColor: "#3b82f6" },
-                    headerTintColor: "#fff",
-                    headerTitleStyle: { fontFamily: "PoppinsSemiBold" },
-                }}
-            />
+            {ready ? (
+                <Stack
+                    screenOptions={{
+                        headerStyle: { backgroundColor: "#3b82f6" },
+                        headerTintColor: "#fff",
+                        headerTitleStyle: { fontFamily: "PoppinsSemiBold" },
+                    }}
+                />
+            ) : (
+                <CustomSplashScreen onFinish={handleSplashFinish} />
+            )}
         </GluestackUIProvider>
     );
 }
