@@ -1,13 +1,17 @@
 // /app/_layout.jsx
-import { Stack } from "expo-router";
+import {Stack} from "expo-router";
 import "@/app/global.css";
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
-import { useEffect, useRef, useState } from "react";
-import { useFonts } from "expo-font";
+import {GluestackUIProvider} from "@/components/ui/gluestack-ui-provider";
+
+import {QueryClientProvider, QueryClient} from "@tanstack/react-query";
+import {AuthProvider} from "../context/auth";
+
+import {useEffect, useRef, useState} from "react";
+import {useFonts} from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import LottieView from "lottie-react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Text, View } from "react-native";
+import {LinearGradient} from "expo-linear-gradient";
+import {Text, View} from "react-native";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -18,7 +22,7 @@ import Animated, {
 
 SplashScreen.preventAutoHideAsync();
 
-function CustomSplashScreen({ onFinish }) {
+function CustomSplashScreen({onFinish}) {
     const animationRef = useRef(null);
     const borderOffset = useSharedValue(0);
 
@@ -27,7 +31,7 @@ function CustomSplashScreen({ onFinish }) {
             animationRef.current.play();
         }
         borderOffset.value = withRepeat(
-            withTiming(100, { duration: 1000, easing: Easing.linear }),
+            withTiming(100, {duration: 1000, easing: Easing.linear}),
             -1,
             false
         );
@@ -39,35 +43,34 @@ function CustomSplashScreen({ onFinish }) {
     const sloganTranslate = useSharedValue(20);
 
     useEffect(() => {
-        logoOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.exp) });
-        logoTranslate.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.exp) });
+        logoOpacity.value = withTiming(1, {duration: 800, easing: Easing.out(Easing.exp)});
+        logoTranslate.value = withTiming(0, {duration: 800, easing: Easing.out(Easing.exp)});
 
         setTimeout(() => {
-            sloganOpacity.value = withTiming(1, { duration: 800, easing: Easing.out(Easing.exp) });
-            sloganTranslate.value = withTiming(0, { duration: 800, easing: Easing.out(Easing.exp) });
+            sloganOpacity.value = withTiming(1, {duration: 800, easing: Easing.out(Easing.exp)});
+            sloganTranslate.value = withTiming(0, {duration: 800, easing: Easing.out(Easing.exp)});
         }, 300);
     }, []);
 
     const logoStyle = useAnimatedStyle(() => ({
         opacity: logoOpacity.value,
-        transform: [{ translateY: logoTranslate.value }, { scale: withTiming(1, { duration: 800 }) }],
+        transform: [{translateY: logoTranslate.value}, {scale: withTiming(1, {duration: 800})}],
     }));
 
     const sloganStyle = useAnimatedStyle(() => ({
         opacity: sloganOpacity.value,
-        transform: [{ translateY: sloganTranslate.value }],
+        transform: [{translateY: sloganTranslate.value}],
     }));
-
     return (
-        <View style={{ flex: 1 }}>
-            <LinearGradient colors={["#3b82f6", "#60a5fa"]} style={{ flex: 1 }}>
-                <View style={{ flex: 1, justifyContent: "center", alignItems: "center", position: "relative" }}>
+        <View style={{flex: 1}}>
+            <LinearGradient colors={["#3b82f6", "#60a5fa"]} style={{flex: 1}}>
+                <View style={{flex: 1, justifyContent: "center", alignItems: "center", position: "relative"}}>
                     <LottieView
                         ref={animationRef}
                         source={require("@/assets/animations/A.json")}
                         autoPlay={false}
                         loop={false}
-                        style={{ width: 800, height: 800 }}
+                        style={{width: 800, height: 800}}
                         onAnimationFinish={onFinish}
                     />
 
@@ -131,6 +134,8 @@ export default function RootLayout() {
     });
 
     const [splashFinished, setSplashFinished] = useState(false);
+    const queryClient = new QueryClient();
+
 
     useEffect(() => {
         if (fontsLoaded || fontsError) {
@@ -145,18 +150,26 @@ export default function RootLayout() {
     const ready = splashFinished && fontsLoaded;
 
     return (
-        <GluestackUIProvider mode="light">
-            {ready ? (
-                <Stack
-                    screenOptions={{
-                        headerStyle: { backgroundColor: "#3b82f6" },
-                        headerTintColor: "#fff",
-                        headerTitleStyle: { fontFamily: "PoppinsSemiBold" },
-                    }}
-                />
-            ) : (
-                <CustomSplashScreen onFinish={handleSplashFinish} />
-            )}
-        </GluestackUIProvider>
+        <>
+            <AuthProvider>
+                <QueryClientProvider client={queryClient}>
+                    <GluestackUIProvider mode="light">
+                        {ready ? (
+                            <>
+                                <Stack
+                                    screenOptions={{
+                                        headerShown: false,
+                                        animation: "fade",
+                                    }}
+                                />
+
+                            </>
+                        ) : (
+                            <CustomSplashScreen onFinish={handleSplashFinish}/>
+                        )}
+                    </GluestackUIProvider>
+                </QueryClientProvider>
+            </AuthProvider>
+        </>
     );
 }

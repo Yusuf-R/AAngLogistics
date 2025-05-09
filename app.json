@@ -1,10 +1,10 @@
 {
   "expo": {
     "name": "AAng Logistics",
-    "slug": "AAng-Logistics",
+    "slug": "AAngLogistics",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "myapp",
+    "scheme": "aang-logistics",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -29,11 +29,12 @@
         "resizeMode": "contain",
         "backgroundColor": "#000000"
       },
-      "package": "com.AAngLogistics"
+      "package": "com.AAngLogistics",
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "server",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -54,7 +55,8 @@
           "configureAndroidBackup": true,
           "faceIDPermission": "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true
@@ -65,6 +67,7 @@
       },
       "eas": {
         "projectId": "fc46b4cb-5fc5-4c6c-929b-392d484af562"
+
       }
     }
   }
