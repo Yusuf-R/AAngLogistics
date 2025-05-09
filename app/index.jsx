@@ -1,28 +1,52 @@
-// /app/index.jsx
 import { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import SessionManager from "../lib/SessionManager";
+import SecureStorage from "../lib/SecureStorage";
 
 export default function Index() {
     const router = useRouter();
     const [checking, setChecking] = useState(true);
+    const [loadingText, setLoadingText] = useState("Initializing...");
     const contentOpacity = useSharedValue(0);
 
     useEffect(() => {
         const resolve = async () => {
+            setLoadingText("Checking session...");
+
+            // Give time for SecureStorage to settle after sign-in
+            await new Promise((res) => setTimeout(res, 200));
+
+            const role = await SecureStorage.getRole();
+            const isExpired = await SecureStorage.isAccessTokenExpired();
+            const onboarded = await SecureStorage.hasOnboarded();
+
+            console.log("[Index] 🔍 Role:", role, "| Expired:", isExpired, "| Onboarded:", onboarded);
+
+            // Contextual loading text
+            if (role && !isExpired) {
+                setLoadingText("Setting up your dashboard...");
+            } else if (!role && onboarded) {
+                setLoadingText("Redirecting to login...");
+            } else if (!onboarded) {
+                setLoadingText("Launching onboarding...");
+            }
+
             const target = await SessionManager.resolveRoute();
+
             if (target && target !== "/") {
-                // Delay before routing to make indicator feel more natural
+                console.log("[Index] 🚀 Routing to:", target);
+                // Short delay to show the loading message
                 setTimeout(() => {
                     router.replace(target);
-                }, 2000);
+                }, 600);
             } else {
-                setChecking(false); // Stay on index.jsx
+                setChecking(false);
                 contentOpacity.value = withTiming(1, { duration: 1000 });
             }
         };
+
         resolve();
     }, []);
 
@@ -35,7 +59,7 @@ export default function Index() {
             <View className="flex-1 justify-center items-center bg-[#3b82f6]">
                 <ActivityIndicator size="large" color="#fff" />
                 <Text className="text-white text-base mt-4 font-['PoppinsRegular']">
-                    Initializing...
+                    {loadingText}
                 </Text>
             </View>
         );
@@ -55,7 +79,7 @@ export default function Index() {
                     onPress={() => router.push("/(authentication)/login")}
                 >
                     <Text className="text-[#3b82f6] text-center text-lg font-['PoppinsRegular']">
-                        Login
+                        Login Page
                     </Text>
                 </TouchableOpacity>
             </Animated.View>
