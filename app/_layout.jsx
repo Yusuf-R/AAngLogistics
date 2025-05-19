@@ -2,10 +2,9 @@
 import {Stack} from "expo-router";
 import "@/app/global.css";
 import {GluestackUIProvider} from "@/components/ui/gluestack-ui-provider";
-
 import {QueryClientProvider, QueryClient} from "@tanstack/react-query";
 import {AuthProvider} from "../context/auth";
-
+import ToastManager, { Toast } from 'toastify-react-native'
 import {useEffect, useRef, useState} from "react";
 import {useFonts} from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -154,6 +153,7 @@ export default function RootLayout() {
             <AuthProvider>
                 <QueryClientProvider client={queryClient}>
                     <GluestackUIProvider mode="light">
+                        <ToastManager/>
                         {ready ? (
                             <>
                                 <Stack

@@ -16,6 +16,8 @@ import {useRouter, Stack} from 'expo-router';
 import {useNavigation} from '@react-navigation/native';
 import LottieView from "lottie-react-native";
 import { useAuth } from "../../context/auth";
+import {Toast} from "toastify-react-native";
+const loader = require("@/assets/animations/loader/spin-loader.json");
 
 // Google OAuth
 import * as WebBrowser from 'expo-web-browser';
@@ -91,7 +93,12 @@ function LogoTitle({role}) {
 export default function SignUp() {
     const [role, setRole] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [submissionState, setSubmissionState] = useState({
+        isLoading: false,
+        status: 'idle', // idle | loading | success | error
+        message: ''
+    });
+    const router = useRouter();
 
     const mutation = useMutation({
         mutationKey: ['SignUp'],
@@ -115,10 +122,71 @@ export default function SignUp() {
         loadRole();
     }, [reset]);
 
-    const onSubmit = (data) => {
-        setIsLoading(true);
-        console.log({data});
-        setIsLoading(false);
+    const onSubmit = async (data) => {
+        setSubmissionState({
+            isLoading: true,
+            status: 'loading',
+            message: 'Creating your account...'
+        });
+
+        mutation.mutate(data, {
+            onSuccess: async (respData) => {
+                const { accessToken, refreshToken, user, expiresIn } = respData;
+                const expiry = new Date(Date.now() + 1000 * expiresIn);
+
+                await SecureStorage.saveAccessToken(accessToken);
+                await SecureStorage.saveRefreshToken(refreshToken);
+                await SecureStorage.saveExpiry(expiry.toISOString());
+                await SecureStorage.saveRole(user.role);
+                await SecureStorage.saveUserData(user);
+                await SecureStorage.saveOnboardingStatus(true);
+
+                // ✅ Show success before routing
+                setSubmissionState({
+                    isLoading: true, // still showing overlay
+                    status: 'success',
+                    message: 'Success! Redirecting...'
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 2500)); // short delay to let user see success
+
+                setSubmissionState({
+                    isLoading: false,
+                    status: 'idle',
+                    message: ''
+                });
+
+                router.replace(`/(protected)/${user.role}/dashboard`);
+            },
+
+            onError: async (error) => {
+                console.error('[SignUp Error]', error);
+
+                let errorMessage = 'Error creating account. Please try again.';
+
+                if (error.response) {
+                    if (error.response.status === 409) {
+                        errorMessage = 'Email already exists. Try logging in instead.';
+                    } else if (error.response.data?.error) {
+                        errorMessage = error.response.data.error;
+                    }
+                }
+
+                setSubmissionState({
+                    isLoading: true,
+                    status: 'error',
+                    message: errorMessage,
+                });
+
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+
+                setSubmissionState({
+                    isLoading: false,
+                    status: 'idle',
+                    message: '',
+                });
+            }
+        });
     };
 
     return (
@@ -294,12 +362,19 @@ export default function SignUp() {
 
                     {/* Submit Button */}
                     <Pressable
-                        className="bg-blue-500 rounded-lg p-4 mb-2"
+                        className={`rounded-lg p-4 mb-2 ${submissionState.isLoading ? 'bg-blue-400' : 'bg-blue-500'}`}
                         onPress={handleSubmit(onSubmit)}
+                        disabled={submissionState.isLoading}
                     >
-                        <Text className="text-[#FFFFFF] text-center text-lg font-['PoppinsRegular']">
-                            {isLoading ? 'Loading...' : 'Sign Up'}
-                        </Text>
+                        <View className="flex-row justify-center items-center">
+                            <Text className="text-white text-center text-lg font-['PoppinsRegular']">
+                                {submissionState.status === 'loading'
+                                    ? 'Creating account...'
+                                    : submissionState.status === 'success'
+                                        ? 'Success! Redirecting...'
+                                        : 'Sign Up'}
+                            </Text>
+                        </View>
                     </Pressable>
                     {/*Social Sign In*/}
                     <View className="flex-row justify-center items-center mb-4 mt-8">
@@ -317,6 +392,21 @@ export default function SignUp() {
                     </View>
                 </View>
             </KeyBoardAvoidingHook>
+            {submissionState.isLoading && (
+                <View style={styles.overlay}>
+                    <View style={styles.loadingBox}>
+                        <LottieView
+                            source={loader}
+                            autoPlay
+                            loop={submissionState.status !== 'success'}
+                            style={{ width: 120, height: 120 }}
+                        />
+                        <Text style={styles.loadingText}>
+                            {submissionState.message}
+                        </Text>
+                    </View>
+                </View>
+            )}
         </SafeAreaView>
     );
 }
@@ -374,5 +464,31 @@ const styles = StyleSheet.create({
         color: 'red',
         fontSize: 14,
         marginLeft: 4,
+    },
+    overlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 50,
+    },
+    loadingBox: {
+        backgroundColor: '#fff',
+        paddingVertical: 28,
+        paddingHorizontal: 24,
+        borderRadius: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowOffset: { width: 0, height: 8 },
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        fontFamily: 'PoppinsMedium',
+        color: '#3b82f6',
     },
 });
