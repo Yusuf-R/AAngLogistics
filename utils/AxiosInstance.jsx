@@ -1,5 +1,7 @@
+// AxiosInstance.js
 import axios from "axios";
 import SecureStorage from "../lib/SecureStorage";
+import { refreshAccessToken } from "../lib/TokenManager"; // ✅ new logic
 
 export const axiosPublic = axios.create({
     baseURL: process.env.EXPO_PUBLIC_AANG_SERVER,
@@ -16,37 +18,44 @@ export const axiosPrivate = axios.create({
     },
 });
 
-axiosPrivate.interceptors.request.use((config) => {
-    const accessToken = document.cookie.match(/accessToken=([^;]*)/)[1];
-    config.headers.Authorization = `Bearer ${accessToken}`;
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
-
-axiosPrivate.interceptors.response.use((response) => {
-    return response;
-}, async (error) => {
-    const originalRequest = error.config;
-    if (error.response.status === 401 && error.response.data.error === "jwt expired" && !originalRequest._retry) {
-        originalRequest._retry = true;
-        try {
-            const refreshToken = await SecureStorage.getRefreshToken();
-            const response = await axiosPublic.post('/auth/refresh', { refreshToken });
-
-            const newAccessToken = response.data?.accessToken;
-            await SecureStorage.saveToken(newAccessToken);
-
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            return axiosPrivate(originalRequest);
-        } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
-            return Promise.reject(refreshError);
-        }
+// ✅ Attach token to outgoing requests
+axiosPrivate.interceptors.request.use(async (config) => {
+    const token = await SecureStorage.getAccessToken();
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+}, (error) => Promise.reject(error));
 
-    return Promise.reject(error);
-});
+// 🔁 Refresh token logic on failure
+axiosPrivate.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
 
+        const isExpired = (
+            error.response?.status === 401 &&
+            error.response?.data?.error?.includes("expired") &&
+            !originalRequest._retry
+        );
 
+        if (isExpired) {
+            originalRequest._retry = true;
 
+            try {
+                const newAccessToken = await refreshAccessToken(); // ✅ central token handler
+
+                if (!newAccessToken) throw new Error("Failed to refresh");
+
+                // Attach new token to retry
+                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                return axiosPrivate(originalRequest);
+            } catch (err) {
+                console.error("[Axios Refresh] ❌", err.message);
+                return Promise.reject(err);
+            }
+        }
+
+        return Promise.reject(error);
+    }
+);

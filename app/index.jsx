@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 import SessionManager from "../lib/SessionManager";
 import SecureStorage from "../lib/SecureStorage";
+import { refreshAccessToken } from "../lib/TokenManager";
 
 export default function Index() {
     const router = useRouter();
@@ -18,6 +19,7 @@ export default function Index() {
             // Give time for SecureStorage to settle after sign-in
             await new Promise((res) => setTimeout(res, 200));
 
+            const token = await SecureStorage.getAccessToken();
             const role = await SecureStorage.getRole();
             const isExpired = await SecureStorage.isAccessTokenExpired();
             const onboarded = await SecureStorage.hasOnboarded();
@@ -31,6 +33,14 @@ export default function Index() {
                 setLoadingText("Redirecting to login...");
             } else if (!onboarded) {
                 setLoadingText("Launching onboarding...");
+            }
+
+            // 👇 Add this block: Attempt refresh if expired and refreshToken exists
+            if (token && isExpired) {
+                const refreshed = await refreshAccessToken();
+                if (!refreshed) {
+                    return router.replace("/(authentication)/login");
+                }
             }
 
             const target = await SessionManager.resolveRoute();

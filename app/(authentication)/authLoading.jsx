@@ -9,8 +9,6 @@ export default function PostAuthLoading() {
 
     useEffect(() => {
         const proceed = async () => {
-            console.log('[AuthLoading] ⏳ Started loading...');
-
             try {
                 const role = await SecureStorage.getRole();
                 const expired = await SecureStorage.isAccessTokenExpired();

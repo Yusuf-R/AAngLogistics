@@ -27,9 +27,6 @@ export async function POST(request) {
     });
 
     const data = await response.json();
-    console.log({
-        data
-    })
 
     if (!data.id_token) {
         return Response.json(
@@ -37,6 +34,5 @@ export async function POST(request) {
             {status: 400}
         );
     }
-    console.log('I have sent it back to authJson');
     return Response.json(data, { status: 200 });
 }

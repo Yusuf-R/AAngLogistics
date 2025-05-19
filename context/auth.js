@@ -3,15 +3,17 @@ import {Platform} from "react-native";
 import SecureStorage from "../lib/SecureStorage";
 import {makeRedirectUri, useAuthRequest, exchangeCodeAsync} from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
-import {router} from "expo-router";
+import {useRouter} from "expo-router";
 import ClientUtils from "../utils/ClientUtilities";
+import {Toast} from "toastify-react-native";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const AuthContext = createContext({
+    user: null,
+    isAuthenticated: false,
     signInWithGoogle: () => {},
     signOut: () => {},
-    fetchWithAuth: (url, options) => Promise.resolve(new Response()),
     isLoading: false,
     error: null,
 });
@@ -31,25 +33,29 @@ export const AuthProvider = ({children}) => {
     const [authPending, setAuthPending] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [user, setUser] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const router = useRouter();
 
     const [request, response, promptAsync] = useAuthRequest(config, discovery);
 
     const signInWithGoogle = async () => {
-        if (!request) {
-            console.warn("Auth request not initialized.");
-            return;
+        try {
+            if (!request) {
+                console.log("No request");
+                return;
+            }
+            await promptAsync();
+        } catch (e) {
+            console.log(e);
         }
-        await promptAsync();
-        setAuthPending(true);
     };
 
-    useEffect(() => {
-        const finalizeGoogleSignIn = async () => {
-            if (!authPending || response?.type !== "success") return;
-
+    const finalizeGoogleSignIn = async () => {
+        if (response?.type === "success") {
             try {
                 setIsLoading(true);
-                const { code } = response.params;
+                const {code} = response.params;
 
                 const tokenResponse = await exchangeCodeAsync(
                     {
@@ -70,9 +76,8 @@ export const AuthProvider = ({children}) => {
                     provider: "Google",
                     role: storedRole,
                 });
-                console.log('I have gotten the data from token api ');
 
-                const { accessToken, refreshToken, user, expiresIn } = res;
+                const {accessToken, refreshToken, user, expiresIn} = res;
 
                 const expiry = new Date(Date.now() + 1000 * expiresIn);
 
@@ -83,46 +88,48 @@ export const AuthProvider = ({children}) => {
                 await SecureStorage.saveUserData(user);
                 await SecureStorage.saveOnboardingStatus(true);
 
-                console.log('I have ensured secure storage of needed data');
-                // lets get all the session snapshots data
-                const allData = await  SecureStorage.getSessionSnapshot();
-                console.log('All data', allData);
-                console.log('Done');
+                // Update context state before navigation
+                setUser(user);
+                setIsAuthenticated(true);
+                setAuthPending(false);
+
+
+                Toast.success('Successful : Redirecting to Dashboard!')
+                setAuthPending(false);
+                router.replace(`/`);
 
             } catch (err) {
-                console.error("Google Sign-In Finalization Failed", err);
-                // handle the error more gracefully in production so that the app does not break
                 setError(err);
-            } finally {
-                setIsLoading(false);
-                setAuthPending(false);
+                console.error("Error finalizing Google sign-in:", err);
+                Toast.error('Error : Unable to sign in. Please try again.');
+                router.replace("/");
             }
-        };
+        } else if (response?.type === "cancel") {
+            console.log("response cancelled");
+            Toast.info('Cancelled : Sign in process was cancelled.');
 
+        } else if (response?.type === "error") {
+            console.log("response error");
+            Toast.error('Error : An error occurred during the sign-in process.');
+        }
+    }
+
+    const signOut = async () => {
+        await SecureStorage.clearAll();
+        setUser(null);
+        setIsAuthenticated(false);
+        Toast.success("✅ Logged out");
+        router.replace("/(authentication)/login");
+    };
+
+    useEffect(() => {
         finalizeGoogleSignIn();
-    }, [authPending, response]);
-
-    const fetchWithAuth = async (url, options = {}) => {
-        const token = await SecureStorage.getAccessToken();
-        return fetch(url, {
-            ...options,
-            headers: {
-                ...(options.headers || {}),
-                Authorization: `Bearer ${token}`,
-            },
-        });
-    };
-
-    const signOut = () => {
-        console.log("Still cooking logout...");
-    };
+    }, [response]);
 
     return (
         <AuthContext.Provider value={{
-            idToken: null,
             signInWithGoogle,
             signOut,
-            fetchWithAuth,
             isLoading,
             error,
         }}>

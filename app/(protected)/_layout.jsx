@@ -1,57 +1,48 @@
-// /app/(protected)/_layout.jsx
-import { Tabs, usePathname, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { usePathname, router, Slot } from 'expo-router';
 import SecureStorage from '../../lib/SecureStorage';
+import { refreshAccessToken } from '../../lib/TokenManager';
 
 export default function ProtectedLayout() {
     const pathname = usePathname();
     const [allowed, setAllowed] = useState(false);
 
     useEffect(() => {
-        const verifyRoleAccess = async () => {
+        const verify = async () => {
+            const token = await SecureStorage.getAccessToken();
             const role = await SecureStorage.getRole();
-            const isClientRoute = pathname.includes('/client');
-            const isDriverRoute = pathname.includes('/driver');
+            const expired = await SecureStorage.isAccessTokenExpired();
+            const onboarded = await SecureStorage.hasOnboarded();
 
-            // Optional safety: wait if role isn't available yet
-            if (!role) return;
+            const isClient = pathname.includes('/client');
+            const isDriver = pathname.includes('/driver');
 
-            if ((role === 'client' && isClientRoute) || (role === 'driver' && isDriverRoute)) {
+            // 👇 Try to refresh if token expired
+            if (token && expired) {
+                const refreshed = await refreshAccessToken();
+                if (!refreshed) {
+                    return router.replace('/(authentication)/login');
+                }
+            }
+
+            const newToken = await SecureStorage.getAccessToken();
+            const newExpired = await SecureStorage.isAccessTokenExpired();
+
+            if (!newToken || newExpired) {
+                return router.replace('/(authentication)/login');
+            }
+
+            if ((role === 'client' && isClient) || (role === 'driver' && isDriver)) {
                 setAllowed(true);
             } else {
-                router.replace('/(authentication)/login');
+                return router.replace('/(authentication)/login');
             }
         };
-        verifyRoleAccess();
+
+        verify();
     }, [pathname]);
 
     if (!allowed) return null;
 
-    return (
-        <Tabs
-            screenOptions={({ route }) => ({
-                headerShown: false,
-                tabBarActiveTintColor: '#3b82f6',
-                tabBarLabelStyle: { fontFamily: 'PoppinsRegular' },
-                tabBarIcon: ({ color, size }) => {
-                    let iconName;
-                    switch (route.name) {
-                        case 'dashboard':
-                            iconName = 'home-outline';
-                            break;
-                        case 'profile':
-                            iconName = 'person-outline';
-                            break;
-                        case 'settings':
-                            iconName = 'settings-outline';
-                            break;
-                        default:
-                            iconName = 'ellipse-outline';
-                    }
-                    return <Ionicons name={iconName} size={size} color={color} />;
-                },
-            })}
-        />
-    );
+    return <Slot />;
 }
