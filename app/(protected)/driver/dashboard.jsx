@@ -9,23 +9,16 @@ export default function DriverDashboard() {
     return (
         <>
             <Text className="text-center mt-10">
-                Home Section
+                Driver Home Section
             </Text>
 
             <TouchableOpacity
                 className="mt-4 bg-red-500 px-4 py-2 rounded"
                 onPress={async () => {
+                   //  await SecureStorage.clearSessionOnly();
+                    Toast.success("Secure Storage cleared.");
                     await SecureStorage.clearAll();
-                    console.log("🧹 SecureStorage cleared.");
-                    // TODO: Add a toast notification
-                    Toast.show({
-                        text: "Secure Storage cleared.",
-                        duration: 2000,
-                        position: "bottom",
-                        type: "success",
-                    });
-                    // reload the page
-                    router.replace('/');
+                   router.replace('/');
                 }}
             >
                 <Text className="text-white">Reset Secure Storage</Text>

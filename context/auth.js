@@ -14,8 +14,6 @@ const AuthContext = createContext({
     isAuthenticated: false,
     signInWithGoogle: () => {},
     signOut: () => {},
-    isLoading: false,
-    error: null,
 });
 
 const config = {
@@ -30,11 +28,6 @@ const discovery = {
 };
 
 export const AuthProvider = ({children}) => {
-    const [authPending, setAuthPending] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const [user, setUser] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const router = useRouter();
 
     const [request, response, promptAsync] = useAuthRequest(config, discovery);
@@ -42,7 +35,6 @@ export const AuthProvider = ({children}) => {
     const signInWithGoogle = async () => {
         try {
             if (!request) {
-                console.log("No request");
                 return;
             }
             await promptAsync();
@@ -54,7 +46,6 @@ export const AuthProvider = ({children}) => {
     const finalizeGoogleSignIn = async () => {
         if (response?.type === "success") {
             try {
-                setIsLoading(true);
                 const {code} = response.params;
 
                 const tokenResponse = await exchangeCodeAsync(
@@ -88,18 +79,11 @@ export const AuthProvider = ({children}) => {
                 await SecureStorage.saveUserData(user);
                 await SecureStorage.saveOnboardingStatus(true);
 
-                // Update context state before navigation
-                setUser(user);
-                setIsAuthenticated(true);
-                setAuthPending(false);
-
 
                 Toast.success('Successful : Redirecting to Dashboard!')
-                setAuthPending(false);
                 router.replace(`/`);
 
             } catch (err) {
-                setError(err);
                 console.error("Error finalizing Google sign-in:", err);
                 Toast.error('Error : Unable to sign in. Please try again.');
                 router.replace("/");
@@ -116,8 +100,6 @@ export const AuthProvider = ({children}) => {
 
     const signOut = async () => {
         await SecureStorage.clearAll();
-        setUser(null);
-        setIsAuthenticated(false);
         Toast.success("✅ Logged out");
         router.replace("/(authentication)/login");
     };
@@ -130,8 +112,6 @@ export const AuthProvider = ({children}) => {
         <AuthContext.Provider value={{
             signInWithGoogle,
             signOut,
-            isLoading,
-            error,
         }}>
             {children}
         </AuthContext.Provider>

@@ -4,7 +4,7 @@ import "@/app/global.css";
 import {GluestackUIProvider} from "@/components/ui/gluestack-ui-provider";
 import {QueryClientProvider, QueryClient} from "@tanstack/react-query";
 import {AuthProvider} from "../context/auth";
-import ToastManager, { Toast } from 'toastify-react-native'
+import ToastManager, {Toast} from 'toastify-react-native'
 import {useEffect, useRef, useState} from "react";
 import {useFonts} from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -153,7 +153,15 @@ export default function RootLayout() {
             <AuthProvider>
                 <QueryClientProvider client={queryClient}>
                     <GluestackUIProvider mode="light">
-                        <ToastManager/>
+                        <ToastManager
+                            position="top"
+                            duration={2000}
+                            animationDuration={300}
+                            animationType="slide"
+                            showCloseIcon={false}
+                            width="70%"
+                            minHeight='55'
+                        />
                         {ready ? (
                             <>
                                 <Stack

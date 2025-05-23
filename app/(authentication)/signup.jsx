@@ -9,14 +9,16 @@ import {
     ImageBackground,
     Image,
     TouchableOpacity,
-    StyleSheet
+    StyleSheet,
+    Modal
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useRouter, Stack} from 'expo-router';
 import {useNavigation} from '@react-navigation/native';
 import LottieView from "lottie-react-native";
-import { useAuth } from "../../context/auth";
+import {useAuth} from "../../context/auth";
 import {Toast} from "toastify-react-native";
+
 const loader = require("@/assets/animations/loader/spin-loader.json");
 
 // Google OAuth
@@ -37,7 +39,6 @@ import {Input, InputField, InputSlot, InputIcon} from '@/components/ui/input';
 
 // Icons
 import Ionicons from '@expo/vector-icons/Ionicons';
-
 
 
 // Utils
@@ -93,6 +94,7 @@ function LogoTitle({role}) {
 export default function SignUp() {
     const [role, setRole] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+
     const [submissionState, setSubmissionState] = useState({
         isLoading: false,
         status: 'idle', // idle | loading | success | error
@@ -116,9 +118,14 @@ export default function SignUp() {
     useEffect(() => {
         async function loadRole() {
             const stored = await SecureStorage.getRole();
+            if (!stored) {
+                router.replace('/(onboarding)/role-select?next=/(authentication)/signup')
+                return;
+            }
             setRole(stored);
             reset({role: stored, email: '', password: ''});
         }
+
         loadRole();
     }, [reset]);
 
@@ -131,7 +138,7 @@ export default function SignUp() {
 
         mutation.mutate(data, {
             onSuccess: async (respData) => {
-                const { accessToken, refreshToken, user, expiresIn } = respData;
+                const {accessToken, refreshToken, user, expiresIn} = respData;
                 const expiry = new Date(Date.now() + 1000 * expiresIn);
 
                 await SecureStorage.saveAccessToken(accessToken);
@@ -147,6 +154,7 @@ export default function SignUp() {
                     status: 'success',
                     message: 'Success! Redirecting...'
                 });
+                Toast.success("Account created 🚀.");
 
                 await new Promise(resolve => setTimeout(resolve, 2500)); // short delay to let user see success
 
@@ -156,20 +164,16 @@ export default function SignUp() {
                     message: ''
                 });
 
+                Toast.success('Redirecting to Dashboard 🔁');
+
                 router.replace(`/(protected)/${user.role}/dashboard`);
             },
 
             onError: async (error) => {
-                console.error('[SignUp Error]', error);
+                let errorMessage = 'Error creating account ⚠️';
 
-                let errorMessage = 'Error creating account. Please try again.';
-
-                if (error.response) {
-                    if (error.response.status === 409) {
-                        errorMessage = 'Email already exists. Try logging in instead.';
-                    } else if (error.response.data?.error) {
-                        errorMessage = error.response.data.error;
-                    }
+                if (error.response.status === 409) {
+                    errorMessage = 'Duplicate Credentials ⚠️';
                 }
 
                 setSubmissionState({
@@ -179,6 +183,7 @@ export default function SignUp() {
                 });
 
                 await new Promise((resolve) => setTimeout(resolve, 2000));
+                Toast.error(errorMessage);
 
                 setSubmissionState({
                     isLoading: false,
@@ -219,13 +224,13 @@ export default function SignUp() {
                     loop
                     style={styles.animation}
                 />
-                <Text className="text-3xl font-['PoppinsSemiBold'] text-[#60a5fa] mb-5">
+                <Text className="text-2xl font-['PoppinsSemiBold'] text-[#60a5fa] mb-5">
                     Get Started
                 </Text>
             </View>
             <KeyBoardAvoidingHook>
                 {/* SignUp Form */}
-                <View className="flex-1 px-7 py-2 " >
+                <View className="flex-1 px-7 py-2 ">
                     {/* Email */}
                     <FormControl
                         isInvalid={!!errors.email}
@@ -331,6 +336,7 @@ export default function SignUp() {
                             control={control}
                             render={({field}) => {
                                 const display = field.value || role;
+                                if (!display) return null; // 🛑 Avoid rendering until role is loaded
                                 const label = display.charAt(0).toUpperCase() + display.slice(1);
                                 return (
                                     <Input
@@ -386,8 +392,14 @@ export default function SignUp() {
                         >
                             <Image
                                 source={googleIcon}
-                                style={{width: 50, height: 50}}
+                                style={{width: 40, height: 40}}
                             />
+                        </TouchableOpacity>
+                    </View>
+                    <View className="flex-row justify-center items-center mb-4 mt-8">
+                        <Text className="text-lg text-gray-500 font-['PoppinsRegular']">Already have an account?</Text>
+                        <TouchableOpacity onPress={() => router.push('/(authentication)/login')}>
+                            <Text className="text-lg text-blue-500 font-['PoppinsSemiBold']"> Login</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -399,7 +411,7 @@ export default function SignUp() {
                             source={loader}
                             autoPlay
                             loop={submissionState.status !== 'success'}
-                            style={{ width: 120, height: 120 }}
+                            style={{width: 120, height: 120}}
                         />
                         <Text style={styles.loadingText}>
                             {submissionState.message}
@@ -481,7 +493,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         shadowColor: '#000',
         shadowOpacity: 0.2,
-        shadowOffset: { width: 0, height: 8 },
+        shadowOffset: {width: 0, height: 8},
         shadowRadius: 12,
         elevation: 6,
     },

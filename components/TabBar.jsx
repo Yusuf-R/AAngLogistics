@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
 import { useLinkBuilder, useTheme } from '@react-navigation/native';
-
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 export function TabBar({ state, descriptors, navigation }) {

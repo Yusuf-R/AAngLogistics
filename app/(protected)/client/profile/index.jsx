@@ -12,43 +12,43 @@ import {
     Modal,
     Pressable, ActivityIndicator
 } from 'react-native';
-import { Ionicons, Feather, FontAwesome, MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import {Ionicons, Feather, FontAwesome, MaterialIcons, Octicons} from '@expo/vector-icons';
+import {useNavigation} from '@react-navigation/native';
 import {router} from "expo-router";
-import SecureStorage from "../../../lib/SecureStorage";
+import SecureStorage from "../../../../lib/SecureStorage";
+import {ROUTES} from "../../../../utils/Constant";
 
-function DriverProfileScreen () {
-    const [isDarkMode, setIsDarkMode] = useState(false);
+function ClientProfileScreen() {
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigation = useNavigation();
 
-    const toggleSwitch = () => {
-        setIsDarkMode(previousState => !previousState);
-    };
-
     const handleLogout = async () => {
         // Close the modal
         setLogoutModalVisible(false);
-        // 👇 Perform secure cleanup and route to login
+        // Perform secure cleanup and route to login
         await SecureStorage.clearSessionOnly();
         router.replace('/(authentication)/login');
     };
 
-    const renderMenuItem = ({ icon, iconType, title, value, hasChevron, color, isSwitch, onPress }) => {
+    const goToSecurity = () => {
+        router.push(ROUTES.SECURITY);
+    };
+
+    const renderMenuItem = ({icon, iconType, title, value, hasChevron, color, isSwitch, onPress}) => {
         const renderIcon = () => {
             switch (iconType) {
                 case 'Ionicons':
-                    return <Ionicons name={icon} size={24} color={color || '#555'} />;
+                    return <Ionicons name={icon} size={24} color={color || '#555'}/>;
                 case 'Feather':
-                    return <Feather name={icon} size={24} color={color || '#555'} />;
+                    return <Feather name={icon} size={24} color={color || '#555'}/>;
                 case 'FontAwesome':
-                    return <FontAwesome name={icon} size={24} color={color || '#555'} />;
+                    return <FontAwesome name={icon} size={24} color={color || '#555'}/>;
                 case 'MaterialIcons':
-                    return <MaterialIcons name={icon} size={24} color={color || '#555'} />;
+                    return <MaterialIcons name={icon} size={24} color={color || '#555'}/>;
                 default:
-                    return <Ionicons name={icon} size={24} color={color || '#555'} />;
+                    return <Ionicons name={icon} size={24} color={color || '#555'}/>;
             }
         };
 
@@ -62,16 +62,7 @@ function DriverProfileScreen () {
                 </View>
                 <View style={styles.menuRightContainer}>
                     {value && <Text style={styles.menuValueText}>{value}</Text>}
-                    {isSwitch && (
-                        <Switch
-                            trackColor={{ false: "#e0e0e0", true: "#00c6a7" }}
-                            thumbColor={isDarkMode ? "#ffffff" : "#ffffff"}
-                            ios_backgroundColor="#e0e0e0"
-                            onValueChange={toggleSwitch}
-                            value={isDarkMode}
-                        />
-                    )}
-                    {hasChevron && <Ionicons name="chevron-forward" size={20} color="#999" />}
+                    {hasChevron && <Ionicons name="chevron-forward" size={20} color="#999"/>}
                 </View>
             </TouchableOpacity>
         );
@@ -97,7 +88,7 @@ function DriverProfileScreen () {
     if (loading) {
         return (
             <SafeAreaView style={styles.container}>
-                <ActivityIndicator size="large" color="#60a5fa" />
+                <ActivityIndicator size="large" color="#60a5fa"/>
             </SafeAreaView>
         );
     }
@@ -112,19 +103,19 @@ function DriverProfileScreen () {
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar barStyle="dark-content"/>
 
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerContent}>
                     <Image
-                        source={require('../../../assets/images/AAngLogo.png')}
+                        source={require('../../../../assets/images/AAngLogo.png')}
                         style={styles.logoText}
                     />
                     <Text style={styles.headerTitle}>Profile</Text>
                 </View>
                 <TouchableOpacity style={styles.moreButton}>
-                    <Feather name="more-horizontal" size={24} color="#333" />
+                    <Feather name="more-horizontal" size={24} color="#333"/>
                 </TouchableOpacity>
             </View>
 
@@ -134,17 +125,17 @@ function DriverProfileScreen () {
                     <View style={styles.profileImageContainer}>
                         {userData?.avatar ? (
                             <Image
-                                source={{ uri: userData.avatar }}
+                                source={{uri: userData.avatar}}
                                 style={styles.profileImage}
                             />
                         ) : (
                             <Image
-                                source={require('../../../assets/images/avatar-1.jpg')}
+                                source={require('../../../../assets/images/avatar-1.jpg')}
                                 style={styles.profileImage}
                             />
                         )}
                         <TouchableOpacity style={styles.editImageButton}>
-                            <Feather name="edit-2" size={18} color="#fff" />
+                            <Feather name="edit-2" size={18} color="#fff"/>
                         </TouchableOpacity>
                     </View>
 
@@ -157,11 +148,21 @@ function DriverProfileScreen () {
                     )}
 
                     {userData?.email && (
-                        <Text style={styles.profileEmail}>{userData.email}</Text>
+                        <View style={styles.emailContainer}>
+                            <Text style={styles.profileEmail}>{userData.email}</Text>
+                            {userData.emailVerified ? (
+                                <MaterialIcons name="verified-user" size={22} color="green"/>
+                            ) : (
+                                <>
+                                    <Octicons name="unverified" size={22} color="black"/>
+                                </>
+                            )}
+                        </View>
                     )}
+
                 </View>
 
-                <View style={styles.divider} />
+                <View style={styles.divider}/>
 
                 {/* Menu Items */}
                 <View style={styles.menuSection}>
@@ -190,7 +191,8 @@ function DriverProfileScreen () {
                         icon: 'shield-outline',
                         iconType: 'Ionicons',
                         title: 'Security',
-                        hasChevron: true
+                        hasChevron: true,
+                        onPress: () => goToSecurity()
                     })}
 
 
@@ -227,7 +229,7 @@ function DriverProfileScreen () {
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalView}>
-                        <View style={styles.modalIndicator} />
+                        <View style={styles.modalIndicator}/>
 
                         <Text style={styles.logoutTitle}>Logout</Text>
 
@@ -343,8 +345,9 @@ const styles = StyleSheet.create({
         marginBottom: 5,
     },
     profileEmail: {
-        fontSize: 14,
+        fontSize: 16,
         color: '#777',
+        marginRight: 3,
     },
     divider: {
         height: 1,
@@ -455,6 +458,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 16,
     },
+    emailContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        marginBottom: 1,
+    },
 });
 
-export default DriverProfileScreen;
+export default ClientProfileScreen;

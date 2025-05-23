@@ -1,13 +1,18 @@
 import {Tabs} from 'expo-router';
 import {TabBar} from "../../../components/TabBar";
-
+import { usePathname } from 'expo-router';
+import { TAB_BAR_VISIBLE_ROUTES } from '../../../utils/Constant';
 
 export default function ClientTabsLayout() {
+    const pathname = usePathname();
+
+    // Check if current route should show Tab Bar
+    const shouldShowTabBar = TAB_BAR_VISIBLE_ROUTES.includes(pathname);
 
     return (
         <>
             <Tabs
-                tabBar={(props) => <TabBar {...props} />}
+                tabBar={shouldShowTabBar ? (props) => <TabBar {...props} /> : () => null}
                 screenOptions={{
                     headerShown: false,
                 }}
@@ -25,7 +30,7 @@ export default function ClientTabsLayout() {
                     }}
                 />
                 <Tabs.Screen
-                    name="profile"
+                    name="profile/index"
                     options={{
                         title: 'Profile',
                     }}
