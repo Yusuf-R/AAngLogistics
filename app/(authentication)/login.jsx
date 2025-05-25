@@ -2,14 +2,14 @@ import React, {useEffect, useState} from 'react';
 import {
     View,
     Text,
-    TextInput,
     TouchableOpacity,
     StyleSheet,
     SafeAreaView,
     StatusBar,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable, ImageBackground, Image, Modal,
+    Pressable,
+    ImageBackground,
+    Image,
+    Modal,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import LottieView from "lottie-react-native";
@@ -46,18 +46,14 @@ const loginSchema = yup.object().shape({
 });
 
 
-const googleIcon = require('../../assets/icons/googleIcon.png');
-
 const MailIcon = () => <Ionicons name="mail" size={26} color="blue"/>;
 const EyeIcon = () => <Ionicons name="eye" size={26} color="blue"/>;
 const EyeOffIcon = () => <Ionicons name="eye-off" size={26} color="blue"/>;
 const AlertIcon = () => <Ionicons name="alert-circle-outline" size={18} color="red"/>;
 const UserIcon = () => <Ionicons name="person-sharp" size={26} color="blue"/>;
 const CarIcon = () => <Ionicons name="car-sport" size={26} color="blue"/>;
-
-
-const roles = ['client', 'driver'];
 const loader = require("@/assets/animations/loader/spin-loader.json");
+const googleIcon = require('../../assets/icons/googleIcon.png');
 
 export default function Login() {
     const [role, setRole] = useState(null);

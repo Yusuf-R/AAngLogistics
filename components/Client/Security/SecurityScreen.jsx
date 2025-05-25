@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {router} from "expo-router"; // or react-native-vector-icons
+import {ROUTES} from "../../../utils/Constant";
 
 const SecurityScreen = ({ navigation }) => {
     const [rememberMe, setRememberMe] = useState(true);
@@ -25,7 +26,7 @@ const SecurityScreen = ({ navigation }) => {
 
     const verifyEmail = () => {
         // Navigate to Email change
-        router.push('/');
+        router.push(ROUTES["VERIFY-EMAIL"]);
     };
 
     const handleChangePIN = () => {
@@ -98,7 +99,7 @@ const SecurityScreen = ({ navigation }) => {
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity
                         style={styles.actionButton}
-                        onPress={handleChangePIN}
+                        onPress={verifyEmail}
                     >
                         <Text style={styles.actionButtonText}>Verify Email</Text>
                     </TouchableOpacity>

@@ -30,7 +30,7 @@ export default function ClientTabsLayout() {
                     }}
                 />
                 <Tabs.Screen
-                    name="profile/index"
+                    name="profile"
                     options={{
                         title: 'Profile',
                     }}

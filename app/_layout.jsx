@@ -159,7 +159,7 @@ export default function RootLayout() {
                             animationDuration={300}
                             animationType="slide"
                             showCloseIcon={false}
-                            width="70%"
+                            width="75%"
                             minHeight='55'
                         />
                         {ready ? (

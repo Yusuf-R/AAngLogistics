@@ -91,6 +91,43 @@ class ClientUtils {
         }
     }
 
+    static async GetToken(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/auth/get-token',
+                data: obj,
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({ error });
+            throw new Error(error);
+        }
+    }
+
+    static async VerifyEmail(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/auth/verify-email',
+                data: obj,
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({ error });
+            throw new Error(error);
+        }
+
+    }
+
 }
 
 export default ClientUtils;

@@ -6,6 +6,7 @@ export const ROUTES = {
 
     // Nested Routes (No Tab Bar)
     SECURITY: '/client/profile/security',
+    'VERIFY-EMAIL': '/client/profile/verify-email',
     // Add other nested routes here
 };
 

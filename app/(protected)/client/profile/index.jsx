@@ -141,7 +141,7 @@ function ClientProfileScreen() {
 
                     {userData?.fullName ? (
                         <Text style={styles.profileName}>
-                            Hi, {userData.fullName.split(' ')[0]} {/* Shows first name only */}
+                            Hi, {userData.fullName.split(' ')[0]}
                         </Text>
                     ) : (
                         <Text style={styles.profileName}>Welcome to AAngLogistics</Text>
