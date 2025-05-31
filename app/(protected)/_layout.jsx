@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { usePathname, router, Slot } from 'expo-router';
+import SessionManager from '../../lib/SessionManager';
 import SecureStorage from '../../lib/SecureStorage';
 import { refreshAccessToken } from '../../lib/TokenManager';
 
@@ -9,34 +10,20 @@ export default function ProtectedLayout() {
 
     useEffect(() => {
         const verify = async () => {
-            const token = await SecureStorage.getAccessToken();
-            const role = await SecureStorage.getRole();
-            const expired = await SecureStorage.isAccessTokenExpired();
-            const onboarded = await SecureStorage.hasOnboarded();
+            const { token, role } = await SessionManager.getCurrentSession();
 
-            const isClient = pathname.includes('/client');
-            const isDriver = pathname.includes('/driver');
-
-            // 👇 Try to refresh if token expired
-            if (token && expired) {
-                const refreshed = await refreshAccessToken();
-                if (!refreshed) {
-                    return router.replace('/(authentication)/login');
-                }
-            }
-
-            const newToken = await SecureStorage.getAccessToken();
-            const newExpired = await SecureStorage.isAccessTokenExpired();
-
-            if (!newToken || newExpired) {
+            if (!token || !role) {
                 return router.replace('/(authentication)/login');
             }
 
-            if ((role === 'client' && isClient) || (role === 'driver' && isDriver)) {
+            const authorized = SessionManager.isAuthorizedRoute(role, pathname);
+
+            if (authorized) {
                 setAllowed(true);
             } else {
                 return router.replace('/(authentication)/login');
             }
+
         };
 
         verify();

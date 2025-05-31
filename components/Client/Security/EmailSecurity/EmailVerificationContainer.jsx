@@ -1,11 +1,10 @@
-// protected/client/profile/verify-email-code.jsx
-import React, {useEffect, useState} from 'react';
+// protected/client/profile/verify-email.jsx
+import React, { useEffect, useState } from 'react';
 import {ActivityIndicator, SafeAreaView, Text} from "react-native";
-import EmailCodeVerification from "../../../../components/Client/Security/EmailSecurity/EmailCodeVerification";
-import SecureStorage from "../../../../lib/SecureStorage";
-import {useSessionStore} from "../../../../store/useSessionStore";
+import EmailMethodSelection from "./EmailMethodSelection";
+import { useSessionStore } from "../../../../store/useSessionStore";
 
-function VerifyEmailCode() {
+function EmailVerificationContainer() {
     const userData = useSessionStore((state) => state.user);
 
     if (!userData) {
@@ -25,12 +24,10 @@ function VerifyEmailCode() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1 }}>
-            <EmailCodeVerification
-                userEmail={userData.email}
-            />
-        </SafeAreaView>
+        <EmailMethodSelection
+            userData={userData}
+        />
     );
 }
 
-export default VerifyEmailCode;
+export default EmailVerificationContainer;

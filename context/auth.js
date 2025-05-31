@@ -6,6 +6,7 @@ import * as WebBrowser from "expo-web-browser";
 import {useRouter} from "expo-router";
 import ClientUtils from "../utils/ClientUtilities";
 import {Toast} from "toastify-react-native";
+import SessionManager from "../lib/SessionManager";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -62,23 +63,19 @@ export const AuthProvider = ({children}) => {
 
                 const storedRole = await SecureStorage.getRole(); // set during role selection
 
-                const res = await ClientUtils.GoogleSocialSignUp({
+                const respData = await ClientUtils.GoogleSocialSignUp({
                     tokenResponse,
                     provider: "Google",
                     role: storedRole,
                 });
 
-                const {accessToken, refreshToken, user, expiresIn} = res;
+                const {accessToken, refreshToken, user, expiresIn} = respData;
 
-                const expiry = new Date(Date.now() + 1000 * expiresIn);
-
-                await SecureStorage.saveAccessToken(accessToken);
-                await SecureStorage.saveRefreshToken(refreshToken);
-                await SecureStorage.saveExpiry(expiry.toISOString());
-                await SecureStorage.saveRole(user.role);
-                await SecureStorage.saveUserData(user);
-                await SecureStorage.saveOnboardingStatus(true);
-
+                await SessionManager.updateToken(accessToken, expiresIn);
+                await SecureStorage.saveRefreshToken(refreshToken); // 🔐 refresh token remains in SecureStorage only
+                await SessionManager.updateUser(user);
+                await SessionManager.updateRole(user.role);
+                await SessionManager.updateOnboardingStatus(true);
 
                 Toast.success('Successful : Redirecting to Dashboard!')
                 router.replace(`/`);
@@ -99,7 +96,7 @@ export const AuthProvider = ({children}) => {
     }
 
     const signOut = async () => {
-        await SecureStorage.clearAll();
+        await SessionManager.logout();
         Toast.success("✅ Logged out");
         router.replace("/(authentication)/login");
     };

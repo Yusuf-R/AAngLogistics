@@ -14,12 +14,8 @@ export default function ClientDashboard() {
                 className="mt-4 bg-red-500 px-4 py-2 rounded"
                 onPress={async () => {
                     Toast.success("Secure Storage cleared.");
-                    // await SecureStorage.clearAll();
-                    Toast.error('Unable to create account ⚠️');
-                    // reload the page
-                    await new Promise(resolve => setTimeout(resolve, 2500)); // short delay to let user see success
-                    Toast.success('Redirecting to Dashboard 🔁');
-                    // router.replace('/');
+                    await SecureStorage.clearAll();
+                    router.replace('/');
 
                 }}
             >

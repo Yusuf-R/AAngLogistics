@@ -1,4 +1,4 @@
-import EmailVerificationContainer from "../../../../components/Client/Security/EmailVerificationContainer"
+import EmailVerificationContainer from "../../../../components/Client/Security/EmailSecurity/EmailVerificationContainer"
 
 function VerifyEmail() {
     return (

@@ -5,7 +5,6 @@ import {
     StyleSheet,
     Image,
     TouchableOpacity,
-    Switch,
     ScrollView,
     SafeAreaView,
     StatusBar,
@@ -13,23 +12,29 @@ import {
     Pressable, ActivityIndicator
 } from 'react-native';
 import {Ionicons, Feather, FontAwesome, MaterialIcons, Octicons} from '@expo/vector-icons';
-import {useNavigation} from '@react-navigation/native';
 import {router} from "expo-router";
-import SecureStorage from "../../../../lib/SecureStorage";
+import { useSessionStore } from "../../../../store/useSessionStore";
+import SessionManager from "../../../../lib/SessionManager";
 import {ROUTES} from "../../../../utils/Constant";
+
 
 function ClientProfileScreen() {
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
-    const [userData, setUserData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const navigation = useNavigation();
+    const userData = useSessionStore((state) => state.user);
+
+    if (!userData) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <ActivityIndicator size="large" color="#60a5fa"/>
+            </SafeAreaView>
+        );
+    }
 
     const handleLogout = async () => {
         // Close the modal
         setLogoutModalVisible(false);
         // Perform secure cleanup and route to login
-        await SecureStorage.clearSessionOnly();
-        router.replace('/(authentication)/login');
+        await SessionManager.logout();
     };
 
     const goToSecurity = () => {
@@ -69,37 +74,6 @@ function ClientProfileScreen() {
     };
 
 
-    // Fetch user data on component mount
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const storedUser = await SecureStorage.getUserData();
-                setUserData(storedUser);
-            } catch (error) {
-                console.error('Failed to fetch user data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchUserData();
-    }, []);
-
-    if (loading) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <ActivityIndicator size="large" color="#60a5fa"/>
-            </SafeAreaView>
-        );
-    }
-
-    if (!userData) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <Text>Failed to load profile data</Text>
-            </SafeAreaView>
-        );
-    }
 
     return (
         <SafeAreaView style={styles.container}>

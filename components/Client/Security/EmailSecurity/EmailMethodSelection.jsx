@@ -9,13 +9,13 @@ import {
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {Toast} from "toastify-react-native";
-import ClientUtils from '../../../utils/ClientUtilities';
+import ClientUtils from '../../../../utils/ClientUtilities';
 import {useMutation} from "@tanstack/react-query";
-import {useGetToken} from "../../../hooks/useGetToken";
-import StatusModal from "../../StatusModal/StatusModal"
+import {useGetToken} from "../../../../hooks/useGetToken";
+import StatusModal from "../../../StatusModal/StatusModal"
 import {router} from "expo-router";
 
-const EmailVet = require('../../../assets/images/emailVet.png')
+const EmailVet = require('../../../../assets/images/emailVet.png')
 
 
 const EmailMethodSelection = ({ userData }) => {

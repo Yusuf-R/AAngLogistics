@@ -4,7 +4,8 @@ import {View, Text, TouchableOpacity} from "react-native";
 import {useLocalSearchParams, useRouter} from "expo-router";
 import LottieView from "lottie-react-native";
 import Animated, {FadeIn, FadeOut} from "react-native-reanimated";
-import SecureStorage     from "../../lib/SecureStorage";
+import SecureStorage from "../../lib/SecureStorage";
+import SessionManager from "../../lib/SessionManager";
 
 const roles = [
     {
@@ -24,13 +25,17 @@ const roles = [
 export default function RoleSelect() {
     const router = useRouter();
     const [selectedRole, setSelectedRole] = useState(null);
-    const { next = "/(authentication)/signup" } = useLocalSearchParams();
+    const {next = "/(authentication)/signup"} = useLocalSearchParams();
+    console.log({
+        next
+    })
 
     const handleContinue = async () => {
         if (!selectedRole) return;
-        // Save to secure storage or state here
-       await SecureStorage.saveRole(selectedRole);
-        router.replace(next);
+        // Save to role to the session manager instead
+        console.log({selectedRole});
+        await SessionManager.updateRole(selectedRole);
+        router.push(next);
     };
 
     return (

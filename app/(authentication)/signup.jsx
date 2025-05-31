@@ -14,10 +14,11 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useRouter, Stack} from 'expo-router';
-import {useNavigation} from '@react-navigation/native';
 import LottieView from "lottie-react-native";
 import {useAuth} from "../../context/auth";
-import {Toast} from "toastify-react-native";
+import SessionManager from "../../lib/SessionManager";
+import { useSessionStore } from "../../store/useSessionStore";
+import StatusModal from "../../components/StatusModal/StatusModal";
 
 const loader = require("@/assets/animations/loader/spin-loader.json");
 
@@ -39,7 +40,6 @@ import {Input, InputField, InputSlot, InputIcon} from '@/components/ui/input';
 
 // Icons
 import Ionicons from '@expo/vector-icons/Ionicons';
-
 
 // Utils
 import SecureStorage from '../../lib/SecureStorage';
@@ -95,6 +95,10 @@ export default function SignUp() {
     const [role, setRole] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalStatus, setModalStatus] = useState('loading'); // 'loading' | 'success' | 'error'
+    const [modalMessage, setModalMessage] = useState('Creating your account...');
+
     const [submissionState, setSubmissionState] = useState({
         isLoading: false,
         status: 'idle', // idle | loading | success | error
@@ -115,56 +119,55 @@ export default function SignUp() {
 
     const {signInWithGoogle} = useAuth();
 
+
     useEffect(() => {
         async function loadRole() {
-            const stored = await SecureStorage.getRole();
+            // ✅ Prefer Zustand memory if present
+            let stored = useSessionStore.getState().role;
+
             if (!stored) {
-                router.replace('/(onboarding)/role-select?next=/(authentication)/signup')
-                return;
+                // ❌ Fallback to SecureStorage (e.g., hard refresh)
+                stored = await SecureStorage.getRole();
+
+                if (stored) {
+                    await SessionManager.updateRole(stored); // ✅ sync memory
+                } else {
+                    router.replace('/(onboarding)/role-select?next=/(authentication)/signup');
+                    return;
+                }
             }
+
             setRole(stored);
-            reset({role: stored, email: '', password: ''});
+            reset({ role: stored, email: '', password: '' });
         }
 
         loadRole();
     }, [reset]);
 
     const onSubmit = async (data) => {
-        setSubmissionState({
-            isLoading: true,
-            status: 'loading',
-            message: 'Creating your account...'
-        });
+
+
+        setModalVisible(true);
 
         mutation.mutate(data, {
             onSuccess: async (respData) => {
                 const {accessToken, refreshToken, user, expiresIn} = respData;
-                const expiry = new Date(Date.now() + 1000 * expiresIn);
 
-                await SecureStorage.saveAccessToken(accessToken);
-                await SecureStorage.saveRefreshToken(refreshToken);
-                await SecureStorage.saveExpiry(expiry.toISOString());
-                await SecureStorage.saveRole(user.role);
-                await SecureStorage.saveUserData(user);
-                await SecureStorage.saveOnboardingStatus(true);
+                await SessionManager.updateToken(accessToken, expiresIn);
+                await SecureStorage.saveRefreshToken(refreshToken); // 🔐 refresh token remains in SecureStorage only
+                await SessionManager.updateUser(user);
+                await SessionManager.updateRole(user.role);
+                await SessionManager.updateOnboardingStatus(true);
 
-                // ✅ Show success before routing
-                setSubmissionState({
-                    isLoading: true, // still showing overlay
-                    status: 'success',
-                    message: 'Success! Redirecting...'
-                });
-                Toast.success("Account created 🚀.");
 
-                await new Promise(resolve => setTimeout(resolve, 2500)); // short delay to let user see success
+                setModalStatus('success');
+                setModalMessage('Account created successfully 🚀');
 
-                setSubmissionState({
-                    isLoading: false,
-                    status: 'idle',
-                    message: ''
-                });
+                setTimeout(() => {
+                    setModalStatus('loading');
+                    setModalMessage('Redirecting to your dashboard ♻️');
+                }, 2000);
 
-                Toast.success('Redirecting to Dashboard 🔁');
 
                 router.replace(`/(protected)/${user.role}/dashboard`);
             },
@@ -174,22 +177,14 @@ export default function SignUp() {
 
                 if (error.response.status === 409) {
                     errorMessage = 'Duplicate Credentials ⚠️';
+                } else if (error.message === "Network error") {
+                    errorMessage = 'No internet connection 🔌';
                 }
 
-                setSubmissionState({
-                    isLoading: true,
-                    status: 'error',
-                    message: errorMessage,
-                });
+                setModalStatus('error');
+                setModalMessage(errorMessage);
+                setModalVisible(true);
 
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                Toast.error(errorMessage);
-
-                setSubmissionState({
-                    isLoading: false,
-                    status: 'idle',
-                    message: '',
-                });
             }
         });
     };
@@ -419,6 +414,13 @@ export default function SignUp() {
                     </View>
                 </View>
             )}
+            <StatusModal
+                visible={modalVisible}
+                status={modalStatus}
+                message={modalMessage}
+                onClose={() => setModalVisible(false)}
+            />
+
         </SafeAreaView>
     );
 }

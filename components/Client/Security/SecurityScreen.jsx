@@ -30,13 +30,12 @@ const SecurityScreen = ({ navigation }) => {
     };
 
     const handleChangePIN = () => {
-        Alert.alert('Change PIN', 'PIN change functionality to be implemented');
-        // Navigate to PIN change screen or show modal
+        // Navigate to Change PIN screen
+        router.push(ROUTES["AUTH-PIN"]);
     };
 
     const handleChangePassword = () => {
-        Alert.alert('Change Password', 'Password change functionality to be implemented');
-        // Navigate to password change screen or show modal
+        router.push(ROUTES["UPDATE-PASSWORD"]);
     };
 
     const handleGoogleAuthenticator = () => {

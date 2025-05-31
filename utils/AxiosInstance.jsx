@@ -1,7 +1,7 @@
 // AxiosInstance.js
 import axios from "axios";
 import SecureStorage from "../lib/SecureStorage";
-import { refreshAccessToken } from "../lib/TokenManager"; // ✅ new logic
+import SessionManager  from "../lib/SessionManager"; // ✅ now our central sync engine
 
 export const axiosPublic = axios.create({
     baseURL: process.env.EXPO_PUBLIC_AANG_SERVER,
@@ -18,40 +18,40 @@ export const axiosPrivate = axios.create({
     },
 });
 
-// ✅ Attach token to outgoing requests
+// ✅ Attach token to every request
 axiosPrivate.interceptors.request.use(async (config) => {
-    const token = await SecureStorage.getAccessToken();
+    const { token } = await SessionManager.getCurrentSession(); // auto-refresh if expired
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
 }, (error) => Promise.reject(error));
 
-// 🔁 Refresh token logic on failure
+// 🔁 Retry once on 401 Unauthorized
 axiosPrivate.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        const isExpired = (
+        const shouldRetry = (
             error.response?.status === 401 &&
-            error.response?.data?.error?.includes("expired") &&
             !originalRequest._retry
         );
 
-        if (isExpired) {
+        if (shouldRetry) {
             originalRequest._retry = true;
 
             try {
-                const newAccessToken = await refreshAccessToken(); // ✅ central token handler
+                const { token } = await SessionManager.getCurrentSession();
 
-                if (!newAccessToken) throw new Error("Failed to refresh");
+                if (!token) {
+                    throw new Error("Token refresh failed");
+                }
 
-                // Attach new token to retry
-                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+                originalRequest.headers.Authorization = `Bearer ${token}`;
                 return axiosPrivate(originalRequest);
             } catch (err) {
-                console.error("[Axios Refresh] ❌", err.message);
+                console.error("[Axios Retry] ❌", err.message);
                 return Promise.reject(err);
             }
         }

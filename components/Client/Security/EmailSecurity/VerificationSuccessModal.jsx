@@ -14,7 +14,6 @@ const VerificationSuccessModal = ({
                                       onNavigate,
                                       title = "Congratulations!",
                                       message = "Your email has been verified successfully. You will be redirected to your profile in a few seconds..",
-                                      redirectRoute = "/(protected)/client/profile",
                                       autoCloseDelay = 3000
                                   }) => {
     const [animatedValue] = useState(new Animated.Value(0));

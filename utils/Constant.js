@@ -7,6 +7,10 @@ export const ROUTES = {
     // Nested Routes (No Tab Bar)
     SECURITY: '/client/profile/security',
     'VERIFY-EMAIL': '/client/profile/verify-email',
+    'UPDATE-PASSWORD': '/client/profile/update-password',
+    'AUTH-PIN': '/client/profile/auth-pin',
+    'UPDATE-PIN': '/client/profile/update-pin',
+    'RESET-PIN': '/client/profile/reset-pin',
     // Add other nested routes here
 };
 

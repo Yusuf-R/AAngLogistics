@@ -11,15 +11,16 @@ import {
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {router} from 'expo-router'; // or react-native-vector-icons
-import StatusModal from "../../StatusModal/StatusModal";
-import {useGetToken} from "../../../hooks/useGetToken";
+import StatusModal from "../../../StatusModal/StatusModal";
+import {useGetToken} from "../../../../hooks/useGetToken";
 import {useMutation} from '@tanstack/react-query';
-import ClientUtils from "../../../utils/ClientUtilities";
+import ClientUtils from "../../../../utils/ClientUtilities";
 import VerificationSuccessModal from "./VerificationSuccessModal";
+import SecureStorage from "../../../../lib/SecureStorage";
+import SessionManager from "../../../../lib/SessionManager";
 
 const EmailCodeVerification = ({
                                    userEmail,
-                                   onVerificationSuccess,
                                }) => {
     const email = userEmail;
     const [timer, setTimer] = useState(10); // 15 minutes in seconds
@@ -79,34 +80,43 @@ const EmailCodeVerification = ({
         const data = {
             reqType: 'Email',
             token,
-        }
-        mutation.mutate(data, {
-            onSuccess: (data) => {
-                setModalStatus('success');
-                setModalMessage('Request sent successfully!');
+        };
 
-                // Delay navigation slightly after success animation plays
+        mutation.mutate(data, {
+            onSuccess: async (respData) => {
+                const { user } = respData;
+
+                // STEP 1: Save updated user securely before any UI transitions
+                await SessionManager.updateUser(user);
+
+
+                // STEP 2: Update modal to show success
+                setModalStatus('success');
+                setModalMessage('Verification successful!');
+
+                // STEP 3: Delay to let user see success, then show fancy success modal
                 setTimeout(() => {
                     setModalVisible(false);
-                    if (onVerificationSuccess) {
-                        onVerificationSuccess(data);
-                    }
-                    router.push({
-                        pathname: '/client/profile',
-                    });
-                }, 1500);
+                    setShowSuccessModal(true);
+                }, 1500); // subtle, human-friendly pause
+
+                // STEP 4: Navigate after another short delay
+                setTimeout(() => {
+                    setShowSuccessModal(false);
+                    router.replace('/client/profile');
+                }, 4500); // 3s + 1.2s = smooth experience
             },
             onError: () => {
                 setModalStatus('error');
                 setModalMessage('Verification Failed. Please try again.');
             },
-        })
-
+        });
     };
+
 
     // Handle resend code
     const handleResendCode = async () => {
-        const payload = { reqType: 'Email', email };
+        const payload = {reqType: 'Email', email};
 
         setRetryContext('resend');
         setModalStatus('loading');
@@ -130,6 +140,15 @@ const EmailCodeVerification = ({
                 setModalMessage('Failed to resend code. Please try again.');
             },
         });
+    };
+
+    const handleSuccessNavigation = () => {
+        setShowSuccessModal(false);
+        router.replace('/client/profile');
+    };
+
+    const handleCloseSuccessModal = () => {
+        setShowSuccessModal(false); // fallback in case modal is dismissed manually
     };
 
     return (
@@ -176,13 +195,10 @@ const EmailCodeVerification = ({
 
                 {/* Verify Button */}
                 <TouchableOpacity
-                    style={[styles.verifyButton, isVerifying && styles.disabledButton]}
+                    style={styles.verifyButton}
                     onPress={handleVerify}
-                    disabled={isVerifying}
                 >
-                    <Text style={styles.verifyButtonText}>
-                        {isVerifying ? 'Verifying...' : 'Verify'}
-                    </Text>
+                    <Text style={styles.verifyButtonText}>Verify</Text>
                 </TouchableOpacity>
 
                 {/* Number Pad */}
@@ -228,8 +244,7 @@ const EmailCodeVerification = ({
                 onClose={handleCloseSuccessModal}
                 onNavigate={handleSuccessNavigation}
                 title="Congratulations!"
-                message="Your email has been verified successfully. You will be redirected to your profile in a few seconds.."
-                redirectRoute="/client/profile/security"
+                message="Your email has been verified successfully. Redirecting..."
                 autoCloseDelay={3000}
             />
         </SafeAreaView>

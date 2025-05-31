@@ -33,9 +33,9 @@ export default function ProfileLayout() {
             />
 
             <Stack.Screen
-                name="reset-password"
+                name="update-password"
                 options={{
-                    title: 'Reset Password',
+                    title: 'Update Password',
                 }}
             />
 
@@ -51,6 +51,34 @@ export default function ProfileLayout() {
                 name="verify-email-code"
                 options={{
                     title: 'Enter Verification Code',
+                }}
+            />
+
+            <Stack.Screen
+                name="auth-pin"
+                options={{
+                    title: 'Set Pin',
+                }}
+            />
+
+            <Stack.Screen
+                name="update-pin"
+                options={{
+                    title: 'Update Pin',
+                }}
+            />
+
+            <Stack.Screen
+                name="reset-pin"
+                options={{
+                    title: 'Reset Pin',
+                }}
+            />
+
+            <Stack.Screen
+                name="pin-email"
+                options={{
+                    title: 'Get Token',
                 }}
             />
 

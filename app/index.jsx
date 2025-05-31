@@ -5,6 +5,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-na
 import SessionManager from "../lib/SessionManager";
 import SecureStorage from "../lib/SecureStorage";
 import { refreshAccessToken } from "../lib/TokenManager";
+import { useSessionStore } from '../store/useSessionStore';
 
 export default function Index() {
     const router = useRouter();
@@ -14,43 +15,14 @@ export default function Index() {
 
     useEffect(() => {
         const resolve = async () => {
-            setLoadingText("Checking session...");
-
-            // Give time for SecureStorage to settle after sign-in
-            await new Promise((res) => setTimeout(res, 200));
-
-            const token = await SecureStorage.getAccessToken();
-            const role = await SecureStorage.getRole();
-            const isExpired = await SecureStorage.isAccessTokenExpired();
-            const onboarded = await SecureStorage.hasOnboarded();
-
-            console.log("[Index] 🔍 Role:", role, "| Expired:", isExpired, "| Onboarded:", onboarded);
-
-            // Contextual loading text
-            if (role && !isExpired) {
-                setLoadingText("Setting up your dashboard...");
-            } else if (!role && onboarded) {
-                setLoadingText("Redirecting to login...");
-            } else if (!onboarded) {
-                setLoadingText("Launching onboarding...");
-            }
-
-            // 👇 Add this block: Attempt refresh if expired and refreshToken exists
-            if (token && isExpired) {
-                const refreshed = await refreshAccessToken();
-                if (!refreshed) {
-                    return router.replace("/(authentication)/login");
-                }
-            }
+            setLoadingText("Checking your session...");
 
             const target = await SessionManager.resolveRoute();
 
             if (target && target !== "/") {
                 console.log("[Index] 🚀 Routing to:", target);
-                // Short delay to show the loading message
-                setTimeout(() => {
-                    router.replace(target);
-                }, 600);
+                setLoadingText("Redirecting...");
+                setTimeout(() => router.replace(target), 600);
             } else {
                 setChecking(false);
                 contentOpacity.value = withTiming(1, { duration: 1000 });

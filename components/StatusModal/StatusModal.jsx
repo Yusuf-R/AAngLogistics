@@ -13,6 +13,7 @@ const StatusModal = ({
                          onFinish,
                          onRetry,       // optional
                          onClose,       // optional
+                         showRetryOnError = true,
                      }) => {
     const getAnimation = () => {
         switch (status) {
@@ -47,7 +48,7 @@ const StatusModal = ({
 
                     {status === 'error' && (
                         <View style={styles.buttonGroup}>
-                            {onRetry && (
+                            {onRetry && showRetryOnError && (
                                 <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
                                     <Text style={styles.retryText}>Try Again</Text>
                                 </TouchableOpacity>

@@ -14,6 +14,7 @@ import {
 import {Ionicons} from '@expo/vector-icons';
 import LottieView from "lottie-react-native";
 import img from "../../assets/images/new.jpg";
+import StatusModal from "../../components/StatusModal/StatusModal";
 
 // Utils
 import SecureStorage from '../../lib/SecureStorage';
@@ -32,6 +33,8 @@ import {FormControl, FormControlError, FormControlErrorIcon} from '@/components/
 import {Input, InputField, InputSlot, InputIcon} from '@/components/ui/input';
 import {useRouter} from "expo-router";
 import {Toast} from "toastify-react-native";
+import {useSessionStore} from "../../store/useSessionStore";
+import SessionManager from "../../lib/SessionManager";
 
 
 // Validation schema
@@ -58,11 +61,10 @@ const googleIcon = require('../../assets/icons/googleIcon.png');
 export default function Login() {
     const [role, setRole] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
-    const [submissionState, setSubmissionState] = useState({
-        isLoading: false,
-        status: 'idle', // idle | loading | success | error
-        message: ''
-    });
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalStatus, setModalStatus] = useState('loading'); // 'loading' | 'success' | 'error'
+    const [modalMessage, setModalMessage] = useState('Logging in...');
 
     const router = useRouter();
     const {control, handleSubmit, reset, formState: {errors}} = useForm({
@@ -75,89 +77,84 @@ export default function Login() {
         console.log('Forgot password');
     };
 
+    const {signInWithGoogle} = useAuth();
+
     const mutation = useMutation({
         mutationKey: ['Login'],
         mutationFn: ClientUtils.Login,
     });
 
     const onLogin = async (data) => {
-        setSubmissionState({
-            isLoading: true,
-            status: 'loading',
-            message: 'logging into your account...'
-        });
+
+        setModalStatus('loading');
+        setModalMessage('Logging in..');
+        setModalVisible(true);
 
         mutation.mutate(data, {
             onSuccess: async (respData) => {
+
+                setModalStatus('success');
+                setModalMessage('Logging Successful 🚀');
+
                 const {accessToken, refreshToken, user, expiresIn} = respData;
-                const expiry = new Date(Date.now() + 1000 * expiresIn);
 
-                await SecureStorage.saveAccessToken(accessToken);
-                await SecureStorage.saveRefreshToken(refreshToken);
-                await SecureStorage.saveExpiry(expiry.toISOString());
-                await SecureStorage.saveRole(user.role);
-                await SecureStorage.saveUserData(user);
-                await SecureStorage.saveOnboardingStatus(true);
+                await SessionManager.updateToken(accessToken, expiresIn);
+                await SecureStorage.saveRefreshToken(refreshToken); // 🔐 refresh token remains in SecureStorage only
+                await SessionManager.updateUser(user);
+                await SessionManager.updateRole(user.role);
+                await SessionManager.updateOnboardingStatus(true);
 
-                // ✅ Show success before routing
-                setSubmissionState({
-                    isLoading: true, // still showing overlay
-                    status: 'success',
-                    message: 'Login Successful 🚀. Redirecting...'
-                });
+                setTimeout(() => {
+                    setModalStatus('loading');
+                    setModalMessage('Redirecting to your dashboard ♻️');
+                }, 2000);
 
-                Toast.success('Login Successful 🚀');
 
-                await new Promise(resolve => setTimeout(resolve, 2500)); // short delay to let user see success
-
-                setSubmissionState({
-                    isLoading: false,
-                    status: 'idle',
-                    message: ''
-                });
-
-                // Redirect to the dashboard based on user role
-                Toast.success('Redirecting to Dashboard 🔁');
-
-                router.replace(`/(protected)/${user.role}/dashboard`);
+                // Navigate after 3s total
+                setTimeout(() => {
+                    setModalVisible(false);
+                    router.replace(`/(protected)/${user.role}/dashboard`);
+                }, 3500);
             },
-
             onError: async (error) => {
-
                 let errorMessage = 'Invalid Credentials ⚠️';
 
-                if (error.response.status === 409) {
+                if (error?.response?.status === 401) {
+                    errorMessage = 'Invalid Credentials ⚠️';
+                } else if (error?.response?.status === 409) {
                     errorMessage = 'Duplicate Credentials ⚠️';
+                } else if (error.message === "Network error") {
+                    errorMessage = 'No internet connection 🔌';
                 }
-
-                setSubmissionState({
-                    isLoading: true,
-                    status: 'error',
-                    message: errorMessage,
-                });
-                Toast.error(errorMessage);
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-
-                setSubmissionState({
-                    isLoading: false,
-                    status: 'idle',
-                    message: '',
-                });
+                setModalStatus('error');
+                setModalMessage(errorMessage);
+                setModalVisible(true);
+                console.log(error.response.status);
             }
         });
     };
 
-    const {signInWithGoogle} = useAuth();
+
 
     useEffect(() => {
         async function loadRole() {
-            const stored = await SecureStorage.getRole();
+            // ✅ Prefer Zustand memory if present
+            let stored = useSessionStore.getState().role;
+
             if (!stored) {
-                router.replace('/(onboarding)/role-select?next=/(authentication)/login')
-                return;
+                // ❌ Fallback to SecureStorage (e.g., hard refresh)
+                stored = await SecureStorage.getRole();
+
+                if (stored) {
+                    await SessionManager.updateRole(stored); // ✅ sync memory
+                } else {
+                    router.replace('/(onboarding)/role-select?next=/(authentication)/login');
+                    return;
+                }
             }
+
             setRole(stored);
-            reset({role: stored, email: '', password: ''});
+            reset({ role: stored, email: '', password: '' });
         }
 
         loadRole();
@@ -326,7 +323,6 @@ export default function Login() {
                         <TouchableOpacity
                             style={styles.signInButton}
                             onPress={handleSubmit(onLogin)}
-                            disabled={submissionState.isLoading}
                         >
                             <Text style={styles.signInText}>Log in</Text>
                         </TouchableOpacity>
@@ -352,21 +348,12 @@ export default function Login() {
                     </View>
                 </View>
             </KeyBoardAvoidingHook>
-            {submissionState.isLoading && (
-                <View style={styles.overlay}>
-                    <View style={styles.loadingBox}>
-                        <LottieView
-                            source={loader}
-                            autoPlay
-                            loop={submissionState.status !== 'success'}
-                            style={{width: 120, height: 120}}
-                        />
-                        <Text style={styles.loadingText}>
-                            {submissionState.message}
-                        </Text>
-                    </View>
-                </View>
-            )}
+            <StatusModal
+                visible={modalVisible}
+                status={modalStatus}
+                message={modalMessage}
+                onClose={() => setModalVisible(false)}
+            />
         </SafeAreaView>
     );
 };
