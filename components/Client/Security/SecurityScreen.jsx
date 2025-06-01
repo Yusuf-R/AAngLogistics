@@ -38,7 +38,7 @@ const SecurityScreen = ({ navigation }) => {
         router.push(ROUTES["UPDATE-PASSWORD"]);
     };
 
-    const handleGoogleAuthenticator = () => {
+    const handlePrivacyPolicy = () => {
         Alert.alert('Google Authenticator', 'Google Authenticator setup to be implemented');
         // Navigate to Google Authenticator setup
     };
@@ -85,12 +85,12 @@ const SecurityScreen = ({ navigation }) => {
                     />
                 </View>
 
-                {/* Google Authenticator */}
+                {/* Privacy Policy */}
                 <TouchableOpacity
                     style={styles.optionRow}
-                    onPress={handleGoogleAuthenticator}
+                    onPress={handlePrivacyPolicy}
                 >
-                    <Text style={styles.optionText}>Google Authenticator</Text>
+                    <Text style={styles.optionText}>Privacy Policy</Text>
                     <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
                 </TouchableOpacity>
 

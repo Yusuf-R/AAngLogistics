@@ -185,14 +185,23 @@ class ClientUtils {
                 url: '/auth/reset-password',
                 data: obj,
             });
+
             if (response.status === 201) {
                 return response.data;
-            } else {
-                throw new Error(response.error);
             }
+
+            // Optional: handle non-201 success responses
+            throw new Error(response.data?.error || 'Unexpected response');
         } catch (error) {
-            console.log({error});
-            throw new Error(error);
+            console.log('ResetPassword API Error:', error?.response?.data);
+
+            const backendMessage =
+                error?.response?.data?.error || // from backend JSON: { error: '...' }
+                error?.message ||               // fallback to Axios generic error
+                'Unknown error occurred';
+            console.log({backendMessage});
+
+            throw new Error(backendMessage); // This is now a clean readable message
         }
     }
 
@@ -260,6 +269,41 @@ class ClientUtils {
                 data: obj,
             });
             if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async AcceptTCs(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/auth/tcs',
+                data: obj,
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async Dashboard() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/auth/dashboard',
+            });
+            if (response.status === 200) {
                 return response.data;
             } else {
                 throw new Error(response.error);

@@ -26,6 +26,22 @@ export default function ProfileLayout() {
             />
 
             <Stack.Screen
+                name="utility"
+                options={{
+                    title: 'Developer Utilities',
+                }}
+            />
+
+            <Stack.Screen
+                name="tcs"
+                options={{
+                    title: 'Terms & Conditions',
+                    // make it at the center
+                    headerTitleAlign: 'center',
+                }}
+            />
+
+            <Stack.Screen
                 name="verify-email"
                 options={{
                     title: 'Verify Email',
@@ -36,13 +52,6 @@ export default function ProfileLayout() {
                 name="update-password"
                 options={{
                     title: 'Update Password',
-                }}
-            />
-
-            <Stack.Screen
-                name="activate-email"
-                options={{
-                    title: 'Activate Email',
                 }}
             />
 

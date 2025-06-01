@@ -17,7 +17,7 @@ export default function DriverDashboard() {
                 onPress={async () => {
                    //  await SecureStorage.clearSessionOnly();
                     Toast.success("Secure Storage cleared.");
-                    await SecureStorage.clearAll();
+                    await SecureStorage.clearSessionOnly();
                    router.replace('/');
                 }}
             >

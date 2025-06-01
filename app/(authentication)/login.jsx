@@ -39,7 +39,6 @@ import SessionManager from "../../lib/SessionManager";
 
 // Validation schema
 const loginSchema = yup.object().shape({
-    role: yup.string().required('Role is required'),
     email: yup.string().email('Invalid email').required('Email is required'),
     password: yup
         .string()
@@ -69,12 +68,11 @@ export default function Login() {
     const router = useRouter();
     const {control, handleSubmit, reset, formState: {errors}} = useForm({
         resolver: yupResolver(loginSchema),
-        defaultValues: {role: '', email: '', password: ''},
+        defaultValues: {email: '', password: ''},
         mode: 'onTouched',
     });
     const handleForgotPassword = () => {
-        // Navigate to forgot password screen
-        console.log('Forgot password');
+        router.push('/(authentication)/forgot-password')
     };
 
     const {signInWithGoogle} = useAuth();
@@ -133,32 +131,6 @@ export default function Login() {
             }
         });
     };
-
-
-
-    useEffect(() => {
-        async function loadRole() {
-            // ✅ Prefer Zustand memory if present
-            let stored = useSessionStore.getState().role;
-
-            if (!stored) {
-                // ❌ Fallback to SecureStorage (e.g., hard refresh)
-                stored = await SecureStorage.getRole();
-
-                if (stored) {
-                    await SessionManager.updateRole(stored); // ✅ sync memory
-                } else {
-                    router.replace('/(onboarding)/role-select?next=/(authentication)/login');
-                    return;
-                }
-            }
-
-            setRole(stored);
-            reset({ role: stored, email: '', password: '' });
-        }
-
-        loadRole();
-    }, [reset]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -285,46 +257,11 @@ export default function Login() {
                             </View>
                         </FormControl>
 
-                        {/* Role (read-only) */}
-                        <FormControl isReadOnly className="mb-12">
-                            <Controller
-                                name="role"
-                                control={control}
-                                render={({field}) => {
-                                    const display = field.value || role;
-                                    if (!display) return null; // 🛑 Avoid rendering until role is loaded
-                                    const label = display.charAt(0).toUpperCase() + display.slice(1);
-                                    return (
-                                        <Input
-                                            variant="rounded"
-                                            size="xl"
-                                            className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
-                                            style={{
-                                                elevation: 5,
-                                                shadowColor: '#000',
-                                                shadowOffset: {width: 0, height: 2},
-                                                shadowOpacity: 0.25,
-                                                shadowRadius: 3.84,
-                                            }}
-                                        >
-                                            <InputField
-                                                placeholder={label}
-                                                isReadOnly
-                                            />
-                                            <InputSlot className="pr-3 ">
-                                                <InputIcon as={display === 'client' ? UserIcon : CarIcon}/>
-                                            </InputSlot>
-                                        </Input>
-                                    );
-                                }}
-                            />
-                        </FormControl>
-
                         <TouchableOpacity
                             style={styles.signInButton}
                             onPress={handleSubmit(onLogin)}
                         >
-                            <Text style={styles.signInText}>Log in</Text>
+                            <Text style={styles.signInText}>LOGIN</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={handleForgotPassword}>
@@ -345,6 +282,13 @@ export default function Login() {
                                 />
                             </TouchableOpacity>
                         </View>
+                        <TouchableOpacity
+                            style={styles.signUpContainer}
+                            onPress={() => router.push('/(onboarding)/role-select')}
+                        >
+                            <Text style={styles.noAccountText}>Don't have an account?</Text>
+                            <Text style={styles.signUpText}> Sign Up</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </KeyBoardAvoidingHook>
@@ -426,57 +370,8 @@ const styles = StyleSheet.create({
         fontSize: 14,
         marginLeft: 4,
     },
-    overlay: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 50,
-    },
-    loadingBox: {
-        backgroundColor: '#fff',
-        paddingVertical: 28,
-        paddingHorizontal: 24,
-        borderRadius: 20,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOpacity: 0.2,
-        shadowOffset: {width: 0, height: 8},
-        shadowRadius: 12,
-        elevation: 6,
-    },
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-        fontFamily: 'PoppinsMedium',
-        color: '#3b82f6',
-    },
     eyeIcon: {
         padding: 8,
-    },
-    rememberMeContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    checkbox: {
-        width: 24,
-        height: 24,
-        borderRadius: 6,
-        borderWidth: 2,
-        borderColor: '#00BFA6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 8,
-    },
-    checkboxChecked: {
-        backgroundColor: '#00BFA6',
-        borderColor: '#00BFA6',
-    },
-    rememberMeText: {
-        fontSize: 14,
-        color: '#555',
     },
     signInButton: {
         backgroundColor: '#60a5fa',
@@ -518,8 +413,8 @@ const styles = StyleSheet.create({
         marginBottom: 30,
     },
     socialButton: {
-        width: 60,
-        height: 60,
+        width: 65,
+        height: 65,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#E0E0E0',
@@ -530,10 +425,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    noAccountText: {
-        fontSize: 14,
-        color: '#888',
     },
     signUpText: {
         fontSize: 14,

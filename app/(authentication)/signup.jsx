@@ -17,7 +17,7 @@ import {useRouter, Stack} from 'expo-router';
 import LottieView from "lottie-react-native";
 import {useAuth} from "../../context/auth";
 import SessionManager from "../../lib/SessionManager";
-import { useSessionStore } from "../../store/useSessionStore";
+import {useSessionStore} from "../../store/useSessionStore";
 import StatusModal from "../../components/StatusModal/StatusModal";
 
 const loader = require("@/assets/animations/loader/spin-loader.json");
@@ -104,6 +104,7 @@ export default function SignUp() {
         status: 'idle', // idle | loading | success | error
         message: ''
     });
+
     const router = useRouter();
 
     const mutation = useMutation({
@@ -118,7 +119,6 @@ export default function SignUp() {
     });
 
     const {signInWithGoogle} = useAuth();
-
 
     useEffect(() => {
         async function loadRole() {
@@ -138,14 +138,13 @@ export default function SignUp() {
             }
 
             setRole(stored);
-            reset({ role: stored, email: '', password: '' });
+            reset({role: stored, email: '', password: ''});
         }
 
         loadRole();
     }, [reset]);
 
     const onSubmit = async (data) => {
-
 
         setModalVisible(true);
 
@@ -190,153 +189,57 @@ export default function SignUp() {
     };
 
     return (
-        <SafeAreaView className="flex-1">
-            <ImageBackground
-                source={img}
-                style={{
-                    position: 'absolute',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                }}
-                resizeMode="cover"
-            />
-
-            <Stack.Screen
-                options={{
-                    animation: "slide_from_right",
-                    headerShown: true,
-                    headerTitle: () => <LogoTitle role={role}/>,
-                    title: "Role",
-                    headerStyle: {
-                        elevation: 0, shadowColor: 'transparent',
-                    },
-                }}
-            />
-            {/* Animated Logo */}
-            <View className="items-center">
-                <LottieView
-                    source={require('../../assets/images/AAngAnimation.json')}
-                    autoPlay
-                    loop
-                    style={styles.animation}
+        <>
+            <SafeAreaView className="flex-1">
+                <ImageBackground
+                    source={img}
+                    style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                    }}
+                    resizeMode="cover"
                 />
-                <Text className="text-2xl font-['PoppinsSemiBold'] text-[#60a5fa] mb-5">
-                    Get Started
-                </Text>
-            </View>
-            <KeyBoardAvoidingHook>
-                {/* SignUp Form */}
-                <View className="flex-1 px-7 py-2 ">
-                    {/* Email */}
-                    <FormControl
-                        isInvalid={!!errors.email}
-                        size='xl'
-                        className="mb-8"
-                    >
-                        <Controller
-                            name="email"
-                            control={control}
-                            render={({field: {value, onChange, onBlur}}) => (
-                                <Input
-                                    variant="rounded"
-                                    size="xl"
-                                    isInvalid={!!errors.email}
-                                    className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
-                                    style={{
-                                        // Android elevation
-                                        elevation: 5,
-                                        // iOS shadow
-                                        shadowColor: '#000',
-                                        shadowOffset: {width: 0, height: 2},
-                                        shadowOpacity: 0.25,
-                                        shadowRadius: 3.84,
-                                    }}
-                                >
-                                    <InputField
-                                        placeholder="Email"
-                                        keyboardType="email-address"
-                                        autoCapitalize="none"
-                                        value={value}
-                                        onChangeText={onChange}
-                                        onBlur={onBlur}
-                                    />
-                                    <InputSlot className="pr-3 ">
-                                        <InputIcon as={MailIcon}/>
-                                    </InputSlot>
-                                </Input>
-                            )}
-                        />
-                        <View style={styles.errorContainer}>
-                            {errors.email && (
-                                <View style={styles.errorContent}>
-                                    <FormControlErrorIcon as={AlertIcon}/>
-                                    <Text style={styles.errorText}>{errors.email?.message}</Text>
-                                </View>
-                            )}
-                        </View>
-                    </FormControl>
 
-                    {/* Password */}
-                    <FormControl
-                        isInvalid={!!errors.password}
-                        size='xl'
-                        className="mb-8"
-                    >
-                        <Controller
-                            name="password"
-                            control={control}
-                            render={({field: {value, onChange, onBlur}}) => (
-                                <Input
-                                    variant="rounded"
-                                    size="xl"
-                                    isInvalid={!!errors.password}
-                                    className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
-                                    style={{
-                                        // Android elevation
-                                        elevation: 5,
-                                        // iOS shadow
-                                        shadowColor: '#000',
-                                        shadowOffset: {width: 0, height: 2},
-                                        shadowOpacity: 0.25,
-                                        shadowRadius: 3.84,
-                                    }}
-                                >
-                                    <InputField
-                                        placeholder="Password"
-                                        secureTextEntry={!showPassword}
-                                        value={value}
-                                        onChangeText={onChange}
-                                        onBlur={onBlur}
-                                    />
-                                    <TouchableOpacity className="pr-3" onPress={() => setShowPassword((prev) => !prev)}>
-                                        <InputIcon as={showPassword ? EyeOffIcon : EyeIcon}/>
-                                    </TouchableOpacity>
-                                </Input>
-                            )}
-                        />
-
-                        <View style={styles.errorContainer}>
-                            {errors.password && (
-                                <View style={styles.errorContent}>
-                                    <FormControlErrorIcon as={AlertIcon}/>
-                                    <Text style={styles.errorText}>{errors.password?.message}</Text>
-                                </View>
-                            )}
-                        </View>
-                    </FormControl>
-
-                    {/* Role (read-only) */}
-                    <FormControl isReadOnly className="mb-12">
-                        <Controller
-                            name="role"
-                            control={control}
-                            render={({field}) => {
-                                const display = field.value || role;
-                                if (!display) return null; // 🛑 Avoid rendering until role is loaded
-                                const label = display.charAt(0).toUpperCase() + display.slice(1);
-                                return (
+                <Stack.Screen
+                    options={{
+                        animation: "slide_from_right",
+                        headerShown: true,
+                        headerTitle: () => <LogoTitle role={role}/>,
+                        title: "Role",
+                        headerStyle: {
+                            elevation: 0, shadowColor: 'transparent',
+                        },
+                    }}
+                />
+                {/* Animated Logo */}
+                <View className="items-center">
+                    <LottieView
+                        source={require('../../assets/images/AAngAnimation.json')}
+                        autoPlay
+                        loop
+                        style={styles.animation}
+                    />
+                    <Text className="text-2xl font-['PoppinsSemiBold'] text-[#60a5fa] mb-5">
+                        Get Started
+                    </Text>
+                </View>
+                <KeyBoardAvoidingHook>
+                    {/* SignUp Form */}
+                    <View className="flex-1 px-7 py-2 ">
+                        {/* Email */}
+                        <FormControl
+                            isInvalid={!!errors.email}
+                            size='xl'
+                            className="mb-8"
+                        >
+                            <Controller
+                                name="email"
+                                control={control}
+                                render={({field: {value, onChange, onBlur}}) => (
                                     <Input
                                         variant="rounded"
                                         size="xl"
+                                        isInvalid={!!errors.email}
                                         className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
                                         style={{
                                             // Android elevation
@@ -349,79 +252,175 @@ export default function SignUp() {
                                         }}
                                     >
                                         <InputField
-                                            placeholder={label}
-                                            isReadOnly
+                                            placeholder="Email"
+                                            keyboardType="email-address"
+                                            autoCapitalize="none"
+                                            value={value}
+                                            onChangeText={onChange}
+                                            onBlur={onBlur}
                                         />
                                         <InputSlot className="pr-3 ">
-                                            <InputIcon as={display === 'client' ? UserIcon : CarIcon}/>
+                                            <InputIcon as={MailIcon}/>
                                         </InputSlot>
                                     </Input>
-                                );
-                            }}
-                        />
-                    </FormControl>
+                                )}
+                            />
+                            <View style={styles.errorContainer}>
+                                {errors.email && (
+                                    <View style={styles.errorContent}>
+                                        <FormControlErrorIcon as={AlertIcon}/>
+                                        <Text style={styles.errorText}>{errors.email?.message}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </FormControl>
 
-                    {/* Submit Button */}
-                    <Pressable
-                        className={`rounded-lg p-4 mb-2 ${submissionState.isLoading ? 'bg-blue-400' : 'bg-blue-500'}`}
-                        onPress={handleSubmit(onSubmit)}
-                        disabled={submissionState.isLoading}
-                    >
-                        <View className="flex-row justify-center items-center">
-                            <Text className="text-white text-center text-lg font-['PoppinsRegular']">
-                                {submissionState.status === 'loading'
-                                    ? 'Creating account...'
-                                    : submissionState.status === 'success'
-                                        ? 'Success! Redirecting...'
-                                        : 'Sign Up'}
+                        {/* Password */}
+                        <FormControl
+                            isInvalid={!!errors.password}
+                            size='xl'
+                            className="mb-8"
+                        >
+                            <Controller
+                                name="password"
+                                control={control}
+                                render={({field: {value, onChange, onBlur}}) => (
+                                    <Input
+                                        variant="rounded"
+                                        size="xl"
+                                        isInvalid={!!errors.password}
+                                        className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
+                                        style={{
+                                            elevation: 5,
+                                            shadowColor: '#000',
+                                            shadowOffset: {width: 0, height: 2},
+                                            shadowOpacity: 0.25,
+                                            shadowRadius: 3.84,
+                                        }}
+                                    >
+                                        <InputField
+                                            placeholder="Password"
+                                            secureTextEntry={!showPassword}
+                                            value={value}
+                                            onChangeText={onChange}
+                                            onBlur={onBlur}
+                                        />
+                                        <TouchableOpacity className="pr-3"
+                                                          onPress={() => setShowPassword((prev) => !prev)}>
+                                            <InputIcon as={showPassword ? EyeOffIcon : EyeIcon}/>
+                                        </TouchableOpacity>
+                                    </Input>
+                                )}
+                            />
+
+                            <View style={styles.errorContainer}>
+                                {errors.password && (
+                                    <View style={styles.errorContent}>
+                                        <FormControlErrorIcon as={AlertIcon}/>
+                                        <Text style={styles.errorText}>{errors.password?.message}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </FormControl>
+
+                        {/* Role (read-only) */}
+                        <FormControl isReadOnly className="mb-12">
+                            <Controller
+                                name="role"
+                                control={control}
+                                render={({field}) => {
+                                    const display = field.value || role;
+                                    if (!display) return null; // 🛑 Avoid rendering until role is loaded
+                                    const label = display.charAt(0).toUpperCase() + display.slice(1);
+                                    return (
+                                        <Input
+                                            variant="rounded"
+                                            size="xl"
+                                            className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
+                                            style={{
+                                                // Android elevation
+                                                elevation: 5,
+                                                // iOS shadow
+                                                shadowColor: '#000',
+                                                shadowOffset: {width: 0, height: 2},
+                                                shadowOpacity: 0.25,
+                                                shadowRadius: 3.84,
+                                            }}
+                                        >
+                                            <InputField
+                                                placeholder={label}
+                                                isReadOnly
+                                            />
+                                            <InputSlot className="pr-3 ">
+                                                <InputIcon as={display === 'client' ? UserIcon : CarIcon}/>
+                                            </InputSlot>
+                                        </Input>
+                                    );
+                                }}
+                            />
+                        </FormControl>
+
+                        {/* Submit Button */}
+                        <Pressable
+                            className={`rounded-lg p-4 mb-2 ${submissionState.isLoading ? 'bg-blue-400' : 'bg-blue-500'}`}
+                            onPress={handleSubmit(onSubmit)}
+                            disabled={submissionState.isLoading}
+                        >
+                            <View className="flex-row justify-center items-center">
+                                <Text className="text-white text-center text-lg font-['PoppinsRegular']">
+                                    {submissionState.status === 'loading'
+                                        ? 'Creating account...'
+                                        : submissionState.status === 'success'
+                                            ? 'Success! Redirecting...'
+                                            : 'Sign Up'}
+                                </Text>
+                            </View>
+                        </Pressable>
+                        {/*Social Sign In*/}
+                        <View className="flex-row justify-center items-center mb-2 mt-4">
+                            <Text className=" text-lg text-gray-400 font-['PoppinsRegular']">Or Sign In with</Text>
+                        </View>
+                        <View className="flex-row justify-evenly w-full">
+                            <TouchableOpacity
+                                onPress={signInWithGoogle}
+                            >
+                                <Image
+                                    source={googleIcon}
+                                    style={{width: 40, height: 40}}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        <View className="flex-row gap-4 items-center mb-4 mt-4 bg-blue-600 rounded-2xl px-14">
+                            <Text className="text-lg text-white font-['PoppinsRegular']">Already have an account?</Text>
+                            <TouchableOpacity onPress={() => router.push('/(authentication)/login')}>
+                                <Text className="text-lg text-white font-['PoppinsSemiBold']">LOGIN</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </KeyBoardAvoidingHook>
+                {submissionState.isLoading && (
+                    <View style={styles.overlay}>
+                        <View style={styles.loadingBox}>
+                            <LottieView
+                                source={loader}
+                                autoPlay
+                                loop={submissionState.status !== 'success'}
+                                style={{width: 120, height: 120}}
+                            />
+                            <Text style={styles.loadingText}>
+                                {submissionState.message}
                             </Text>
                         </View>
-                    </Pressable>
-                    {/*Social Sign In*/}
-                    <View className="flex-row justify-center items-center mb-4 mt-8">
-                        <Text className=" text-lg text-gray-500 font-['PoppinsRegular']">Or Sign In with</Text>
                     </View>
-                    <View className="flex-row justify-evenly w-full">
-                        <TouchableOpacity
-                            onPress={signInWithGoogle}
-                        >
-                            <Image
-                                source={googleIcon}
-                                style={{width: 40, height: 40}}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                    <View className="flex-row justify-center items-center mb-4 mt-8">
-                        <Text className="text-lg text-gray-500 font-['PoppinsRegular']">Already have an account?</Text>
-                        <TouchableOpacity onPress={() => router.push('/(authentication)/login')}>
-                            <Text className="text-lg text-blue-500 font-['PoppinsSemiBold']"> Login</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </KeyBoardAvoidingHook>
-            {submissionState.isLoading && (
-                <View style={styles.overlay}>
-                    <View style={styles.loadingBox}>
-                        <LottieView
-                            source={loader}
-                            autoPlay
-                            loop={submissionState.status !== 'success'}
-                            style={{width: 120, height: 120}}
-                        />
-                        <Text style={styles.loadingText}>
-                            {submissionState.message}
-                        </Text>
-                    </View>
-                </View>
-            )}
-            <StatusModal
-                visible={modalVisible}
-                status={modalStatus}
-                message={modalMessage}
-                onClose={() => setModalVisible(false)}
-            />
-
-        </SafeAreaView>
+                )}
+                <StatusModal
+                    visible={modalVisible}
+                    status={modalStatus}
+                    message={modalMessage}
+                    onClose={() => setModalVisible(false)}
+                />
+            </SafeAreaView>
+        </>
     );
 }
 

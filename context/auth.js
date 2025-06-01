@@ -77,8 +77,9 @@ export const AuthProvider = ({children}) => {
                 await SessionManager.updateRole(user.role);
                 await SessionManager.updateOnboardingStatus(true);
 
-                Toast.success('Successful : Redirecting to Dashboard!')
-                router.replace(`/`);
+                router.replace(`/(protected)/${user.role}/dashboard`);
+                return;
+                // router.replace(`/`);
 
             } catch (err) {
                 console.error("Error finalizing Google sign-in:", err);

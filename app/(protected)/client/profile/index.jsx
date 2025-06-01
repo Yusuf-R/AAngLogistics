@@ -41,6 +41,15 @@ function ClientProfileScreen() {
         router.push(ROUTES.SECURITY);
     };
 
+    const goToTC = () => {
+        router.push(ROUTES.TC);
+    }
+
+    const goToUtility = () => {
+        router.push(ROUTES.UTILITY);
+    }
+
+
     const renderMenuItem = ({icon, iconType, title, value, hasChevron, color, isSwitch, onPress}) => {
         const renderIcon = () => {
             switch (iconType) {
@@ -173,15 +182,17 @@ function ClientProfileScreen() {
                     {renderMenuItem({
                         icon: 'lock-closed-outline',
                         iconType: 'Ionicons',
-                        title: 'Privacy Policy',
-                        hasChevron: true
+                        title: 'Terms & Conditions',
+                        hasChevron: true,
+                        onPress: () => goToTC()
                     })}
 
                     {renderMenuItem({
                         icon: 'people-outline',
                         iconType: 'Ionicons',
-                        title: 'Invite Friends',
-                        hasChevron: true
+                        title: 'Utility',
+                        hasChevron: true,
+                        onPress: () => goToUtility()
                     })}
 
                     {renderMenuItem({

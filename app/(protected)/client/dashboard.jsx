@@ -14,7 +14,7 @@ export default function ClientDashboard() {
                 className="mt-4 bg-red-500 px-4 py-2 rounded"
                 onPress={async () => {
                     Toast.success("Secure Storage cleared.");
-                    await SecureStorage.clearAll();
+                    await SecureStorage.clearSessionOnly();
                     router.replace('/');
 
                 }}

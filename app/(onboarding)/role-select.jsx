@@ -26,14 +26,10 @@ export default function RoleSelect() {
     const router = useRouter();
     const [selectedRole, setSelectedRole] = useState(null);
     const {next = "/(authentication)/signup"} = useLocalSearchParams();
-    console.log({
-        next
-    })
 
     const handleContinue = async () => {
         if (!selectedRole) return;
         // Save to role to the session manager instead
-        console.log({selectedRole});
         await SessionManager.updateRole(selectedRole);
         router.push(next);
     };
@@ -44,7 +40,6 @@ export default function RoleSelect() {
                 <Text className="text-2xl font-['PoppinsSemiBold'] text-[#3b82f6] mb-8">
                     Select Your Role
                 </Text>
-
                 <View className="flex-row justify-between w-full gap-6 mb-8">
                     {roles.map((role) => (
                         <TouchableOpacity
