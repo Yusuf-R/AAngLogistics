@@ -2,13 +2,15 @@ import {Text, TouchableOpacity} from 'react-native';
 import {useProtectedScreen} from '../../../hooks/useProtectedScreen';
 import SecureStorage from "../../../lib/SecureStorage";
 import {useRouter} from "expo-router";
+import MapScreen from "../../../components/MapScreen";
 import {Toast} from "toastify-react-native";
 
-export default function ClientDashboard() {
+function ClientDashboard() {
     const router = useRouter();
     return (
         <>
             <Text className="text-center mt-10">Client Dashboard</Text>
+            <MapScreen/>
 
             <TouchableOpacity
                 className="mt-4 bg-red-500 px-4 py-2 rounded"
@@ -24,3 +26,5 @@ export default function ClientDashboard() {
         </>
     )
 }
+
+export default ClientDashboard;

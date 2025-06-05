@@ -16,7 +16,8 @@
       },
       "bundleIdentifier": "com.AAngLogistics",
       "config": {
-        "usesNonExemptEncryption": false
+        "usesNonExemptEncryption": false,
+        "googleMapsApiKey": "process.env.GOOGLE_MAPS_API_KEY"
       }
     },
     "android": {
@@ -30,7 +31,12 @@
         "backgroundColor": "#000000"
       },
       "package": "com.AAngLogistics",
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "config": {
+        "googleMaps": {
+          "apiKey": "process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+        }
+      }
     },
     "web": {
       "bundler": "metro",
@@ -73,7 +79,6 @@
       },
       "eas": {
         "projectId": "fc46b4cb-5fc5-4c6c-929b-392d484af562"
-
       }
     }
   }
