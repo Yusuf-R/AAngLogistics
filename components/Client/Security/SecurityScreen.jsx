@@ -29,6 +29,11 @@ const SecurityScreen = ({ navigation }) => {
         router.push(ROUTES["VERIFY-EMAIL"]);
     };
 
+    const verifyNIN = () => {
+        router.push(ROUTES["NIN-VERIFICATION"]);
+    };
+
+
     const handleChangePIN = () => {
         // Navigate to Change PIN screen
         router.push(ROUTES["AUTH-PIN"]);
@@ -39,9 +44,9 @@ const SecurityScreen = ({ navigation }) => {
     };
 
     const handlePrivacyPolicy = () => {
-        Alert.alert('Google Authenticator', 'Google Authenticator setup to be implemented');
-        // Navigate to Google Authenticator setup
+        router.push(ROUTES["PRIVACY-POLICY"]);
     };
+
 
     return (
         <SafeAreaView style={styles.container}>
@@ -101,6 +106,13 @@ const SecurityScreen = ({ navigation }) => {
                         onPress={verifyEmail}
                     >
                         <Text style={styles.actionButtonText}>Verify Email</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={verifyNIN}
+                    >
+                        <Text style={styles.actionButtonText}>Verify NIN</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity

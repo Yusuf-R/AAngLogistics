@@ -18,6 +18,7 @@ import ClientUtils from "../../../../utils/ClientUtilities";
 import {router} from "expo-router";
 import SessionManager from "../../../../lib/SessionManager";
 import SecureStorage from "../../../../lib/SecureStorage";
+import { sections } from "../../../../utils/Constant"
 
 const TermsAndConditions = ({navigation}) => {
     const userData = useSessionStore((state) => state.user);
@@ -41,142 +42,7 @@ const TermsAndConditions = ({navigation}) => {
         }));
     };
 
-    const sections = [
-        {
-            id: 'definitions',
-            title: 'Definitions',
-            icon: 'document-text-outline',
-            content: [
-                {term: 'Company', definition: 'refers to AANG Logistics, a registered logistics service provider.'},
-                {term: 'Customer', definition: 'refers to the individual or entity using the Company\'s services.'},
-                {
-                    term: 'Goods',
-                    definition: 'refers to the items being transported, stored, or handled by our logistics services.'
-                },
-                {term: 'Services', definition: 'refers to all logistics and related services provided by the Company.'},
-            ]
-        },
-        {
-            id: 'scope',
-            title: 'Scope of Services',
-            icon: 'car-outline',
-            content: `AANG Logistics provides comprehensive logistics services including:
 
-• Transportation services (road and rail)
-• Last-mile delivery solutions
-`
-        },
-        {
-            id: 'obligations',
-            title: 'Customer Obligations',
-            icon: 'checkmark-circle-outline',
-            content: `As our valued customer, you agree to:
-
-• Provide accurate and complete shipment details (weight, dimensions, contents, destination)
-• Ensure goods are properly packed, labeled, and comply with all legal and safety requirements
-• Notify the Company immediately of any hazardous materials or special handling requirements
-• Pay all applicable charges as per the agreed terms and conditions
-• Comply with all applicable laws and regulations`
-        },
-        {
-            id: 'pricing',
-            title: 'Quotations & Pricing',
-            icon: 'card-outline',
-            content: `Pricing Terms:
-
-• Quotations are valid for 30 days unless otherwise specified
-• Prices may be subject to change due to fuel surcharges, customs fees, or unforeseen circumstances
-• Additional charges may apply for special handling, extended storage, or incorrect documentation
-• All prices are exclusive of applicable taxes unless otherwise stated
-• Volume discounts available for regular customers`
-        },
-        {
-            id: 'payment',
-            title: 'Payment Terms',
-            icon: 'wallet-outline',
-            content: `Payment Conditions:
-
-• Payment is due within 30 days of invoice issuance
-• Late payments may incur interest at 1.5% per month
-• The Company reserves the right to withhold services or goods for unpaid invoices
-• Accepted payment methods: Bank transfer, credit cards, and approved digital wallets
-• Payment disputes must be raised within 7 days of invoice receipt`
-        },
-        {
-            id: 'liability',
-            title: 'Liability & Insurance',
-            icon: 'shield-checkmark-outline',
-            content: `Liability Framework:
-
-• The Company's liability for loss or damage is limited to 3 times the freight charges or as per applicable law
-• Customers must declare high-value goods and arrange additional insurance if needed
-• The Company maintains comprehensive insurance coverage for standard operations
-• We are not liable for delays caused by force majeure events (e.g., natural disasters, strikes, government actions).
-`
-        },
-        {
-            id: 'delivery',
-            title: 'Delivery & Service Standards',
-            icon: 'time-outline',
-            content: `Delivery Terms:
-
-• Estimated delivery times are provided as guidance and are not guaranteed
-• Customers must inspect goods upon delivery and report any damages within 48 hours
-• Storage fees may apply if the customer fails to accept delivery within the agreed timeframe
-• Delivery attempts will be made during standard business hours (8 AM - 6 PM)
-• Special delivery arrangements available upon request`
-        },
-        {
-            id: 'force-majeure',
-            title: 'Force Majeure',
-            icon: 'warning-outline',
-            content: `The Company is not liable for failures or delays due to events beyond our reasonable control, including:
-
-• Natural disasters, floods, earthquakes, or severe weather conditions
-• War, terrorism, or civil unrest
-• Government restrictions, sanctions, or regulatory changes
-• Labor strikes or industrial action
-• Pandemic-related restrictions or quarantine measures
-• Infrastructure failures or cyber attacks`
-        },
-        {
-            id: 'cancellation',
-            title: 'Cancellation & Refunds',
-            icon: 'return-up-back-outline',
-            content: `Cancellation Policy:
-
-• Cancellations must be submitted in writing or through our mobile app
-• Cancellations made 24 hours before scheduled pickup: Full refund minus 5% administrative fee
-• Cancellations made less than 24 hours: 50% refund
-• No refunds for services already commenced or completed
-• Emergency cancellations will be reviewed on a case-by-case basis`
-        },
-        {
-            id: 'governing-law',
-            title: 'Governing Law & Dispute Resolution',
-            icon: 'library-outline',
-            content: `Legal Framework:
-
-• These terms are governed by the laws of Nigeria and the Federal Capital Territory
-• Any disputes shall first be resolved through good-faith negotiation
-• Unresolved disputes may be submitted to binding arbitration under the Nigerian Arbitration Act
-• The courts of Abuja, FCT shall have exclusive jurisdiction
-• All legal proceedings shall be conducted in English`
-        },
-        {
-            id: 'amendments',
-            title: 'Terms Modification',
-            icon: 'create-outline',
-            content: `The Company reserves the right to modify these terms at any time. Changes will be communicated through:
-
-• Email notifications to registered customers
-• In-app notifications
-• Website updates
-• SMS alerts for significant changes
-
-Continued use of our services after notification constitutes acceptance of the updated terms.`
-        }
-    ];
 
     const handleAcceptTerms = () => {
         setAcceptedTerms(!acceptedTerms);

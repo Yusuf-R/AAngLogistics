@@ -314,6 +314,62 @@ class ClientUtils {
         }
     }
 
+    static async UpdateProfile(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: '/user/update-profile',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Cloudinary
+    // get signed URL for image upload
+    static async GetSignedUrl() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/auth/get-signed-url',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async UpdateAvatar(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: '/user/update-avatar',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+
+    }
+
 
 }
 

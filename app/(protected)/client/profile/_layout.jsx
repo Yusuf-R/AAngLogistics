@@ -42,6 +42,13 @@ export default function ProfileLayout() {
             />
 
             <Stack.Screen
+                name="privacy-policy"
+                options={{
+                    title: 'Privacy Policy',
+                }}
+            />
+
+            <Stack.Screen
                 name="verify-email"
                 options={{
                     title: 'Verify Email',
@@ -88,6 +95,48 @@ export default function ProfileLayout() {
                 name="pin-email"
                 options={{
                     title: 'Get Token',
+                }}
+            />
+
+            <Stack.Screen
+                name="update-avatar"
+                options={{
+                    title: 'Update Avatar',
+                }}
+            />
+
+            <Stack.Screen
+                name="edit-profile"
+                options={{
+                    title: 'Edit Profile',
+                }}
+            />
+
+            <Stack.Screen
+                name="payment"
+                options={{
+                    title: 'Payment',
+                }}
+            />
+
+            <Stack.Screen
+                name="notifications"
+                options={{
+                    title: 'Notifications',
+                }}
+            />
+
+            <Stack.Screen
+                name="help-center"
+                options={{
+                    title: 'Help & Support',
+                }}
+            />
+
+            <Stack.Screen
+                name="nin-verification"
+                options={{
+                    title: 'NIN Verification',
                 }}
             />
 

@@ -49,6 +49,27 @@ function ClientProfileScreen() {
         router.push(ROUTES.UTILITY);
     }
 
+    const geToEdit = () => {
+        router.push(ROUTES['EDIT-PROFILE']);
+    }
+
+    const updateProfilePic = () => {
+        router.push(ROUTES['UPDATE-AVATAR']);
+    }
+
+    const goToNotifications = () => {
+        router.push(ROUTES.NOTIFICATIONS);
+    }
+
+    const goToPayment = () => {
+        router.push(ROUTES.PAYMENT);
+    }
+
+    const goToHelpCenter = () =>
+        router.push(ROUTES['HELP-CENTER']); {
+
+    }
+
 
     const renderMenuItem = ({icon, iconType, title, value, hasChevron, color, isSwitch, onPress}) => {
         const renderIcon = () => {
@@ -97,7 +118,9 @@ function ClientProfileScreen() {
                     />
                     <Text style={styles.headerTitle}>Profile</Text>
                 </View>
-                <TouchableOpacity style={styles.moreButton}>
+                <TouchableOpacity
+                    style={styles.moreButton}
+                >
                     <Feather name="more-horizontal" size={24} color="#333"/>
                 </TouchableOpacity>
             </View>
@@ -117,7 +140,9 @@ function ClientProfileScreen() {
                                 style={styles.profileImage}
                             />
                         )}
-                        <TouchableOpacity style={styles.editImageButton}>
+                        <TouchableOpacity style={styles.editImageButton}
+                                          onPress={() => updateProfilePic()}
+                        >
                             <Feather name="edit-2" size={18} color="#fff"/>
                         </TouchableOpacity>
                     </View>
@@ -154,20 +179,23 @@ function ClientProfileScreen() {
                         iconType: 'Ionicons',
                         title: 'Edit Profile',
                         hasChevron: true,
+                        onPress: () => geToEdit()
                     })}
 
                     {renderMenuItem({
                         icon: 'notifications-outline',
                         iconType: 'Ionicons',
                         title: 'Notification',
-                        hasChevron: true
+                        hasChevron: true,
+                        onPress: () => goToNotifications()
                     })}
 
                     {renderMenuItem({
                         icon: 'wallet-outline',
                         iconType: 'Ionicons',
                         title: 'Payment',
-                        hasChevron: true
+                        hasChevron: true,
+                        onPress: () => goToPayment()
                     })}
 
                     {renderMenuItem({
@@ -180,19 +208,27 @@ function ClientProfileScreen() {
 
 
                     {renderMenuItem({
-                        icon: 'lock-closed-outline',
-                        iconType: 'Ionicons',
+                        icon: 'handshake',
+                        iconType: 'MaterialIcons',
                         title: 'Terms & Conditions',
                         hasChevron: true,
                         onPress: () => goToTC()
                     })}
 
                     {renderMenuItem({
-                        icon: 'people-outline',
+                        icon: 'construct-outline',
                         iconType: 'Ionicons',
                         title: 'Utility',
                         hasChevron: true,
                         onPress: () => goToUtility()
+                    })}
+
+                    {renderMenuItem({
+                        icon: 'accessibility-outline',
+                        iconType: 'Ionicons',
+                        title: 'Help Center',
+                        hasChevron: true,
+                        onPress: () => goToHelpCenter()
                     })}
 
                     {renderMenuItem({
@@ -314,7 +350,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: -5,
         right: -5,
-        backgroundColor: '#60a5fa',
+        backgroundColor: '#43b0f1',
         width: 36,
         height: 36,
         borderRadius: 18,
