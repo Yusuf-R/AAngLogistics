@@ -1,30 +1,45 @@
-import {Text, TouchableOpacity} from 'react-native';
-import {useProtectedScreen} from '../../../hooks/useProtectedScreen';
-import SecureStorage from "../../../lib/SecureStorage";
-import {useRouter} from "expo-router";
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
 import MapScreen from "../../../components/MapScreen";
-import {Toast} from "toastify-react-native";
 
 function ClientDashboard() {
-    const router = useRouter();
     return (
-        <>
-            <Text className="text-center mt-10">Client Dashboard</Text>
-            <MapScreen/>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.title}>AAng Logistics</Text>
+            </View>
 
-            <TouchableOpacity
-                className="mt-4 bg-red-500 px-4 py-2 rounded"
-                onPress={async () => {
-                    Toast.success("Secure Storage cleared.");
-                    await SecureStorage.clearSessionOnly();
-                    router.replace('/');
-
-                }}
-            >
-                <Text className="text-white">Reset Secure Storage</Text>
-            </TouchableOpacity>
-        </>
-    )
+            <View style={styles.mapContainer}>
+                <MapScreen />
+            </View>
+        </SafeAreaView>
+    );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+    },
+    header: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        alignItems: 'center',
+    },
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 4,
+    },
+    subtitle: {
+        fontSize: 14,
+        color: 'rgba(255, 255, 255, 0.8)',
+    },
+    mapContainer: {
+        flex: 1,
+    },
+});
 
 export default ClientDashboard;

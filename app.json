@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "scheme": "aang-logistics",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "icon": {
@@ -17,10 +16,11 @@
       "bundleIdentifier": "com.AAngLogistics",
       "config": {
         "usesNonExemptEncryption": false,
-        "googleMapsApiKey": "process.env.GOOGLE_MAPS_API_KEY"
+        "googleMapsApiKey": "AIzaSyAK01e17CgtLYUiSs5hnCsI50nXk_wpN10"
       }
     },
     "android": {
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/icons/android/adaptive-icon.png",
         "backgroundColor": "#000000"
@@ -34,7 +34,7 @@
       "softwareKeyboardLayoutMode": "pan",
       "config": {
         "googleMaps": {
-          "apiKey": "process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY"
+          "apiKey": "AIzaSyAK01e17CgtLYUiSs5hnCsI50nXk_wpN10"
         }
       }
     },
@@ -68,7 +68,19 @@
         {
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": false
+          },
+          "ios": {
+            "newArchEnabled": false
+          }
+        }
+      ],
+
     ],
     "experiments": {
       "typedRoutes": true

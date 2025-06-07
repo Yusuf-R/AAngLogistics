@@ -18,7 +18,6 @@ const svgConfig = {
     },
     resolver: {
         ...restResolver,
-        // Remove 'svg' from assetExts and add it to sourceExts
         assetExts: assetExts.filter(ext => ext !== 'svg'),
         sourceExts: [...sourceExts, 'svg'],
     },
@@ -34,3 +33,6 @@ const mergedConfig = mergeConfig(
 module.exports = withNativeWind(mergedConfig, {
     input: './app/global.css',
 });
+
+
+
