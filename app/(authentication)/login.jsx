@@ -1,43 +1,34 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
     View,
     Text,
+    TextInput,
     TouchableOpacity,
     StyleSheet,
     SafeAreaView,
     StatusBar,
-    Pressable,
     ImageBackground,
     Image,
-    Modal,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import LottieView from "lottie-react-native";
-import img from "../../assets/images/new.jpg";
-import StatusModal from "../../components/StatusModal/StatusModal";
-
-// Utils
-import SecureStorage from '../../lib/SecureStorage';
-import KeyBoardAvoidingHook from '../../hooks/KeyBoardAvoidingHook';
-import ClientUtils from "../../utils/ClientUtilities";
-import {useMutation} from "@tanstack/react-query";
-
-// Form and validation
+import LottieView from 'lottie-react-native';
 import {useForm, Controller} from 'react-hook-form';
 import {yupResolver} from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import {useAuth} from "../../context/auth";
 
-// GlueStack UI components
-import {FormControl, FormControlError, FormControlErrorIcon} from '@/components/ui/form-control';
-import {Input, InputField, InputSlot, InputIcon} from '@/components/ui/input';
-import {useRouter} from "expo-router";
-import {Toast} from "toastify-react-native";
-import {useSessionStore} from "../../store/useSessionStore";
-import SessionManager from "../../lib/SessionManager";
+import {useRouter} from 'expo-router';
+import KeyBoardAvoidingHook from '../../hooks/KeyBoardAvoidingHook';
+import ClientUtils from '../../utils/ClientUtilities';
+import SecureStorage from '../../lib/SecureStorage';
+import SessionManager from '../../lib/SessionManager';
+import {useMutation} from '@tanstack/react-query';
+import {useAuth} from '../../context/auth';
+import StatusModal from '../../components/StatusModal/StatusModal';
 
+import img from '../../assets/images/new.jpg';
 
-// Validation schema
+const googleIcon = require('../../assets/icons/googleIcon.png');
+
 const loginSchema = yup.object().shape({
     email: yup.string().email('Invalid email').required('Email is required'),
     password: yup
@@ -47,35 +38,21 @@ const loginSchema = yup.object().shape({
         .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{4,}$/, 'Include upper, lower, number'),
 });
 
-
-const MailIcon = () => <Ionicons name="mail" size={26} color="blue"/>;
-const EyeIcon = () => <Ionicons name="eye" size={26} color="blue"/>;
-const EyeOffIcon = () => <Ionicons name="eye-off" size={26} color="blue"/>;
 const AlertIcon = () => <Ionicons name="alert-circle-outline" size={18} color="red"/>;
-const UserIcon = () => <Ionicons name="person-sharp" size={26} color="blue"/>;
-const CarIcon = () => <Ionicons name="car-sport" size={26} color="blue"/>;
-const loader = require("@/assets/animations/loader/spin-loader.json");
-const googleIcon = require('../../assets/icons/googleIcon.png');
 
 export default function Login() {
-    const [role, setRole] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
-
     const [modalVisible, setModalVisible] = useState(false);
-    const [modalStatus, setModalStatus] = useState('loading'); // 'loading' | 'success' | 'error'
+    const [modalStatus, setModalStatus] = useState('loading');
     const [modalMessage, setModalMessage] = useState('Logging in...');
-
     const router = useRouter();
-    const {control, handleSubmit, reset, formState: {errors}} = useForm({
+    const {signInWithGoogle} = useAuth();
+
+    const {control, handleSubmit, formState: {errors}} = useForm({
         resolver: yupResolver(loginSchema),
         defaultValues: {email: '', password: ''},
         mode: 'onTouched',
     });
-    const handleForgotPassword = () => {
-        router.push('/(authentication)/forgot-password')
-    };
-
-    const {signInWithGoogle} = useAuth();
 
     const mutation = useMutation({
         mutationKey: ['Login'],
@@ -83,21 +60,19 @@ export default function Login() {
     });
 
     const onLogin = async (data) => {
-
         setModalStatus('loading');
         setModalMessage('Logging in..');
         setModalVisible(true);
 
         mutation.mutate(data, {
             onSuccess: async (respData) => {
-
                 setModalStatus('success');
-                setModalMessage('Logging Successful 🚀');
+                setModalMessage('Login successful 🚀');
 
                 const {accessToken, refreshToken, user, expiresIn} = respData;
 
                 await SessionManager.updateToken(accessToken, expiresIn);
-                await SecureStorage.saveRefreshToken(refreshToken); // 🔐 refresh token remains in SecureStorage only
+                await SecureStorage.saveRefreshToken(refreshToken);
                 await SessionManager.updateUser(user);
                 await SessionManager.updateRole(user.role);
                 await SessionManager.updateOnboardingStatus(true);
@@ -107,191 +82,145 @@ export default function Login() {
                     setModalMessage('Redirecting to your dashboard ♻️');
                 }, 2000);
 
-
-                // Navigate after 3s total
                 setTimeout(() => {
                     setModalVisible(false);
                     router.replace(`/(protected)/${user.role}/dashboard`);
                 }, 3500);
             },
-            onError: async (error) => {
-                let errorMessage = 'Invalid Credentials ⚠️';
+            onError: (error) => {
+                let errorMessage = 'Login failed ⚠️';
 
                 if (error?.response?.status === 401) {
                     errorMessage = 'Invalid Credentials ⚠️';
                 } else if (error?.response?.status === 409) {
                     errorMessage = 'Duplicate Credentials ⚠️';
-                } else if (error.message === "Network error") {
+                } else if (error.message === 'Network error') {
                     errorMessage = 'No internet connection 🔌';
                 }
+
                 setModalStatus('error');
                 setModalMessage(errorMessage);
                 setModalVisible(true);
-                console.log(error.response.status);
-            }
+                console.log(error.response?.status);
+            },
         });
     };
 
     return (
         <SafeAreaView style={styles.container}>
             <StatusBar barStyle="dark-content"/>
-            <ImageBackground
-                source={img}
-                style={{
-                    position: 'absolute',
-                    top: 0, left: 0, right: 0, bottom: 0,
+            <ImageBackground source={img} style={StyleSheet.absoluteFill} resizeMode="cover"/>
 
-                }}
-                resizeMode="cover"
-            />
-            {/* Animated Logo */}
-            <View className="items-center mt-10">
+            <View style={styles.animationContainer}>
                 <LottieView
                     source={require('../../assets/images/AAngAnimation.json')}
                     autoPlay
                     loop
                     style={styles.animation}
                 />
-                <Text className="text-2xl font-['PoppinsSemiBold'] text-[#60a5fa] mb-5">
-                    Login
-                </Text>
+                <Text style={styles.title}>Welcome Back</Text>
+                <Text style={styles.subtitle}>Login in to continue</Text>
             </View>
-            <KeyBoardAvoidingHook>
-                <View style={styles.content}>
 
-                    <View className="flex-1 px-1 py-2 ">
-                        {/* Email */}
-                        <FormControl
-                            isInvalid={!!errors.email}
-                            size='xl'
-                            className="mb-8"
-                        >
-                            <Controller
-                                name="email"
-                                control={control}
-                                render={({field: {value, onChange, onBlur}}) => (
-                                    <Input
-                                        variant="rounded"
-                                        size="xl"
-                                        isInvalid={!!errors.email}
-                                        className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
-                                        style={{
-                                            // Android elevation
-                                            elevation: 5,
-                                            // iOS shadow
-                                            shadowColor: '#000',
-                                            shadowOffset: {width: 0, height: 2},
-                                            shadowOpacity: 0.25,
-                                            shadowRadius: 3.84,
-                                        }}
-                                    >
-                                        <InputField
+            <KeyBoardAvoidingHook>
+                <View className="flex-1 px-7 py-2 ">
+                    {/* Email Field */}
+                    <View style={[styles.formControl, {marginBottom: 32}]}>
+                        <Controller
+                            control={control}
+                            name="email"
+                            render={({field: {onChange, onBlur, value}}) => (
+                                <>
+                                    <View style={styles.inputWrapper}>
+                                        <Ionicons name="mail" size={22} color="blue" style={styles.inputIcon}/>
+                                        <TextInput
                                             placeholder="Email"
+                                            style={styles.input}
                                             keyboardType="email-address"
                                             autoCapitalize="none"
-                                            value={value}
                                             onChangeText={onChange}
                                             onBlur={onBlur}
+                                            value={value}
                                         />
-                                        <InputSlot className="pr-3 ">
-                                            <InputIcon as={MailIcon}/>
-                                        </InputSlot>
-                                    </Input>
-                                )}
-                            />
-                            <View style={styles.errorContainer}>
-                                {errors.email && (
-                                    <View style={styles.errorContent}>
-                                        <FormControlErrorIcon as={AlertIcon}/>
-                                        <Text style={styles.errorText}>{errors.email?.message}</Text>
                                     </View>
-                                )}
-                            </View>
-                        </FormControl>
 
-                        {/* Password */}
-                        <FormControl
-                            isInvalid={!!errors.password}
-                            size='xl'
-                            className="mb-8"
-                        >
-                            <Controller
-                                name="password"
-                                control={control}
-                                render={({field: {value, onChange, onBlur}}) => (
-                                    <Input
-                                        variant="rounded"
-                                        size="xl"
-                                        isInvalid={!!errors.password}
-                                        className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
-                                        style={{
-                                            elevation: 5,
-                                            shadowColor: '#000',
-                                            shadowOffset: {width: 0, height: 2},
-                                            shadowOpacity: 0.25,
-                                            shadowRadius: 3.84,
-                                        }}
-                                    >
-                                        <InputField
+                                </>
+                            )}
+                        />
+                        <View style={styles.errorContainer}>
+                            {errors.email && (
+                                <View style={styles.errorContent}>
+                                    <AlertIcon/>
+                                    <Text style={styles.errorText}>{errors.email?.message}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Password Field */}
+                    <View style={[styles.formControl, {marginBottom: 28}]}>
+                        <Controller
+                            control={control}
+                            name="password"
+                            render={({field: {onChange, onBlur, value}}) => (
+                                <>
+                                    <View style={styles.inputWrapper}>
+                                        <Ionicons name="lock-closed" size={22} color="blue" style={styles.inputIcon}/>
+                                        <TextInput
                                             placeholder="Password"
+                                            style={styles.input}
                                             secureTextEntry={!showPassword}
-                                            value={value}
                                             onChangeText={onChange}
                                             onBlur={onBlur}
+                                            value={value}
                                         />
-                                        <TouchableOpacity className="pr-3"
-                                                          onPress={() => setShowPassword((prev) => !prev)}>
-                                            <InputIcon as={showPassword ? EyeOffIcon : EyeIcon}/>
+                                        <TouchableOpacity onPress={() => setShowPassword(prev => !prev)}>
+                                            <Ionicons name={showPassword ? "eye-off" : "eye"} size={22} color="blue"/>
                                         </TouchableOpacity>
-                                    </Input>
-                                )}
-                            />
-
-                            <View style={styles.errorContainer}>
-                                {errors.password && (
-                                    <View style={styles.errorContent}>
-                                        <FormControlErrorIcon as={AlertIcon}/>
-                                        <Text style={styles.errorText}>{errors.password?.message}</Text>
                                     </View>
-                                )}
-                            </View>
-                        </FormControl>
-
-                        <TouchableOpacity
-                            style={styles.signInButton}
-                            onPress={handleSubmit(onLogin)}
-                        >
-                            <Text style={styles.signInText}>LOGIN</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity onPress={handleForgotPassword}>
-                            <Text style={styles.forgotPasswordText}>Forgot the password?</Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.dividerContainer}>
-                            <View style={styles.divider}/>
-                            <Text style={styles.dividerText}>or continue with</Text>
-                            <View style={styles.divider}/>
+                                </>
+                            )}
+                        />
+                        <View style={styles.errorContainer}>
+                            {errors.password && (
+                                <View style={styles.errorContent}>
+                                    <AlertIcon/>
+                                    <Text style={styles.errorText}>{errors.password?.message}</Text>
+                                </View>
+                            )}
                         </View>
+                    </View>
 
-                        <View style={styles.socialButtonsRow}>
-                            <TouchableOpacity onPress={signInWithGoogle}>
-                                <Image
-                                    source={googleIcon}
-                                    style={{width: 40, height: 40}}
-                                />
-                            </TouchableOpacity>
-                        </View>
-                        <TouchableOpacity
-                            style={styles.signUpContainer}
-                            onPress={() => router.push('/(onboarding)/role-select')}
-                        >
-                            <Text style={styles.noAccountText}>Don't have an account?</Text>
-                            <Text style={styles.signUpText}> Sign Up</Text>
+                    <TouchableOpacity style={styles.button} onPress={handleSubmit(onLogin)}>
+                        <Text style={styles.buttonText}>LOGIN</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => router.push('/(authentication)/forgot-password')}>
+                        <Text style={styles.link}>Forgot the password?</Text>
+                    </TouchableOpacity>
+
+                    <View style={styles.dividerContainer}>
+                        <View style={styles.divider}/>
+                        <Text style={styles.dividerText}>or continue with</Text>
+                        <View style={styles.divider}/>
+                    </View>
+
+                    <View style={styles.socialRow}>
+                        <TouchableOpacity onPress={signInWithGoogle}>
+                            <Image source={googleIcon} style={{width: 40, height: 40}}/>
                         </TouchableOpacity>
                     </View>
+
+                    <TouchableOpacity
+                        style={styles.footer}
+                        onPress={() => router.push('/(onboarding)/role-select')}
+                    >
+                        <Text style={styles.footerText}>Don't have an account?</Text>
+                        <Text style={styles.footerLink}> Sign Up</Text>
+                    </TouchableOpacity>
                 </View>
             </KeyBoardAvoidingHook>
+
             <StatusModal
                 visible={modalVisible}
                 status={modalStatus}
@@ -300,66 +229,48 @@ export default function Login() {
             />
         </SafeAreaView>
     );
-};
+}
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: 'white',
-    },
-    animation: {
-        width: 300,
-        height: 300
-    },
-    keyboardAvoid: {
-        flex: 1,
-    },
-    header: {
-        height: 50,
-        justifyContent: 'center',
-    },
-    backButton: {
-        padding: 10,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: 24,
-    },
+    container: {flex: 1, backgroundColor: '#fff'},
+    animationContainer: {alignItems: 'center', marginTop: 40},
+    animation: {width: 250, height: 250},
     title: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        marginBottom: 40,
-        marginTop: 10,
+        fontSize: 28,
+        color: '#60a5fa',
+        marginBottom: 8,
+        letterSpacing: -0.5,
+        fontFamily: 'PoppinsBold',
     },
-    inputContainer: {
-        width: '100%',
+    subtitle: {
+        fontSize: 16,
+        color: '#6b7280',
+        fontFamily: 'PoppinsRegular',
+        marginBottom: 20,
     },
+    form: {paddingHorizontal: 24, flex: 1, justifyContent: 'center'},
     inputWrapper: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F5F5F5',
-        borderRadius: 12,
-        marginBottom: 16,
-        paddingHorizontal: 12,
-        height: 56,
+        backgroundColor: '#fff',
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 25,
+        paddingHorizontal: 10,
+        elevation: 3,
+    },
+    input: {
+        flex: 1,
+        height: 50,
+        fontSize: 16,
+        fontFamily: 'PoppinsRegular',
     },
     inputIcon: {
         marginRight: 10,
     },
-    input: {
-        backgroundColor: 'white',
-        borderRadius: 8,
-        minHeight: 50,
-        marginBottom: 5,
-    },
-    error: {
-        color: 'red',
-        fontSize: 14,
-        marginTop: 4,
-    },
     errorContainer: {
-        height: 20,
-        marginTop: 2,
+        height: 20, // Fixed height for error message
+        marginTop: 4,
     },
     errorContent: {
         flexDirection: 'row',
@@ -369,64 +280,56 @@ const styles = StyleSheet.create({
         color: 'red',
         fontSize: 14,
         marginLeft: 4,
+        fontFamily: 'PoppinsRegular',
     },
-    eyeIcon: {
-        padding: 8,
-    },
-    signInButton: {
+    button: {
         backgroundColor: '#60a5fa',
         borderRadius: 30,
-        height: 56,
+        height: 50,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 16,
+        marginVertical: 16,
     },
-    signInText: {
-        color: 'white',
+    buttonText: {
+        color: '#fff',
         fontSize: 16,
         fontWeight: '600',
     },
-    forgotPasswordText: {
+    link: {
         color: '#60a5fa',
         textAlign: 'center',
         fontSize: 14,
-        marginBottom: 30,
+        marginBottom: 20,
     },
     dividerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 24,
+        marginVertical: 24,
     },
     divider: {
         flex: 1,
         height: 1,
-        backgroundColor: '#E0E0E0',
+        backgroundColor: '#ccc',
     },
     dividerText: {
-        paddingHorizontal: 10,
+        marginHorizontal: 10,
         color: '#888',
         fontSize: 14,
     },
-    socialButtonsRow: {
+    socialRow: {
         flexDirection: 'row',
-        justifyContent: 'space-evenly',
+        justifyContent: 'center',
         marginBottom: 30,
     },
-    socialButton: {
-        width: 65,
-        height: 65,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    signUpContainer: {
+    footer: {
         flexDirection: 'row',
         justifyContent: 'center',
-        alignItems: 'center',
     },
-    signUpText: {
+    footerText: {
+        fontSize: 14,
+        color: '#444',
+    },
+    footerLink: {
         fontSize: 14,
         color: '#00BFA6',
         fontWeight: '600',

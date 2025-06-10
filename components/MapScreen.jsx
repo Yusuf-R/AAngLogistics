@@ -13,7 +13,6 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
-const GOOGLE_MAPS_APIKEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 export default function MapScreen() {
     const [currentLocation, setCurrentLocation] = useState(null);

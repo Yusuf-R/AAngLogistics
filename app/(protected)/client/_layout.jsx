@@ -30,6 +30,18 @@ export default function ClientTabsLayout() {
                     }}
                 />
                 <Tabs.Screen
+                    name="notifications"
+                    options={{
+                        title: 'Notifications',
+                    }}
+                />
+                <Tabs.Screen
+                    name="wallet"
+                    options={{
+                        title: 'Wallets',
+                    }}
+                />
+                <Tabs.Screen
                     name="profile"
                     options={{
                         title: 'Profile',

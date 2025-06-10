@@ -10,7 +10,8 @@ import {
     Image,
     TouchableOpacity,
     StyleSheet,
-    Modal
+    Modal,
+    TextInput
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useRouter, Stack} from 'expo-router';
@@ -33,10 +34,6 @@ WebBrowser.maybeCompleteAuthSession();
 import {useForm, Controller} from 'react-hook-form';
 import {yupResolver} from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-
-// GlueStack UI components
-import {FormControl, FormControlError, FormControlErrorIcon} from '@/components/ui/form-control';
-import {Input, InputField, InputSlot, InputIcon} from '@/components/ui/input';
 
 // Icons
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -89,7 +86,6 @@ function LogoTitle({role}) {
         </View>
     );
 }
-
 
 export default function SignUp() {
     const [role, setRole] = useState('');
@@ -158,7 +154,6 @@ export default function SignUp() {
                 await SessionManager.updateRole(user.role);
                 await SessionManager.updateOnboardingStatus(true);
 
-
                 setModalStatus('success');
                 setModalMessage('Account created successfully 🚀');
 
@@ -166,7 +161,6 @@ export default function SignUp() {
                     setModalStatus('loading');
                     setModalMessage('Redirecting to your dashboard ♻️');
                 }, 2000);
-
 
                 router.replace(`/(protected)/${user.role}/dashboard`);
             },
@@ -183,7 +177,6 @@ export default function SignUp() {
                 setModalStatus('error');
                 setModalMessage(errorMessage);
                 setModalVisible(true);
-
             }
         });
     };
@@ -211,120 +204,95 @@ export default function SignUp() {
                         },
                     }}
                 />
-                {/* Animated Logo */}
-                <View className="items-center">
+                <View style={styles.animationContainer}>
                     <LottieView
                         source={require('../../assets/images/AAngAnimation.json')}
                         autoPlay
                         loop
                         style={styles.animation}
                     />
-                    <Text className="text-2xl font-['PoppinsSemiBold'] text-[#60a5fa] mb-5">
-                        Get Started
-                    </Text>
+                    <Text style={styles.title}>Welcome to AAngLogistics</Text>
+                    <Text style={styles.subtitle}>SignUp to Get Started</Text>
                 </View>
                 <KeyBoardAvoidingHook>
                     {/* SignUp Form */}
                     <View className="flex-1 px-7 py-2 ">
                         {/* Email */}
-                        <FormControl
-                            isInvalid={!!errors.email}
-                            size='xl'
-                            className="mb-8"
-                        >
+                        <View style={[styles.formControl, {marginBottom: 24}]}>
                             <Controller
                                 name="email"
                                 control={control}
                                 render={({field: {value, onChange, onBlur}}) => (
-                                    <Input
-                                        variant="rounded"
-                                        size="xl"
-                                        isInvalid={!!errors.email}
-                                        className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
-                                        style={{
-                                            // Android elevation
-                                            elevation: 5,
-                                            // iOS shadow
-                                            shadowColor: '#000',
-                                            shadowOffset: {width: 0, height: 2},
-                                            shadowOpacity: 0.25,
-                                            shadowRadius: 3.84,
-                                        }}
-                                    >
-                                        <InputField
+                                    <View style={[
+                                        styles.inputContainer,
+                                        errors.email && styles.inputContainerError
+                                    ]}>
+                                        <TextInput
+                                            style={styles.textInput}
                                             placeholder="Email"
                                             keyboardType="email-address"
                                             autoCapitalize="none"
                                             value={value}
                                             onChangeText={onChange}
                                             onBlur={onBlur}
+                                            placeholderTextColor="#9CA3AF"
                                         />
-                                        <InputSlot className="pr-3 ">
-                                            <InputIcon as={MailIcon}/>
-                                        </InputSlot>
-                                    </Input>
+                                        <View style={styles.iconContainer}>
+                                            <MailIcon />
+                                        </View>
+                                    </View>
                                 )}
                             />
                             <View style={styles.errorContainer}>
                                 {errors.email && (
                                     <View style={styles.errorContent}>
-                                        <FormControlErrorIcon as={AlertIcon}/>
+                                        <AlertIcon />
                                         <Text style={styles.errorText}>{errors.email?.message}</Text>
                                     </View>
                                 )}
                             </View>
-                        </FormControl>
+                        </View>
 
                         {/* Password */}
-                        <FormControl
-                            isInvalid={!!errors.password}
-                            size='xl'
-                            className="mb-8"
-                        >
+                        <View style={[styles.formControl, {marginBottom: 24}]}>
                             <Controller
                                 name="password"
                                 control={control}
                                 render={({field: {value, onChange, onBlur}}) => (
-                                    <Input
-                                        variant="rounded"
-                                        size="xl"
-                                        isInvalid={!!errors.password}
-                                        className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
-                                        style={{
-                                            elevation: 5,
-                                            shadowColor: '#000',
-                                            shadowOffset: {width: 0, height: 2},
-                                            shadowOpacity: 0.25,
-                                            shadowRadius: 3.84,
-                                        }}
-                                    >
-                                        <InputField
+                                    <View style={[
+                                        styles.inputContainer,
+                                        errors.password && styles.inputContainerError
+                                    ]}>
+                                        <TextInput
+                                            style={styles.textInput}
                                             placeholder="Password"
                                             secureTextEntry={!showPassword}
                                             value={value}
                                             onChangeText={onChange}
                                             onBlur={onBlur}
+                                            placeholderTextColor="#9CA3AF"
                                         />
-                                        <TouchableOpacity className="pr-3"
-                                                          onPress={() => setShowPassword((prev) => !prev)}>
-                                            <InputIcon as={showPassword ? EyeOffIcon : EyeIcon}/>
+                                        <TouchableOpacity
+                                            style={styles.iconContainer}
+                                            onPress={() => setShowPassword((prev) => !prev)}
+                                        >
+                                            {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                                         </TouchableOpacity>
-                                    </Input>
+                                    </View>
                                 )}
                             />
-
                             <View style={styles.errorContainer}>
                                 {errors.password && (
                                     <View style={styles.errorContent}>
-                                        <FormControlErrorIcon as={AlertIcon}/>
+                                        <AlertIcon />
                                         <Text style={styles.errorText}>{errors.password?.message}</Text>
                                     </View>
                                 )}
                             </View>
-                        </FormControl>
+                        </View>
 
                         {/* Role (read-only) */}
-                        <FormControl isReadOnly className="mb-12">
+                        <View style={[styles.formControl, {marginBottom: 48}]}>
                             <Controller
                                 name="role"
                                 control={control}
@@ -333,32 +301,21 @@ export default function SignUp() {
                                     if (!display) return null; // 🛑 Avoid rendering until role is loaded
                                     const label = display.charAt(0).toUpperCase() + display.slice(1);
                                     return (
-                                        <Input
-                                            variant="rounded"
-                                            size="xl"
-                                            className="shadow-2xl bg-white/100 elevation-2xl border-1 h-14"
-                                            style={{
-                                                // Android elevation
-                                                elevation: 5,
-                                                // iOS shadow
-                                                shadowColor: '#000',
-                                                shadowOffset: {width: 0, height: 2},
-                                                shadowOpacity: 0.25,
-                                                shadowRadius: 3.84,
-                                            }}
-                                        >
-                                            <InputField
+                                        <View style={styles.inputContainer}>
+                                            <TextInput
+                                                style={[styles.textInput, styles.readOnlyInput]}
                                                 placeholder={label}
-                                                isReadOnly
+                                                editable={false}
+                                                placeholderTextColor="#374151"
                                             />
-                                            <InputSlot className="pr-3 ">
-                                                <InputIcon as={display === 'client' ? UserIcon : CarIcon}/>
-                                            </InputSlot>
-                                        </Input>
+                                            <View style={styles.iconContainer}>
+                                                {display === 'client' ? <UserIcon /> : <CarIcon />}
+                                            </View>
+                                        </View>
                                     );
                                 }}
                             />
-                        </FormControl>
+                        </View>
 
                         {/* Submit Button */}
                         <Pressable
@@ -425,12 +382,19 @@ export default function SignUp() {
 }
 
 const styles = StyleSheet.create({
+    animationContainer: {alignItems: 'center', marginTop: 10},
+    animation: {width: 250, height: 250},
     title: {
         fontSize: 24,
-        color: 'white',
+        color: '#60a5fa',
         fontFamily: 'PoppinsBold',
         textAlign: 'center',
-        marginBottom: 20,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#60a5fa',
+        fontFamily: 'PoppinsRegular',
+        marginBottom: 15
     },
     label: {
         color: 'white',
@@ -458,16 +422,48 @@ const styles = StyleSheet.create({
         padding: 6,
         justifyContent: 'center'
     },
-    animationContainer: {
-        alignItems: 'center',
+
+    formControl: {
+        // Matches GlueStack FormControl size='xl'
     },
-    animation: {
-        width: 300,
-        height: 300
+    inputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        borderRadius: 25, // rounded variant
+        height: 56, // size="xl" equivalent (h-14)
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        // Shadow styles matching original
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    inputContainerError: {
+        borderColor: '#EF4444', // red border for errors
+    },
+    textInput: {
+        flex: 1,
+        paddingHorizontal: 16,
+        fontSize: 16,
+        color: '#111827',
+        fontFamily: 'PoppinsRegular',
+        borderWidth: 0,
+        outlineWidth: 0,
+    },
+    readOnlyInput: {
+        color: '#374151', // slightly muted color for read-only
+    },
+    iconContainer: {
+        paddingRight: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     errorContainer: {
         height: 20, // Fixed height for error message
-        marginTop: 2,
+        marginTop: 4,
     },
     errorContent: {
         flexDirection: 'row',
@@ -477,6 +473,7 @@ const styles = StyleSheet.create({
         color: 'red',
         fontSize: 14,
         marginLeft: 4,
+        fontFamily: 'PoppinsRegular',
     },
     overlay: {
         position: 'absolute',

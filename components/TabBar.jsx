@@ -42,6 +42,10 @@ export function TabBar({ state, descriptors, navigation }) {
             outline: 'person-outline',
             filled: 'person-sharp',
         },
+        notifications: {
+            outline: 'notifications-outline',
+            filled: 'notifications-sharp',
+        },
         orders: {
             outline: 'clipboard-outline',
             filled: 'clipboard',
@@ -57,6 +61,7 @@ export function TabBar({ state, descriptors, navigation }) {
         profile: 'Profile',
         orders: 'Orders',
         wallet: 'Wallet',
+        notifications: 'Notifications',
     };
 
     return (
@@ -130,16 +135,27 @@ export function TabBar({ state, descriptors, navigation }) {
 const styles = StyleSheet.create({
     tabBar: {
         flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
-        marginHorizontal: 50,
-        marginBottom: 10,
-        paddingVertical: 10,
-        borderRadius: 50,
+        // marginHorizontal: 50,
+        marginBottom: -10,
+        // paddingVertical: 10,
+        // borderRadius: 70,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
         elevation: 3,
+        // position: 'absolute',
+        // bottom: Platform.OS === 'ios' ? 20 : 0,
+        // left: 0,
+        // right: 0,
+        zIndex: 1000,
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        height: 70,
+        overflow: 'hidden',
+        // borderColor: 'blue',
+        // backgroundColor: '#fdfbfb',
+        backgroundColor: '#FFF',
     },
     tabBarItem: {
         flex: 1,
@@ -152,7 +168,6 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 2,
     },
     label: {
         fontSize: 12,

@@ -57,8 +57,8 @@ function ClientProfileScreen() {
         router.push(ROUTES['UPDATE-AVATAR']);
     }
 
-    const goToNotifications = () => {
-        router.push(ROUTES.NOTIFICATIONS);
+    const goToNotificationsSettings = () => {
+        router.push(ROUTES['NOTIFICATION-SETTINGS']);
     }
 
     const goToPayment = () => {
@@ -187,7 +187,7 @@ function ClientProfileScreen() {
                         iconType: 'Ionicons',
                         title: 'Notification',
                         hasChevron: true,
-                        onPress: () => goToNotifications()
+                        onPress: () => goToNotificationsSettings()
                     })}
 
                     {renderMenuItem({
@@ -285,10 +285,10 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
         paddingTop: StatusBar.currentHeight,
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
+        // borderBottomLeftRadius: 20,
+        // borderBottomRightRadius: 20,
         overflow: 'hidden',
-        marginBottom: 25,
+        // marginBottom: 5,
     },
     header: {
         flexDirection: 'row',

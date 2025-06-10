@@ -3,6 +3,8 @@ export const ROUTES = {
     HOME: '/client/dashboard',
     ORDERS: '/client/orders',
     PROFILE: '/client/profile',
+    WALLET: '/client/wallet',
+    NOTIFICATIONS: '/client/notifications',
 
     // Nested Routes (No Tab Bar)
     SECURITY: '/client/profile/security',
@@ -16,7 +18,7 @@ export const ROUTES = {
     'EDIT-PROFILE': '/client/profile/edit-profile',
     'UPDATE-AVATAR': '/client/profile/update-avatar',
     "PRIVACY-POLICY": '/client/profile/privacy-policy',
-    "NOTIFICATIONS": '/client/profile/notifications',
+    "NOTIFICATION-SETTINGS": '/client/profile/notification-settings',
     "PAYMENT": '/client/profile/payment',
     'HELP-CENTER': '/client/profile/help-center',
     'NIN-VERIFICATION': '/client/profile/nin-verification',
@@ -28,7 +30,9 @@ export const ROUTES = {
 export const TAB_BAR_VISIBLE_ROUTES = [
     ROUTES.HOME,
     ROUTES.ORDERS,
-    ROUTES.PROFILE
+    ROUTES.PROFILE,
+    ROUTES.WALLET,
+    ROUTES.NOTIFICATIONS,
 ];
 
 // Utility to check password change capability (can be used elsewhere in your app)
@@ -75,6 +79,7 @@ export const canUserChangePassword = (userData) => {
     };
 };
 
+// States and LGA data
 export const stateAndLGA = {
     Abia: [
         "Aba North",
@@ -1258,3 +1263,5 @@ export const faqData = {
         }
     ]
 };
+
+

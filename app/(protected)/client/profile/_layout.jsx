@@ -120,9 +120,9 @@ export default function ProfileLayout() {
             />
 
             <Stack.Screen
-                name="notifications"
+                name="notification-settings"
                 options={{
-                    title: 'Notifications',
+                    title: 'Notifications Settings',
                 }}
             />
 
