@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { usePathname, router, Slot } from 'expo-router';
 import SessionManager from '../../lib/SessionManager';
-import SecureStorage from '../../lib/SecureStorage';
-import { refreshAccessToken } from '../../lib/TokenManager';
 
 export default function ProtectedLayout() {
     const pathname = usePathname();
@@ -23,7 +21,6 @@ export default function ProtectedLayout() {
             } else {
                 return router.replace('/(authentication)/login');
             }
-
         };
 
         verify();

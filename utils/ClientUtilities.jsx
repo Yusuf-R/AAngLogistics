@@ -370,6 +370,100 @@ class ClientUtils {
 
     }
 
+    /** Notification **/
+    static async GetNotifications() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/notification/get',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Get unread count
+    static async GetUnreadCount() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/notification/unread-count',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Mark as read
+    static async MarkAsRead(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: `/notification/mark-as-read`,
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Mark all as read
+    static async MarkAllAsRead() {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: `/notification/mark-all`,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Delet Notification
+    static async DeleteNotification(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "DELETE",
+                url: `/notification/delete`,
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+
+
 
 }
 

@@ -2,11 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
 import { useLinkBuilder, useTheme } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import {useNotificationStore} from "../store/useNotificationStore";
 
 export function TabBar({ state, descriptors, navigation }) {
     const { colors } = useTheme();
     const { buildHref } = useLinkBuilder();
     const [previousIndex, setPreviousIndex] = useState(state.index);
+    const unreadCount = useNotificationStore(state => state.stats?.unread || 0);
 
     // Animation values
     const animatedValues = useRef(
@@ -61,8 +63,10 @@ export function TabBar({ state, descriptors, navigation }) {
         profile: 'Profile',
         orders: 'Orders',
         wallet: 'Wallet',
-        notifications: 'Notifications',
+        notifications: '',
     };
+
+
 
     return (
         <View style={styles.tabBar}>
@@ -89,6 +93,8 @@ export function TabBar({ state, descriptors, navigation }) {
                     ? icons[route.name].filled
                     : icons[route.name].outline;
 
+                const showBadge = route.name === 'notifications' && unreadCount > 0;
+
                 return (
                     <Pressable
                         key={index}
@@ -100,9 +106,7 @@ export function TabBar({ state, descriptors, navigation }) {
                         <Animated.View
                             style={[
                                 styles.iconContainer,
-                                isFocused && {
-                                    backgroundColor: colors.primary,
-                                },
+                                isFocused && { backgroundColor: colors.primary },
                                 { transform: [{ scale }] },
                             ]}
                         >
@@ -111,6 +115,14 @@ export function TabBar({ state, descriptors, navigation }) {
                                 size={22}
                                 color={isFocused ? '#FFF' : colors.text}
                             />
+                            {showBadge && (
+                                <View style={styles.badgeContainer}>
+                                    <Text style={styles.badgeText}>
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </Text>
+                                </View>
+                            )}
+
                         </Animated.View>
 
                         <Text
@@ -172,5 +184,22 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 12,
         fontFamily: 'PoppinsRegular',
+    },
+    badgeContainer: {
+        position: 'absolute',
+        top: -3,
+        right: -3,
+        backgroundColor: '#EF4444',
+        borderRadius: 38,
+        paddingHorizontal: 4,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    badgeText: {
+        color: '#FFF',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
 });

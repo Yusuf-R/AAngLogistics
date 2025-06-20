@@ -1,6 +1,7 @@
 // Notification Hooks and Integration Layer
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState } from 'react-native';
+import ClientUtils from "../utils/ClientUtilities";
 
 // Main notification hook - this is what you'll use in your components
 export const useNotifications = (userId) => {
@@ -16,63 +17,52 @@ export const useNotifications = (userId) => {
 
     // Fetch notifications from your API
     const fetchNotifications = useCallback(async (options = {}) => {
-        if (!userId) return;
-
         setIsLoading(true);
         setError(null);
 
         try {
-            const queryParams = new URLSearchParams({
-                userId,
+            const payload = {
+                category: options.category || null,
+                unreadOnly: options.unreadOnly || false,
+                priority: options.priority || null,
                 limit: options.limit || 50,
                 offset: options.offset || 0,
-                ...(options.category && { category: options.category }),
-                ...(options.unreadOnly && { unreadOnly: 'true' }),
-                ...(options.priority && { priority: options.priority })
-            });
+            };
 
-            const response = await fetch(`/api/notifications?${queryParams}`);
-            const data = await response.json();
+            const data = await ClientUtils.GetNotifications(payload);
 
-            if (response.ok) {
-                if (options.offset > 0) {
-                    // Load more - append to existing
-                    setNotifications(prev => [...prev, ...data.notifications]);
-                } else {
-                    // Fresh load - replace all
-                    setNotifications(data.notifications);
-                }
-                setStats(data.stats);
-                setUnreadCount(data.stats.unread);
-                setHasUrgent(data.stats.byPriority?.URGENT > 0 || data.stats.byPriority?.CRITICAL > 0);
+            if (options.offset > 0) {
+                setNotifications(prev => [...prev, ...data.notifications]);
             } else {
-                throw new Error(data.message || 'Failed to fetch notifications');
+                setNotifications(data.notifications);
             }
+
+            setStats(data.stats);
+            setUnreadCount(data.stats.unread);
+            setHasUrgent(
+                data.stats.byPriority?.URGENT > 0 || data.stats.byPriority?.CRITICAL > 0
+            );
         } catch (err) {
             setError(err.message);
             console.error('Notification fetch error:', err);
         } finally {
             setIsLoading(false);
         }
-    }, [userId]);
+    }, []);
 
     // Mark notification as read
     const markAsRead = useCallback(async (notificationId) => {
         try {
-            const response = await fetch(`/api/notifications/${notificationId}/read`, {
-                method: 'PATCH',
-            });
+            const response = await ClientUtils.MarkAsRead({ id: notificationId });
 
-            if (response.ok) {
-                setNotifications(prev =>
-                    prev.map(notification =>
-                        notification._id === notificationId
-                            ? { ...notification, read: { status: true, readAt: new Date() } }
-                            : notification
-                    )
-                );
-                setUnreadCount(prev => Math.max(0, prev - 1));
-            }
+            setNotifications(prev =>
+                prev.map(notification =>
+                    notification._id === notificationId
+                        ? { ...notification, read: { status: true, readAt: new Date() } }
+                        : notification
+                )
+            );
+            setUnreadCount(prev => Math.max(0, prev - 1));
         } catch (err) {
             console.error('Mark as read error:', err);
         }
@@ -81,51 +71,41 @@ export const useNotifications = (userId) => {
     // Mark all as read
     const markAllAsRead = useCallback(async (category = null) => {
         try {
-            const response = await fetch('/api/notifications/mark-all-read', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId, category })
-            });
+            const response = await ClientUtils.MarkAllAsRead({ category });
 
-            if (response.ok) {
-                setNotifications(prev =>
-                    prev.map(notification =>
-                        (!category || notification.category === category)
-                            ? { ...notification, read: { status: true, readAt: new Date() } }
-                            : notification
-                    )
-                );
+            setNotifications(prev =>
+                prev.map(notification =>
+                    (!category || notification.category === category)
+                        ? { ...notification, read: { status: true, readAt: new Date() } }
+                        : notification
+                )
+            );
 
-                if (!category) {
-                    setUnreadCount(0);
-                    setHasUrgent(false);
-                } else {
-                    // Recalculate counts for specific category
-                    fetchNotifications({ limit: 1 }); // Just to update stats
-                }
+            if (!category) {
+                setUnreadCount(0);
+                setHasUrgent(false);
+            } else {
+                fetchNotifications({ limit: 1 }); // refresh stats
             }
+
         } catch (err) {
             console.error('Mark all as read error:', err);
         }
-    }, [userId, fetchNotifications]);
+    }, [fetchNotifications]);
 
     // Delete notification
     const deleteNotification = useCallback(async (notificationId) => {
         try {
-            const response = await fetch(`/api/notifications/${notificationId}`, {
-                method: 'DELETE',
-            });
+            const response = await ClientUtils.DeleteNotification({ id: notificationId });
 
-            if (response.ok) {
-                const deletedNotification = notifications.find(n => n._id === notificationId);
+            const deletedNotification = notifications.find(n => n._id === notificationId);
 
-                setNotifications(prev =>
-                    prev.filter(notification => notification._id !== notificationId)
-                );
+            setNotifications(prev =>
+                prev.filter(notification => notification._id !== notificationId)
+            );
 
-                if (deletedNotification && !deletedNotification.read.status) {
-                    setUnreadCount(prev => Math.max(0, prev - 1));
-                }
+            if (deletedNotification && !deletedNotification.read.status) {
+                setUnreadCount(prev => Math.max(0, prev - 1));
             }
         } catch (err) {
             console.error('Delete notification error:', err);

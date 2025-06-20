@@ -9,9 +9,10 @@ import {
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {router} from 'expo-router';
+import {CheckCircle2} from "lucide-react-native";
 
 
-function Header({userData }) {
+function Header({userData, stats, onMarkAllRead}) {
     const firstName = userData?.fullName?.split(' ')[0] || 'User';
 
     return (
@@ -45,11 +46,35 @@ function Header({userData }) {
                     </TouchableOpacity>
                 </View>
             </View>
+            <View style={styles.parentHeader}>
+                <View style={styles.statsContainer}>
+                    <View style={styles.statItem}>
+                        <Text style={styles.statNumber}>{stats?.total}</Text>
+                        <Text style={styles.statLabel}>Total</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                        <Text style={[styles.statNumber, {color: '#2563EB'}]}>
+                            {stats?.unread}
+                        </Text>
+                        <Text style={styles.statLabel}>Unread</Text>
+                    </View>
+                    <TouchableOpacity onPress={onMarkAllRead} style={styles.markAllButton}>
+                        <CheckCircle2 size={16} color="#2563EB"/>
+                        <Text style={styles.markAllText}>Mark all read</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
         </>
     );
 };
 
 const styles = StyleSheet.create({
+    parentHeader: {
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 20,
+        paddingVertical: 1,
+        borderBottomColor: '#E5E7EB',
+    },
     // Header Styles
     header: {
         flexDirection: 'row',
@@ -87,6 +112,38 @@ const styles = StyleSheet.create({
     rightSection: {
         flexDirection: 'row',
         alignItems: 'center',
+    },
+    statsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    statItem: {
+        marginRight: 20,
+    },
+    statNumber: {
+        fontSize: 18,
+        color: '#111827',
+        fontFamily: 'PoppinsSemiBold',
+    },
+    statLabel: {
+        fontSize: 12,
+        color: '#6B7280',
+        fontFamily: 'PoppinsRegular',
+    },
+    markAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: 'auto',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: '#EFF6FF',
+    },
+    markAllText: {
+        fontSize: 14,
+        color: '#2563EB',
+        marginLeft: 4,
+        fontFamily: 'PoppinsRegular',
     },
 });
 

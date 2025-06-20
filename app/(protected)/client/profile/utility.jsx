@@ -18,6 +18,7 @@ import SecureStorage from "../../../../lib/SecureStorage";
 import SessionManager from "../../../../lib/SessionManager";
 import { useSessionStore } from "../../../../store/useSessionStore";
 import ClientUtils from "../../../../utils/ClientUtilities";
+import SocketStatusMonitor from "../../../../components/Client/Security/Utility/SocketStatusMonitor";
 
 const { width } = Dimensions.get('window');
 
@@ -409,6 +410,8 @@ const UtilityScreen = () => {
                 ) : null}
 
                 <View style={styles.bottomSpacing} />
+
+                <SocketStatusMonitor />
             </ScrollView>
         </SafeAreaView>
     );

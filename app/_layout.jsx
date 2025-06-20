@@ -1,7 +1,6 @@
 // /app/_layout.jsx
 import {Stack} from "expo-router";
 import "@/app/global.css";
-import {GluestackUIProvider} from "@/components/ui/gluestack-ui-provider";
 import {QueryClientProvider, QueryClient} from "@tanstack/react-query";
 import {AuthProvider} from "../context/auth";
 import ToastManager, {Toast} from 'toastify-react-native'
@@ -18,6 +17,8 @@ import Animated, {
     withRepeat,
     Easing,
 } from "react-native-reanimated";
+import {queryClient} from "../lib/queryClient";
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -133,7 +134,6 @@ export default function RootLayout() {
     });
 
     const [splashFinished, setSplashFinished] = useState(false);
-    const queryClient = new QueryClient();
 
 
     useEffect(() => {
@@ -150,9 +150,9 @@ export default function RootLayout() {
 
     return (
         <>
-            <AuthProvider>
-                <QueryClientProvider client={queryClient}>
-                    <GluestackUIProvider mode="light">
+            <GestureHandlerRootView style={{flex: 1}}>
+                <AuthProvider>
+                    <QueryClientProvider client={queryClient}>
                         <ToastManager
                             position="top"
                             duration={2000}
@@ -175,9 +175,9 @@ export default function RootLayout() {
                         ) : (
                             <CustomSplashScreen onFinish={handleSplashFinish}/>
                         )}
-                    </GluestackUIProvider>
-                </QueryClientProvider>
-            </AuthProvider>
+                    </QueryClientProvider>
+                </AuthProvider>
+            </GestureHandlerRootView>
         </>
     );
 }

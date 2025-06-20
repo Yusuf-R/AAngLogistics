@@ -35,6 +35,39 @@ export const TAB_BAR_VISIBLE_ROUTES = [
     ROUTES.NOTIFICATIONS,
 ];
 
+export const TAB_BAR_HIDDEN_EXCEPTIONS = [
+    '/client/profile/edit-profile',
+    '/client/profile/update-password',
+    '/client/profile/notification-settings',
+    '/client/profile/update-avatar',
+    '/client/profile/privacy-policy',
+    '/client/profile/security',
+    '/client/profile/nin-verification',
+    '/client/profile/payment',
+    '/client/profile/auth-pin',
+    '/client/profile/reset-pin',
+    '/client/profile/help-center',
+    '/client/profile/tcs',
+    '/client/profile/verify-email',
+    '/client/profile/utility',
+];
+
+//
+export const SocketEvents = {
+    NOTIFICATION: {
+        NEW: 'notification',
+        MARK_READ: 'notification:read:single',
+        MARK_READ_ALL: 'notification:read:all',
+        DELETE: 'notification:delete',
+        DELETE_SUCCESS: 'notification:delete:success',
+        ERROR: 'notification:error'
+    },
+    PING: {
+        HEALTH: 'ping:health',
+    },
+    // Add more groups as you grow (e.g., CHAT, ORDER, etc.)
+};
+
 // Utility to check password change capability (can be used elsewhere in your app)
 export const canUserChangePassword = (userData) => {
     // Multiple layers of validation
@@ -1263,5 +1296,7 @@ export const faqData = {
         }
     ]
 };
+
+
 
 
