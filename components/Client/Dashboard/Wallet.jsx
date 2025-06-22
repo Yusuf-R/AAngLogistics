@@ -15,6 +15,8 @@ import { router } from 'expo-router';
 function WalletCard({ userData }) {
     const [showBalance, setShowBalance] = useState(false);
     const [showCardNumber, setShowCardNumber] = useState(false);
+    // Generate random balance only once
+    const [randomBalance] = useState(() => (Math.random() * 100000).toFixed(2));
 
     const getDisplayBalance = () => {
         if (!showBalance) {
@@ -30,8 +32,7 @@ function WalletCard({ userData }) {
         }
 
         // Show random balance if no real one exists
-        const random = (Math.random() * 100000).toFixed(2);
-        return `₦ ${parseFloat(random).toLocaleString('en-NG', {
+        return `₦ ${parseFloat(randomBalance).toLocaleString('en-NG', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;

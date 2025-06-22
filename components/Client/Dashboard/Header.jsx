@@ -67,26 +67,6 @@ function Header ({ userData, notifications = [],  style = {} }) {
                         </View>
                     </View>
                 </View>
-                {/*<View style={styles.rightSection}>*/}
-                {/*    <TouchableOpacity*/}
-                {/*        style={styles.bellContainer}*/}
-                {/*        onPress={() => router.push('/client/profile/notifications')}*/}
-                {/*    >*/}
-                {/*        <View style={styles.bellWrapper}>*/}
-                {/*            {unreadCount > 0 ? (*/}
-                {/*                <BellRing size={24} color="#10B981" />*/}
-                {/*            ) : (*/}
-                {/*                <Bell size={24} color="#6B7280" />*/}
-                {/*            )}*/}
-
-                {/*            {unreadCount > 0 && (*/}
-                {/*                <View style={[styles.badge]}>*/}
-                {/*                    <Text style={styles.badgeText}>{unreadCount}</Text>*/}
-                {/*                </View>*/}
-                {/*            )}*/}
-                {/*        </View>*/}
-                {/*    </TouchableOpacity>*/}
-                {/*</View>*/}
             </View>
         </>
     );
