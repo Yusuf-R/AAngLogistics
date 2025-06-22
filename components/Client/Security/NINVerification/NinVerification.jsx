@@ -70,8 +70,8 @@ function NinVerification({ userData }) {
             style={styles.container}
         >
             <View style={styles.header}>
-                <Text className="font-poppinsExtraBold text-3xl mb-4 ">Verify Your Identity</Text>
-                <Text className="font-poppinsLight text-lg text-gray-600">
+                <Text className="font-poppinsExtraBold text-3xl mb-4 text-black">Verify Your Identity</Text>
+                <Text className="font-poppinsLight text-lg text-gray-950">
                     For security and compliance, we need to verify your National Identification Number (NIN)
                 </Text>
             </View>
@@ -200,6 +200,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 14,
         lineHeight: 20,
+        fontFamily: 'PoppinsRegular'
     },
     button: {
         height: 56,
@@ -230,10 +231,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
     },
     securityText: {
-        color: '#666',
         marginLeft: 8,
-        fontSize: 13,
+        fontSize: 12,
         lineHeight: 18,
+        color: '#666',
+        fontFamily: 'PoppinsRegular',
     },
     successContainer: {
         flex: 1,

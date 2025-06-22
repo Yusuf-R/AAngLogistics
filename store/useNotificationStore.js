@@ -4,6 +4,7 @@ export const useNotificationStore = create((set, get) => ({
     notifications: [],
     stats: null,
     isInitialized: false, // Track if we've loaded initial data
+    selectedNotification: null,
 
     setAllNotifications: (notifs) => set({
         notifications: notifs,
@@ -122,9 +123,14 @@ export const useNotificationStore = create((set, get) => ({
         }
     },
 
+    setSelectedNotification: (notification) => set({ selectedNotification: notification }),
+
+    clearSelectedNotification: () => set({ selectedNotification: null }),
+
     clearAll: () => set({
         notifications: [],
         stats: null,
-        isInitialized: false
+        isInitialized: false,
+        selectedNotification: null,
     })
 }));

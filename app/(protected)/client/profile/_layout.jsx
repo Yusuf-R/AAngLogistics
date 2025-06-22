@@ -6,8 +6,14 @@ export default function ProfileLayout() {
         <Stack
             screenOptions={{
                 headerShown: true, // Enable header
-                headerBackTitleVisible: false, // Clean back button
-                headerShadowVisible: false, // Clean look
+                headerBackTitleVisible: false,
+                headerShadowVisible: false,
+                headerTitleAlign: 'center',
+                headerTitleStyle: {
+                    fontFamily: 'PoppinsSemiBold',
+                    fontSize: 19,
+                },
+
             }}
         >
             <Stack.Screen

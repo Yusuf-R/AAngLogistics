@@ -46,7 +46,6 @@ const formatTime = (dateString) => {
 
 // Memoized NotificationCard to prevent unnecessary re-renders
 const NotificationCard = memo(({notification, onDelete, onViewDetails, onViewSilently}) => {
-    // Get read status directly from notification prop (Zustand source of truth)
     const isUnread = !notification.read?.status;
 
     const priorityConfig = PRIORITY_CONFIG[notification.priority];
@@ -75,6 +74,8 @@ const NotificationCard = memo(({notification, onDelete, onViewDetails, onViewSil
         console.log(`🔍 Silent view: ${notification._id}`);
         onViewSilently(notification);
     };
+
+
 
     return (
         <>
@@ -255,13 +256,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingLeft: 8,
     },
-    // unreadDot: {
-    //     width: 80,
-    //     height: 80,
-    //     borderRadius: 4,
-    //     backgroundColor: '#2563EB',
-    //     marginBottom: 28,
-    // },
     cardActions: {
         flexDirection: 'column',
         alignItems: 'center',

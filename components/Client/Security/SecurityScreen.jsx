@@ -12,8 +12,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import {router} from "expo-router"; // or react-native-vector-icons
 import {ROUTES} from "../../../utils/Constant";
+import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
+import { useLayoutEffect } from 'react';
 
-const SecurityScreen = ({ navigation }) => {
+const SecurityScreen = () => {
+    const router = useRouter();
+    const navigation = useNavigation();
     const [rememberMe, setRememberMe] = useState(true);
     const [faceID, setFaceID] = useState(true);
     const [biometricID, setBiometricID] = useState(true);
@@ -46,6 +51,17 @@ const SecurityScreen = ({ navigation }) => {
     const handlePrivacyPolicy = () => {
         router.push(ROUTES["PRIVACY-POLICY"]);
     };
+
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerLeft: () => (
+                <TouchableOpacity onPress={() => router.push('/client/profile')}>
+                    <Ionicons name="arrow-back" size={24} color="black" />
+                </TouchableOpacity>
+            ),
+        });
+    }, []);
 
 
     return (

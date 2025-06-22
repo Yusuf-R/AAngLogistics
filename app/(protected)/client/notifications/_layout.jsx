@@ -1,4 +1,7 @@
 import {Stack} from 'expo-router';
+import Ionicons from "@expo/vector-icons/Ionicons";
+import {TouchableOpacity} from "react-native";
+import {router} from "expo-router";
 
 export default function NotificationLayout() {
     return (
@@ -13,6 +16,19 @@ export default function NotificationLayout() {
                 name="index"
                 options={{
                     headerShown: false // Hide only for main profile
+                }}
+            />
+            <Stack.Screen
+                name="details"
+                options={{
+                    headerTitle: 'Notification Details',
+                    headerBackTitleVisible: false,
+                    headerTitleAlign: 'center',
+                    headerLeft: () => (
+                        <TouchableOpacity onPress={() => router.back()} >
+                            <Ionicons name="arrow-back" size={24} color="#111827" />
+                        </TouchableOpacity>
+                    ),
                 }}
             />
         </Stack>

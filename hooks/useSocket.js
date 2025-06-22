@@ -71,12 +71,28 @@ export default function useSocket(userId) {
                     console.log('✅ Notification marked as read:', notificationId);
                 });
 
+                // ✅ Handle read ALL notification success
+                socketRef.current.on('notification:read:all:success', ({notificationId}) => {
+                    queryClient.invalidateQueries({queryKey: ['GetNotifications']});
+                    queryClient.invalidateQueries({queryKey: ['GetUnreadCount']});
+
+                    console.log('✅ Notification marked as read:', notificationId);
+                });
+
                 // ✅ Handle delete notification success
                 socketRef.current.on('notification:delete:success', ({notificationId}) => {
                     queryClient.invalidateQueries({queryKey: ['GetNotifications']});
                     queryClient.invalidateQueries({queryKey: ['GetUnreadCount']});
 
                     console.log('🗑️ Notification deleted:', notificationId);
+                });
+
+                // ✅ Handle delete all notification success
+                socketRef.current.on('notification:delete:all:success', ({notificationId}) => {
+                    queryClient.invalidateQueries({queryKey: ['GetNotifications']});
+                    queryClient.invalidateQueries({queryKey: ['GetUnreadCount']});
+
+                    console.log('🗑️ All Notification deleted:', notificationId);
                 });
 
                 socketRef.current.on('connect_error', (err) => {

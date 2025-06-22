@@ -9,10 +9,10 @@ import {
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {router} from 'expo-router';
-import {CheckCircle2} from "lucide-react-native";
+import {CheckCircle2, Trash2} from 'lucide-react-native'
 
 
-function Header({userData, stats, onMarkAllRead}) {
+function Header({userData, stats, onMarkAllRead, onDeleteAll}) {
     const firstName = userData?.fullName?.split(' ')[0] || 'User';
 
     return (
@@ -62,6 +62,12 @@ function Header({userData, stats, onMarkAllRead}) {
                         <CheckCircle2 size={16} color="#2563EB"/>
                         <Text style={styles.markAllText}>Mark all read</Text>
                     </TouchableOpacity>
+                    {stats?.total > 0 && (
+                        <TouchableOpacity onPress={onDeleteAll} style={styles.deleteAllButton}>
+                            <Trash2 size={16} color="#EF4444"/>
+                            <Text style={styles.deleteAllText}>Delete all</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
         </>
@@ -145,6 +151,27 @@ const styles = StyleSheet.create({
         marginLeft: 4,
         fontFamily: 'PoppinsRegular',
     },
+    deleteAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        backgroundColor: '#FEE2E2',
+    },
+    deleteAllText: {
+        fontSize: 14,
+        color: '#EF4444',
+        marginLeft: 4,
+        fontFamily: 'PoppinsRegular',
+    },
+    deleteAll: {
+        fontSize: 14,
+        color: '#EF4444',
+        marginLeft: 4,
+        fontFamily: 'PoppinsRegular',
+    }
 });
 
 

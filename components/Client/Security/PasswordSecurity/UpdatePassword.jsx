@@ -70,7 +70,7 @@ export default function UpdatePassword() {
 
                 setTimeout(() => {
                     setModalVisible(false);
-                    router.replace('/client/profile/security');
+                    router.push('/client/profile/security');
                 }, 2500);
 
                 queryClient.invalidateQueries({
