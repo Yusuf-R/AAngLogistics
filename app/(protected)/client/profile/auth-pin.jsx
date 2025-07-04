@@ -6,8 +6,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSessionStore } from '../../../../store/useSessionStore';
 import { ROUTES } from '../../../../utils/Constant';
-import AuthPinSecurity from '../../../../components/Client/Security/AuthPinSecurity/AuthPinSecurity';
-import VerifyFirst from "../../../../components/Client/Security/AuthPinSecurity/VerifyFirst";
+import AuthPinSecurity from '../../../../components/Client/Profile/Security/AuthPinSecurity/AuthPinSecurity';
+import VerifyFirst from "../../../../components/Client/Profile/Security/AuthPinSecurity/VerifyFirst";
 import SecureStorage from '../../../../lib/SecureStorage';
 
 export default function AuthPinScreen() {

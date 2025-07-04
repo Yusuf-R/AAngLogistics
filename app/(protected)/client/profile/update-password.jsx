@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import UpdatePassword from "../../../../components/Client/Security/PasswordSecurity/UpdatePassword";
+import UpdatePassword from "../../../../components/Client/Profile/Security/PasswordSecurity/UpdatePassword";
 import { useSessionStore } from "../../../../store/useSessionStore";
 
 // Component for users who can't change password

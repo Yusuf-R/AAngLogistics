@@ -1,4 +1,4 @@
-import NinVerification from "../../../../components/Client/Security/NINVerification/NinVerification";
+import NinVerification from "../../../../components/Client/Profile/Security/NINVerification/NinVerification";
 import {useSessionStore} from "../../../../store/useSessionStore";
 
 function NinVerificationScreen(){

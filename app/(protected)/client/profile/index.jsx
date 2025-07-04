@@ -11,7 +11,7 @@ import {
     Modal,
     Pressable, ActivityIndicator
 } from 'react-native';
-import {Ionicons, Feather, FontAwesome, MaterialIcons, Octicons} from '@expo/vector-icons';
+import {Ionicons, Feather, FontAwesome, MaterialIcons, Octicons, MaterialCommunityIcons} from '@expo/vector-icons';
 import {router} from "expo-router";
 import { useSessionStore } from "../../../../store/useSessionStore";
 import SessionManager from "../../../../lib/SessionManager";
@@ -57,8 +57,8 @@ function ClientProfileScreen() {
         router.push(ROUTES['UPDATE-AVATAR']);
     }
 
-    const goToNotificationsSettings = () => {
-        router.push(ROUTES['NOTIFICATION-SETTINGS']);
+    const goToLocationSettings = () => {
+        router.push(ROUTES['LOCATION']);
     }
 
     const goToPayment = () => {
@@ -183,11 +183,11 @@ function ClientProfileScreen() {
                     })}
 
                     {renderMenuItem({
-                        icon: 'notifications-outline',
+                        icon: 'location-outline',
                         iconType: 'Ionicons',
-                        title: 'Notification',
+                        title: 'Saved Locations',
                         hasChevron: true,
-                        onPress: () => goToNotificationsSettings()
+                        onPress: () => goToLocationSettings()
                     })}
 
                     {renderMenuItem({

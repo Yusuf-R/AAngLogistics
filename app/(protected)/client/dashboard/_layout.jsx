@@ -4,15 +4,15 @@ export default function DashboardLayout() {
     return (
         <Stack
             screenOptions={{
-                headerShown: true, // Enable header
-                headerBackTitleVisible: false, // Clean back button
-                headerShadowVisible: false, // Clean look
+                headerShown: true,
+                headerBackTitleVisible: false,
+                headerShadowVisible: false,
             }}
         >
             <Stack.Screen
                 name="index"
                 options={{
-                    headerShown: false // Hide only for main profile
+                    headerShown: false
                 }}
             />
         </Stack>

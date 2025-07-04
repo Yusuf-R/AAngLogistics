@@ -1,4 +1,4 @@
-import TermsAndConditions from "../../../../components/Client/Security/TermsAndConditions/TermsAndConditions";
+import TermsAndConditions from "../../../../components/Client/Profile/Security/TermsAndConditions/TermsAndConditions";
 
 
 function TermsAndConditionsScreen() {

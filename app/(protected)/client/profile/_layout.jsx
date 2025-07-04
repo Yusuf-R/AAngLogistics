@@ -20,7 +20,22 @@ export default function ProfileLayout() {
                 name="index"
                 options={{
                     title: 'Profile',
-                    headerShown: false // Hide only for main profile
+                    headerShown: false
+                }}
+            />
+
+            <Stack.Screen
+                name="edit-profile"
+                options={{
+                    title: 'Edit Profile',
+                }}
+            />
+
+            <Stack.Screen
+                name="location"
+                options={{
+                    title: 'Location Settings',
+                    headerShown: false
                 }}
             />
 
@@ -68,7 +83,6 @@ export default function ProfileLayout() {
                 }}
             />
 
-            {/* New screen for email code verification */}
             <Stack.Screen
                 name="verify-email-code"
                 options={{
@@ -111,12 +125,7 @@ export default function ProfileLayout() {
                 }}
             />
 
-            <Stack.Screen
-                name="edit-profile"
-                options={{
-                    title: 'Edit Profile',
-                }}
-            />
+
 
             <Stack.Screen
                 name="payment"
@@ -125,12 +134,7 @@ export default function ProfileLayout() {
                 }}
             />
 
-            <Stack.Screen
-                name="notification-settings"
-                options={{
-                    title: 'Notifications Settings',
-                }}
-            />
+
 
             <Stack.Screen
                 name="help-center"

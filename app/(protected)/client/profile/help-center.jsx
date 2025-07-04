@@ -1,4 +1,4 @@
-import HelpCenter from "../../../../components/Client/Security/HelpCenter/HelpCenter";
+import HelpCenter from "../../../../components/Client/Profile/Security/HelpCenter/HelpCenter";
 
 function HelpCenterScreen() {
     return (

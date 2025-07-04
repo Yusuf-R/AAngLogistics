@@ -1,7 +1,7 @@
 // protected/client/profile/verify-email-code.jsx
 import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, SafeAreaView, Text} from "react-native";
-import EmailCodeVerification from "../../../../components/Client/Security/EmailSecurity/EmailCodeVerification";
+import EmailCodeVerification from "../../../../components/Client/Profile/Security/EmailSecurity/EmailCodeVerification";
 import SecureStorage from "../../../../lib/SecureStorage";
 import {useSessionStore} from "../../../../store/useSessionStore";
 

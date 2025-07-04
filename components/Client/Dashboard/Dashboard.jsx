@@ -6,35 +6,26 @@ import {
     StyleSheet,
     SafeAreaView,
     ScrollView,
-    StatusBar
+    StatusBar, FlatList
 } from 'react-native';
 import {
-    Bell,
     CreditCard,
-    Plus,
-    DollarSign,
     MapPin,
     HelpCircle,
     Package,
     TrendingUp,
     Wallet,
     Search,
-    CheckCircle2
+    History,
 } from 'lucide-react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import Header from "../Dashboard/Header"
+import Header from "./Header"
 import WalletCard from "./Wallet";
+import { serviceFeatures } from "../../../utils/Constant";
 
 
 // Search Bar Component
-const SearchBar = ({ placeholder }) => (
-    <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-            <Search size={20} color="#9ca3af" style={styles.searchIcon} />
-            <Text style={styles.searchPlaceholder}>{placeholder}</Text>
-        </View>
-    </View>
-);
 
 // Quick Action Button Component
 const QuickActionButton = ({ icon: Icon, title, onPress, color = "#00d4aa" }) => (
@@ -60,6 +51,33 @@ const QuickActionsGrid = ({ actions }) => (
         ))}
     </View>
 );
+
+const AangServices = ({ features }) =>{
+    return (
+        <>
+            {/* Service Features */}
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Why Choose Us</Text>
+                <View style={styles.featuresContainer}>
+                    {features.map((feature, index) => {
+                        const IconComponent = feature.icon;
+                        return (
+                            <View key={index} style={styles.featureCard}>
+                                <View style={[styles.featureIcon, {backgroundColor: `${feature.color}15`}]}>
+                                    <IconComponent size={24} color={feature.color}/>
+                                </View>
+                                <View style={styles.featureContent}>
+                                    <Text style={styles.featureTitle}>{feature.title}</Text>
+                                    <Text style={styles.featureDescription}>{feature.description}</Text>
+                                </View>
+                            </View>
+                        );
+                    })}
+                </View>
+            </View>
+        </>
+    )
+}
 
 // Transaction Item Component
 const TransactionItem = ({ transaction }) => {
@@ -100,9 +118,12 @@ const TransactionHistory = ({ transactions, onSeeAll }) => (
         </View>
 
         <View style={styles.transactionsList}>
-            {transactions.map((transaction, index) => (
-                <TransactionItem key={index} transaction={transaction} />
-            ))}
+            <FlatList
+                data={transactions}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => <TransactionItem transaction={item} />}
+                scrollEnabled={false}
+            />
         </View>
     </View>
 );
@@ -117,12 +138,6 @@ function Dashboard ({userData}) {
     });
 
     const [transactions] = useState([
-        {
-            type: 'order',
-            title: 'New Order Made!',
-            description: 'You have created a new shipping order',
-            time: '2 hours ago'
-        },
         {
             type: 'topup',
             title: 'Top Up Successful!',
@@ -151,19 +166,19 @@ function Dashboard ({userData}) {
             onPress: () => console.log('Make Order')
         },
         {
-            icon: DollarSign,
-            title: 'Check Rates',
+            icon: History,
+            title: 'Order History',
             color: '#3b82f6',
-            onPress: () => console.log('Check Rates')
+            onPress: () => console.log('Order History')
         },
         {
             icon: MapPin,
-            title: 'Nearby Drop',
+            title: 'Saved Locations',
             color: '#3b82f6',
-            onPress: () => console.log('Nearby Drop')
+            onPress: () => console.log('Saved Locations')
         },
         {
-            icon: HelpCircle,
+            icon: (props) => <MaterialCommunityIcons name="headset" size={24} color="white" {...props} />,
             title: 'Help Center',
             color: '#3b82f6',
             onPress: () => console.log('Help Center')
@@ -177,25 +192,13 @@ function Dashboard ({userData}) {
                 style={styles.scrollView}
                 showsVerticalScrollIndicator={false}
             >
-                <Header
-                    userData={userData}
-                />
-
+                <Header userData={userData}/>
                 <View style={styles.content}>
-
-                    <WalletCard
-                        userData={userData}
-                    />
-
-                    <SearchBar placeholder="Enter Track ID Number" />
+                    <WalletCard userData={userData} />
+                    <AangServices features={serviceFeatures} />
 
                     <QuickActionsGrid actions={quickActions} />
-
-                    <TransactionHistory
-                        transactions={transactions}
-                        onSeeAll={() => console.log('See all pressed')}
-                    />
-
+                    <TransactionHistory transactions={transactions} onSeeAll={() => console.log('See all pressed')} />
                 </View>
             </ScrollView>
         </SafeAreaView>
@@ -252,6 +255,64 @@ const styles = StyleSheet.create({
         padding: 8,
         borderRadius: 20,
     },
+    section: {
+        flex: 1,
+        paddingHorizontal: 1,
+        marginBottom: 20,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        color: '#1f2937',
+        marginBottom: 16,
+        fontFamily: 'PoppinsSemiBold',
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    featuresContainer: {
+        gap: 16,
+    },
+    featureCard: {
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        padding: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    featureIcon: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    featureContent: {
+        flex: 1,
+    },
+    featureTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1f2937',
+        marginBottom: 4,
+    },
+    featureDescription: {
+        fontSize: 14,
+        color: '#6b7280',
+        lineHeight: 20,
+    },
+
     content: {
         paddingHorizontal: 10,
     },
@@ -321,8 +382,8 @@ const styles = StyleSheet.create({
     },
     historyTitle: {
         fontSize: 18,
-        fontWeight: '600',
-        color: '#111827',
+        fontFamily: 'PoppinsBold',
+        color: '#1f2937',
     },
     seeAllText: {
         fontSize: 14,

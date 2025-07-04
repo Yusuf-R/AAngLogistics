@@ -1,8 +1,8 @@
-import PinVerificationEmail from "../../../../components/Client/Security/AuthPinSecurity/PinVerificationEmail";
+import PinVerificationEmail from "../../../../components/Client/Profile/Security/AuthPinSecurity/PinVerificationEmail";
 import React from "react";
 import {useLocalSearchParams} from "expo-router";
 import {useSessionStore} from "../../../../store/useSessionStore";
-import VerifyFirst from "../../../../components/Client/Security/AuthPinSecurity/VerifyFirst";
+import VerifyFirst from "../../../../components/Client/Profile/Security/AuthPinSecurity/VerifyFirst";
 import {SafeAreaView} from "react-native";
 
 function PinVerificationEmailScreen() {

@@ -332,6 +332,79 @@ class ClientUtils {
         }
     }
 
+    // Locations
+    static async GetSavedLocations() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/user/location/saved',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async CreateLocation(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/user/location/create',
+                data: obj,
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async UpdateLocation(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: '/user/location/update',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async DeleteLocation(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "DELETE",
+                url: '/user/location/delete',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+
     // Cloudinary
     // get signed URL for image upload
     static async GetSignedUrl() {
@@ -443,7 +516,7 @@ class ClientUtils {
         }
     }
 
-    // Delet Notification
+    // Delete Notification
     static async DeleteNotification(obj) {
         try {
             const response = await axiosPrivate({
@@ -461,6 +534,66 @@ class ClientUtils {
             throw new Error(error);
         }
     }
+
+    /**************** Orders ******************/
+    static async GetOrders() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/order/get',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async GetOrderStats() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/order/stats',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async GetOrderHistory() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/order/history',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+
+
+
+
+
+
+
 
 
 

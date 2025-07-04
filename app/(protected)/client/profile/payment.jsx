@@ -1,4 +1,4 @@
-import Payments from "../../../../components/Client/Security/Payments/Payments";
+import Payments from "../../../../components/Client/Profile/Security/Payments/Payments";
 
 function PaymentScreen() {
     return (

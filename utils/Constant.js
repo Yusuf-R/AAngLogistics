@@ -1,3 +1,43 @@
+import * as Device from 'expo-device';
+import * as Network from 'expo-network';
+import {Shield, Users, Zap} from "lucide-react-native";
+
+export const COLORS = {
+    primary: '#4361EE',
+    secondary: '#3A0CA3',
+    accent: '#7209B7',
+    background: '#F8F9FA',
+    card: '#FFFFFF',
+    text: '#212529',
+    muted: '#6C757D',
+    error: '#DC3545',
+    success: '#28A745',
+    warning: '#FFC107',
+    border: '#DEE2E6',
+    light: '#F8F9FA',
+    dark: '#495057',
+};
+
+export const LOCATION_ICONS = {
+    residential: 'home-outline',
+    commercial: 'business-outline',
+    office: 'briefcase-outline',
+    mall: 'storefront-outline',
+    hospital: 'medical-outline',
+    school: 'school-outline',
+    other: 'location-outline'
+};
+
+export const LOCATION_COLORS = {
+    residential: '#28A745',
+    commercial: '#007BFF',
+    office: '#6F42C1',
+    mall: '#FD7E14',
+    hospital: '#DC3545',
+    school: '#20C997',
+    other: '#6C757D'
+};
+
 export const ROUTES = {
     // Tab Bar Routes
     HOME: '/client/dashboard',
@@ -18,12 +58,13 @@ export const ROUTES = {
     'EDIT-PROFILE': '/client/profile/edit-profile',
     'UPDATE-AVATAR': '/client/profile/update-avatar',
     "PRIVACY-POLICY": '/client/profile/privacy-policy',
-    "NOTIFICATION-SETTINGS": '/client/profile/notification-settings',
+    "LOCATION": '/client/profile/location',
     "PAYMENT": '/client/profile/payment',
     'HELP-CENTER': '/client/profile/help-center',
     'NIN-VERIFICATION': '/client/profile/nin-verification',
 
     // Add other nested routes here
+    'ORDER-CREATE': '/client/orders/create',
 };
 
 // Explicit list of routes where Tab Bar should appear
@@ -36,9 +77,10 @@ export const TAB_BAR_VISIBLE_ROUTES = [
 ];
 
 export const TAB_BAR_HIDDEN_EXCEPTIONS = [
+    // PROFILE
     '/client/profile/edit-profile',
     '/client/profile/update-password',
-    '/client/profile/notification-settings',
+    '/client/profile/location',
     '/client/profile/update-avatar',
     '/client/profile/privacy-policy',
     '/client/profile/security',
@@ -50,6 +92,10 @@ export const TAB_BAR_HIDDEN_EXCEPTIONS = [
     '/client/profile/tcs',
     '/client/profile/verify-email',
     '/client/profile/utility',
+    //  ORDERS
+    '/client/orders/create',
+
+
 ];
 
 //
@@ -1297,6 +1343,302 @@ export const faqData = {
     ]
 };
 
+// Dashboard Constants
+export const serviceFeatures = [
+    {
+        icon: Zap,
+        title: 'Instant Delivery',
+        description: 'Same-day delivery across the city',
+        color: '#F59E0B'
+    },
+    {
+        icon: Shield,
+        title: 'Secure & Insured',
+        description: 'Your packages are fully protected',
+        color: '#10B981'
+    },
+    {
+        icon: Users,
+        title: 'Trusted Couriers',
+        description: 'Verified and professional drivers',
+        color: '#3B82F6'
+    }
+];
 
 
+// Order Utilities
+// orderUtils.js - Utility functions for order creation
 
+
+/**
+ * Calculate estimated pricing for an order
+ * @param {Object} orderData - The order data object
+ * @returns {Promise<Object>} - Pricing information
+ */
+export const calculateOrderPricing = async (orderData) => {
+    try {
+        // Extract relevant data for pricing calculation
+        const { pickup, dropoff, package: packageData, vehicleRequirements, orderType } = orderData;
+
+        // Calculate distance (you might want to use a proper distance calculation service)
+        const distance = calculateDistance(
+            pickup.coordinates.lat,
+            pickup.coordinates.lng,
+            dropoff.coordinates.lat,
+            dropoff.coordinates.lng
+        );
+
+        // Base pricing logic
+        let basePrice = 500; // Base price in your currency
+        let distancePrice = distance * 50; // Price per km
+        let vehicleMultiplier = getVehicleMultiplier(vehicleRequirements);
+        let packageMultiplier = getPackageMultiplier(packageData);
+        let urgencyMultiplier = orderType === 'instant' ? 1.2 : 1.0;
+
+        // Calculate total
+        const subtotal = (basePrice + distancePrice) * vehicleMultiplier * packageMultiplier * urgencyMultiplier;
+        const tax = subtotal * 0.075; // 7.5% tax
+        const total = subtotal + tax;
+
+        return {
+            basePrice,
+            distancePrice,
+            distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+            vehicleMultiplier,
+            packageMultiplier,
+            urgencyMultiplier,
+            subtotal: Math.round(subtotal),
+            tax: Math.round(tax),
+            total: Math.round(total),
+            currency: 'NGN',
+            breakdown: [
+                { label: 'Base Price', amount: basePrice },
+                { label: `Distance (${Math.round(distance * 100) / 100}km)`, amount: Math.round(distancePrice) },
+                { label: 'Vehicle Type', amount: Math.round((basePrice + distancePrice) * (vehicleMultiplier - 1)) },
+                { label: 'Package Type', amount: Math.round((basePrice + distancePrice) * vehicleMultiplier * (packageMultiplier - 1)) },
+                { label: 'Urgency Fee', amount: Math.round((basePrice + distancePrice) * vehicleMultiplier * packageMultiplier * (urgencyMultiplier - 1)) },
+                { label: 'Tax (7.5%)', amount: Math.round(tax) }
+            ]
+        };
+    } catch (error) {
+        console.error('Pricing calculation error:', error);
+        throw new Error('Unable to calculate pricing at this time');
+    }
+};
+
+/**
+ * Calculate distance between two coordinates using Haversine formula
+ * @param {number} lat1 - Latitude of first point
+ * @param {number} lon1 - Longitude of first point
+ * @param {number} lat2 - Latitude of second point
+ * @param {number} lon2 - Longitude of second point
+ * @returns {number} - Distance in kilometers
+ */
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+};
+
+const toRad = (deg) => {
+    return deg * (Math.PI / 180);
+};
+
+/**
+ * Get pricing multiplier based on vehicle requirements
+ * @param {Array} vehicleRequirements - Array of required vehicle types
+ * @returns {number} - Multiplier value
+ */
+const getVehicleMultiplier = (vehicleRequirements) => {
+    if (!vehicleRequirements || vehicleRequirements.length === 0) return 1.0;
+
+    const multipliers = {
+        bicycle: 0.8,
+        motorcycle: 1.0,
+        tricycle: 1.2,
+        van: 1.5,
+        truck: 2.0,
+        pickup: 1.8
+    };
+
+    // Use the highest multiplier if multiple vehicles are selected
+    return Math.max(...vehicleRequirements.map(vehicle => multipliers[vehicle] || 1.0));
+};
+
+/**
+ * Get pricing multiplier based on package characteristics
+ * @param {Object} packageData - Package information
+ * @returns {number} - Multiplier value
+ */
+const getPackageMultiplier = (packageData) => {
+    let multiplier = 1.0;
+
+    // Size-based multiplier
+    if (packageData.weight?.value > 20) multiplier *= 1.3;
+    if (packageData.dimensions?.length > 100 || packageData.dimensions?.width > 100) multiplier *= 1.2;
+
+    // Special handling
+    if (packageData.isFragile) multiplier *= 1.15;
+    if (packageData.requiresSpecialHandling) multiplier *= 1.25;
+    if (packageData.temperature?.controlled) multiplier *= 1.4;
+
+    // High-value items
+    if (packageData.value > 100000) multiplier *= 1.1; // For items over 100k
+
+    return multiplier;
+};
+
+/**
+ * Get device IP address
+ * @returns {Promise<string>} - Device IP address
+ */
+export const getDeviceIP = async () => {
+    try {
+        const networkState = await Network.getNetworkStateAsync();
+        return networkState.details?.ipAddress || 'unknown';
+    } catch (error) {
+        console.error('Error getting device IP:', error);
+        return 'unknown';
+    }
+};
+
+/**
+ * Get device information
+ * @returns {Promise<string>} - Device user agent string
+ */
+export const getDeviceInfo = async () => {
+    try {
+        const deviceInfo = {
+            brand: Device.brand,
+            manufacturer: Device.manufacturer,
+            modelName: Device.modelName,
+            osName: Device.osName,
+            osVersion: Device.osVersion,
+            platformApiLevel: Device.platformApiLevel,
+            deviceType: Device.deviceType
+        };
+
+        return `${deviceInfo.manufacturer} ${deviceInfo.modelName} (${deviceInfo.osName} ${deviceInfo.osVersion})`;
+    } catch (error) {
+        console.error('Error getting device info:', error);
+        return 'unknown';
+    }
+};
+
+/**
+ * Validate order data before submission
+ * @param {Object} orderData - Complete order data
+ * @returns {Object} - Validation result with errors if any
+ */
+export const validateOrderData = (orderData) => {
+    const errors = {};
+
+    // Required fields validation
+    if (!orderData.orderType) errors.orderType = 'Order type is required';
+    if (!orderData.package?.category) errors.packageCategory = 'Package category is required';
+    if (!orderData.package?.description?.trim()) errors.packageDescription = 'Package description is required';
+    if (!orderData.pickup?.address) errors.pickupAddress = 'Pickup address is required';
+    if (!orderData.dropoff?.address) errors.dropoffAddress = 'Delivery address is required';
+    if (!orderData.vehicleRequirements || orderData.vehicleRequirements.length === 0) {
+        errors.vehicleRequirements = 'At least one vehicle type must be selected';
+    }
+
+    // Coordinate validation
+    if (!orderData.pickup?.coordinates?.lat || !orderData.pickup?.coordinates?.lng) {
+        errors.pickupCoordinates = 'Pickup location coordinates are required';
+    }
+    if (!orderData.dropoff?.coordinates?.lat || !orderData.dropoff?.coordinates?.lng) {
+        errors.dropoffCoordinates = 'Delivery location coordinates are required';
+    }
+
+    // Package validation
+    if (orderData.package?.weight?.value && orderData.package.weight.value < 0) {
+        errors.packageWeight = 'Package weight must be positive';
+    }
+    if (orderData.package?.value && orderData.package.value < 0) {
+        errors.packageValue = 'Package value must be positive';
+    }
+
+    // Contact information validation
+    if (orderData.pickup?.contactPerson?.phone && !isValidPhoneNumber(orderData.pickup.contactPerson.phone)) {
+        errors.pickupPhone = 'Invalid pickup contact phone number';
+    }
+    if (orderData.dropoff?.contactPerson?.phone && !isValidPhoneNumber(orderData.dropoff.contactPerson.phone)) {
+        errors.dropoffPhone = 'Invalid delivery contact phone number';
+    }
+
+    return {
+        isValid: Object.keys(errors).length === 0,
+        errors
+    };
+};
+
+/**
+ * Validate phone number format
+ * @param {string} phone - Phone number to validate
+ * @returns {boolean} - Whether the phone number is valid
+ */
+const isValidPhoneNumber = (phone) => {
+    // Basic Nigerian phone number validation
+    const phoneRegex = /^(\+234|234|0)?[789][01]\d{8}$/;
+    return phoneRegex.test(phone.replace(/\s+/g, ''));
+};
+
+/**
+ * Format currency amount
+ * @param {number} amount - Amount to format
+ * @param {string} currency - Currency code (default: NGN)
+ * @returns {string} - Formatted currency string
+ */
+export const formatCurrency = (amount, currency = 'NGN') => {
+    if (typeof amount !== 'number') return '₦0.00';
+
+    const formatter = new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+
+    return formatter.format(amount);
+};
+
+/**
+ * Generate a unique order reference
+ * @returns {string} - Order reference
+ */
+export const generateOrderRef = () => {
+    const prefix = 'ORD';
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substr(2, 4).toUpperCase();
+    return `${prefix}-${timestamp}-${random}`;
+};
+
+/**
+ * Generate a delivery token
+ * @returns {string} - Delivery token
+ */
+export const generateDeliveryToken = () => {
+    return Math.random().toString(36).substr(2, 8).toUpperCase();
+};
+
+export const timeAgo = (date) => {
+    const now = new Date();
+    const diff = now - new Date(date);
+    const seconds = Math.floor(diff / 1000);
+
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return `Yesterday`;
+    return `${days}d ago`;
+}

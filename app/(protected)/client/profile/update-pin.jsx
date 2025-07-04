@@ -1,9 +1,9 @@
-import PinVerificationEmail from "../../../../components/Client/Security/AuthPinSecurity/PinVerificationEmail";
+import PinVerificationEmail from "../../../../components/Client/Profile/Security/AuthPinSecurity/PinVerificationEmail";
 import {useSessionStore} from "../../../../store/useSessionStore";
 import {SafeAreaView, Text, TextInput, TouchableOpacity, View} from "react-native";
-import VerifyFirst from "../../../../components/Client/Security/AuthPinSecurity/VerifyFirst";
+import VerifyFirst from "../../../../components/Client/Profile/Security/AuthPinSecurity/VerifyFirst";
 import React, {useRef} from "react";
-import UpdatePin from "../../../../components/Client/Security/AuthPinSecurity/UpdatePin"
+import UpdatePin from "../../../../components/Client/Profile/Security/AuthPinSecurity/UpdatePin"
 
 
 

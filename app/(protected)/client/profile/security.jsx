@@ -1,5 +1,5 @@
 import React from 'react';
-import SecurityScreen from "../../../../components/Client/Security/SecurityScreen";
+import SecurityScreen from "../../../../components/Client/Profile/Security/SecurityScreen";
 
 
 function Security() {

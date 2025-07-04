@@ -19,6 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import {queryClient} from "../lib/queryClient";
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import 'react-native-get-random-values';
 
 SplashScreen.preventAutoHideAsync();
 

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
 import { useLinkBuilder, useTheme } from '@react-navigation/native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import {Ionicons, AntDesign, FontAwesome5 } from "@expo/vector-icons";
 import {useNotificationStore} from "../store/useNotificationStore";
 
 export function TabBar({ state, descriptors, navigation }) {
@@ -49,8 +49,8 @@ export function TabBar({ state, descriptors, navigation }) {
             filled: 'notifications-sharp',
         },
         orders: {
-            outline: 'clipboard-outline',
-            filled: 'clipboard',
+            outline: <AntDesign name="CodeSandbox" size={24} color="black" />,
+            filled: <FontAwesome5 name="box-open" size={24} color="black" />
         },
         wallet: {
             outline: 'wallet-outline',
@@ -110,11 +110,17 @@ export function TabBar({ state, descriptors, navigation }) {
                                 { transform: [{ scale }] },
                             ]}
                         >
-                            <Ionicons
-                                name={iconName}
-                                size={22}
-                                color={isFocused ? '#FFF' : colors.text}
-                            />
+                            {typeof iconName === 'string' ? (
+                                <Ionicons
+                                    name={iconName}
+                                    size={22}
+                                    color={isFocused ? '#FFF' : colors.text}
+                                />
+                            ) : (
+                                React.cloneElement(iconName, {
+                                    color: isFocused ? '#FFF' : colors.text
+                                })
+                            )}
                             {showBadge && (
                                 <View style={styles.badgeContainer}>
                                     <Text style={styles.badgeText}>

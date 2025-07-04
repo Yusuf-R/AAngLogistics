@@ -18,7 +18,7 @@ import SecureStorage from "../../../../lib/SecureStorage";
 import SessionManager from "../../../../lib/SessionManager";
 import { useSessionStore } from "../../../../store/useSessionStore";
 import ClientUtils from "../../../../utils/ClientUtilities";
-import SocketStatusMonitor from "../../../../components/Client/Security/Utility/SocketStatusMonitor";
+import SocketStatusMonitor from "../../../../components/Client/Profile/Security/Utility/SocketStatusMonitor";
 
 const { width } = Dimensions.get('window');
 

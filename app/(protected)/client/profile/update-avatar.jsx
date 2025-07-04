@@ -1,4 +1,4 @@
-import UpdateAvatar from "../../../../components/Client/Security/Profile/UpdateAvatar";
+import UpdateAvatar from "../../../../components/Client/Profile/Security/Profile/UpdateAvatar";
 import {useSessionStore} from "../../../../store/useSessionStore";
 
 

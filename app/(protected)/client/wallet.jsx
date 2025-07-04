@@ -5,7 +5,7 @@ function WalletScreen() {
     return (
         <>
             <View>
-                <Text> Wallet Tab </Text>
+                <Text className="text-center mt-10"> Wallet Screen </Text>
             </View>
         </>
     )

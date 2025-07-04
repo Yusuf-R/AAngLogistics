@@ -1,4 +1,4 @@
-import EditProfile from "../../../../components/Client/Security/Profile/EditProfile";
+import EditProfile from "../../../../components/Client/Profile/Security/Profile/EditProfile";
 import {useSessionStore} from "../../../../store/useSessionStore";
 
 function EditProfileScreen() {
