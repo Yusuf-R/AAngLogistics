@@ -5,9 +5,6 @@ import {useSessionStore} from "../../../../store/useSessionStore";
 
 function OrdersScreen() {
     const userData = useSessionStore((state) => state.user);
-    console.log({
-        userData,
-    })
 
     // Recent Order Mocks
     const [recentOrders, setRecentOrders] = useState([

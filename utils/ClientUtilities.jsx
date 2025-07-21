@@ -536,6 +536,23 @@ class ClientUtils {
     }
 
     /**************** Orders ******************/
+    static async InstantiateOrder() {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/order/instantiate',
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
     static async GetOrders() {
         try {
             const response = await axiosPrivate({
@@ -587,16 +604,42 @@ class ClientUtils {
         }
     }
 
+    // Image/Video preSigned url for S3 bucket
+    static async GetPresignedUrl(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/s3/presigned-url',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
 
-
-
-
-
-
-
-
-
-
+    static async DeleteFile(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "DELETE",
+                url: '/s3/delete',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error.response?.data?.error || 'Failed to delete file');
+        }
+    }
 
 }
 

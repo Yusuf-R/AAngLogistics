@@ -5,8 +5,7 @@ import {
     Text,
     Pressable,
     Animated,
-    Dimensions,
-    Platform
+    Dimensions
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -15,15 +14,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const FloatingActionPanel = ({
-                                 currentStep = 0,
-                                 totalSteps = 5,
-                                 onNext = () => {},
-                                 onPrevious = () => {},
-                                 onSubmit = () => {},
-                                 isLoading = false,
-                                 hasErrors = false
-                             }) => {
+function FloatingActionPanel ({
+                                 currentStep,
+                                 totalSteps,
+                                 onNext,
+                                 onPrevious,
+                                 onSubmit,
+                                 hasErrors,
+                             }) {
     const insets = useSafeAreaInsets();
     const slideAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -49,7 +47,6 @@ const FloatingActionPanel = ({
                 Animated.timing(scaleAnim, { toValue: 1.05, duration: 100, useNativeDriver: true }),
                 Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true })
             ]).start();
-
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             return;
         }
@@ -80,20 +77,11 @@ const FloatingActionPanel = ({
     };
 
     const getNextButtonText = () => {
-        if (isLastStep) {
-            return isLoading ? 'Creating...' : 'Create Order';
-        }
-        return 'Continue';
+        return isLastStep ? 'Submit Order' : 'Continue';
     };
 
     const getNextButtonColors = () => {
-        if (hasErrors) {
-            return ['#ef4444', '#dc2626'];
-        }
-        if (isLastStep) {
-            return ['#059669', '#047857'];
-        }
-        return ['#667eea', '#764ba2'];
+        return isLastStep ? ['#059669', '#047857'] : ['#62cff4', '#0396ff'];
     };
 
     return (
@@ -116,31 +104,24 @@ const FloatingActionPanel = ({
         >
             <BlurView intensity={20} style={styles.blurContainer}>
                 <View style={styles.content}>
-
-                    {/* Action Buttons */}
                     <View style={styles.buttonsContainer}>
-                        {/* Previous Button */}
+                        {/* Back Button */}
                         {!isFirstStep && (
                             <Pressable
                                 style={styles.previousButton}
                                 onPress={handlePrevious}
-                                disabled={isLoading}
                             >
-                                <View style={styles.previousButtonContent}>
-                                    <Text style={styles.previousButtonText}>Back</Text>
-                                </View>
+                                <Text style={styles.previousButtonText}>Back</Text>
                             </Pressable>
                         )}
 
-                        {/* Next/Submit Button */}
+                        {/* Continue/Submit Button */}
                         <Pressable
                             style={[
                                 styles.nextButton,
-                                isFirstStep && styles.nextButtonFullWidth,
-                                (isLoading || hasErrors) && styles.nextButtonDisabled
+                                isFirstStep && styles.nextButtonFullWidth
                             ]}
                             onPress={isLastStep ? handleSubmit : handleNext}
-                            disabled={isLoading}
                         >
                             <LinearGradient
                                 colors={getNextButtonColors()}
@@ -148,37 +129,18 @@ const FloatingActionPanel = ({
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                             >
-                                <View style={styles.nextButtonContent}>
-                                    {isLoading && (
-                                        <Animated.View style={styles.loadingSpinner} />
-                                    )}
-                                    <Text style={styles.nextButtonText}>
-                                        {getNextButtonText()}
-                                    </Text>
-                                    {!isLoading && !isLastStep && (
-                                        <Text style={styles.nextButtonIcon}>→</Text>
-                                    )}
-                                    {!isLoading && isLastStep && (
-                                        <Text style={styles.nextButtonIcon}>✓</Text>
-                                    )}
-                                </View>
+                                <Text style={styles.nextButtonText}>
+                                    {getNextButtonText()}
+                                </Text>
                             </LinearGradient>
                         </Pressable>
                     </View>
-
-                    {/* Error Message */}
-                    {/*{hasErrors && (*/}
-                    {/*    <View style={styles.errorContainer}>*/}
-                    {/*        <Text style={styles.errorText}>*/}
-                    {/*            Please fix the errors above before continuing*/}
-                    {/*        </Text>*/}
-                    {/*    </View>*/}
-                    {/*)}*/}
                 </View>
             </BlurView>
         </Animated.View>
     );
 };
+
 
 const styles = {
     container: {
@@ -192,36 +154,10 @@ const styles = {
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         overflow: 'hidden',
-        backgroundColor: Platform.OS === 'android' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
     },
     content: {
         paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 12
-    },
-    stepCounter: {
-        alignItems: 'center',
-        marginBottom: 16
-    },
-    stepCounterText: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#6b7280',
-        marginBottom: 8
-    },
-    stepDots: {
-        flexDirection: 'row',
-        alignItems: 'center'
-    },
-    stepDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: '#d1d5db',
-        marginHorizontal: 3
-    },
-    stepDotActive: {
-        backgroundColor: '#667eea'
+        paddingBottom: 12,
     },
     buttonsContainer: {
         flexDirection: 'row',
@@ -231,87 +167,40 @@ const styles = {
     previousButton: {
         flex: 1,
         marginRight: 12,
-        backgroundColor: '#f3f4f6',
-        borderRadius: 12,
-        paddingVertical: 14,
+        backgroundColor: '#d4dfed',
+        borderRadius: 30,
+        paddingVertical: 16,
         paddingHorizontal: 16
-    },
-    previousButtonContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    previousButtonIcon: {
-        fontSize: 16,
-        color: '#374151',
-        marginRight: 8
     },
     previousButtonText: {
         fontSize: 16,
-        fontWeight: '600',
-        color: '#374151'
+        color: '#000',
+        textAlign: 'center',
+        fontFamily: 'PoppinsRegular',
     },
     nextButton: {
         flex: 2,
-        borderRadius: 12,
+        borderRadius: 30,
         overflow: 'hidden',
         elevation: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.15,
-        shadowRadius: 8
+        shadowRadius: 8,
     },
     nextButtonFullWidth: {
         flex: 1,
         marginRight: 0
     },
-    nextButtonDisabled: {
-        elevation: 2,
-        shadowOpacity: 0.1
-    },
     nextButtonGradient: {
-        paddingVertical: 14,
+        paddingVertical: 16,
         paddingHorizontal: 16
-    },
-    nextButtonContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center'
     },
     nextButtonText: {
         fontSize: 16,
-        fontWeight: '600',
         color: '#ffffff',
+        fontFamily: 'PoppinsSemiBold',
         textAlign: 'center'
-    },
-    nextButtonIcon: {
-        fontSize: 16,
-        color: '#ffffff',
-        marginLeft: 8
-    },
-    loadingSpinner: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        borderWidth: 2,
-        borderColor: 'rgba(255, 255, 255, 0.3)',
-        borderTopColor: '#ffffff',
-        marginRight: 8
-    },
-    errorContainer: {
-        marginTop: 12,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        backgroundColor: '#fef2f2',
-        borderRadius: 8,
-        borderLeftWidth: 4,
-        borderLeftColor: '#ef4444'
-    },
-    errorText: {
-        fontSize: 12,
-        color: '#dc2626',
-        textAlign: 'center',
-        fontWeight: '500'
     }
 };
 

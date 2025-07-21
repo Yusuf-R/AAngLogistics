@@ -15,7 +15,6 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const ProgressIndicator = ({
                                steps = [],
                                currentStep = 0,
-                               onStepPress = () => {}
                            }) => {
     const progressAnim = useRef(new Animated.Value(0)).current;
     const dotScale = useRef(new Animated.Value(1)).current;
@@ -51,20 +50,13 @@ const ProgressIndicator = ({
         return 'inactive';
     };
 
-    const handleStepPress = (index) => {
-        if (index < currentStep) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onStepPress(index);
-        }
-    };
-
     const getStepIcon = (step, status) => {
         const iconConfig = {
-            'package': { active: 'cube', default: 'cube-outline' },
-            'map-pin': { active: 'location', default: 'location-outline' },
-            'truck': { active: 'car', default: 'car-outline' },
-            'credit-card': { active: 'card', default: 'card-outline' },
-            'check-circle': { active: 'checkmark-circle', default: 'checkmark-circle-outline' }
+            'package': {active: 'cube', default: 'cube-outline'},
+            'map-pin': {active: 'location', default: 'location-outline'},
+            'truck': {active: 'car', default: 'car-outline'},
+            'credit-card': {active: 'card', default: 'card-outline'},
+            'check-circle': {active: 'checkmark-circle', default: 'checkmark-circle-outline'}
         };
 
         const iconName = iconConfig[step.icon]?.[status === 'active' ? 'active' : 'default'] || 'ellipse-outline';
@@ -77,37 +69,30 @@ const ProgressIndicator = ({
         return (
             <Ionicons
                 name={iconName}
-                size={26}
+                size={28}
                 color={iconColor}
             />
         );
     };
 
     const StepDot = ({step, index, status}) => {
-        const isClickable = index < currentStep;
         const scale = index === currentStep ? dotScale : 1;
 
         return (
             <View style={styles.stepDotContainer}>
-                <Pressable
-                    onPress={() => handleStepPress(index)}
-                    disabled={!isClickable}
-                    accessibilityLabel={`Go to ${step.title} step`}
-                >
-                    <Animated.View style={[
-                        styles.stepDot,
-                        status === 'completed' && styles.stepDotCompleted,
-                        status === 'active' && styles.stepDotActive,
-                        status === 'inactive' && styles.stepDotInactive,
-                        {transform: [{scale}]}
-                    ]}>
-                        {status === 'completed' ? (
-                            <Ionicons name="checkmark" size={26} color="white"/>
-                        ) : (
-                            getStepIcon(step, status)
-                        )}
-                    </Animated.View>
-                </Pressable>
+                <Animated.View style={[
+                    styles.stepDot,
+                    status === 'completed' && styles.stepDotCompleted,
+                    status === 'active' && styles.stepDotActive,
+                    status === 'inactive' && styles.stepDotInactive,
+                    {transform: [{scale}]}
+                ]}>
+                    {status === 'completed' ? (
+                        <Ionicons name="checkmark" size={26} color="white"/>
+                    ) : (
+                        getStepIcon(step, status)
+                    )}
+                </Animated.View>
             </View>
         );
     };
@@ -178,8 +163,6 @@ const ProgressIndicator = ({
 
 const styles = StyleSheet.create({
     container: {
-        paddingVertical: 2,
-        paddingHorizontal: 10,
         backgroundColor: 'white',
     },
     stepsRow: {
@@ -197,10 +180,10 @@ const styles = StyleSheet.create({
     stepDot: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 50,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 4,
+        marginBottom: 2,
         shadowColor: '#000',
         shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
@@ -226,7 +209,7 @@ const styles = StyleSheet.create({
     },
     stepLabelCompleted: {
         color: '#10b981',
-        fontWeight: '500',
+        fontWeight: '600',
     },
     stepLabelActive: {
         color: '#3b82f6',
@@ -238,10 +221,11 @@ const styles = StyleSheet.create({
     progressLineContainer: {
         position: 'absolute',
         left: 0,
-        right: 0,
-        top: 16, // Half of dot height
+        right: 5,
+        top: 20,
         height: 2,
-        zIndex: 1, // Behind the dots
+        zIndex: 1,
+
     },
     progressLineBackground: {
         flex: 1,

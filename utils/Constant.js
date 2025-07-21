@@ -65,6 +65,7 @@ export const ROUTES = {
 
     // Add other nested routes here
     'ORDER-CREATE': '/client/orders/create',
+    'ORDER-MANAGE': '/client/orders/manage',
 };
 
 // Explicit list of routes where Tab Bar should appear
@@ -94,6 +95,7 @@ export const TAB_BAR_HIDDEN_EXCEPTIONS = [
     '/client/profile/utility',
     //  ORDERS
     '/client/orders/create',
+    '/client/orders/manage',
 
 
 ];
@@ -1366,8 +1368,57 @@ export const serviceFeatures = [
 ];
 
 
+
 // Order Utilities
 // orderUtils.js - Utility functions for order creation
+export const ORDER_TYPES = [
+    {
+        id: 'instant',
+        title: 'Send Now',
+        subtitle: 'Immediate pickup',
+        icon: 'flash',
+        color: ['#ff6b6b', '#ee5a24'],
+        popular: true
+    },
+    {
+        id: 'scheduled',
+        title: 'Schedule',
+        subtitle: 'Pick a time',
+        icon: 'time',
+        color: ['#667eea', '#764ba2']
+    },
+    {
+        id: 'recurring',
+        title: 'Recurring',
+        subtitle: 'Regular deliveries',
+        icon: 'repeat',
+        color: ['#2ecc71', '#27ae60']
+    }
+];
+
+export const ORDER_STEPS = [
+    {id: 'type', title: 'Type', icon: 'package'},
+    {id: 'locations', title: 'Locations', icon: 'map-pin'},
+    {id: 'vehicle', title: 'Vehicle', icon: 'truck'},
+    {id: 'review', title: 'Review', icon: 'check-circle'},
+    {id: 'payment', title: 'Payment', icon: 'credit-card'},
+]
+
+export const PACKAGE_CATEGORIES = [
+    {id: 'document', title: 'Documents', icon: 'document-text', color: '#3b82f6'},
+    {id: 'parcel', title: 'Parcel', icon: 'cube', color: '#8b5cf6'},
+    {id: 'food', title: 'Food', icon: 'restaurant', color: '#f59e0b'},
+    {id: 'clothing', title: 'Clothing', icon: 'shirt', color: '#f472b6'},
+    {id: 'furniture', title: 'Furniture', icon: 'bed', color: '#f97316'},
+    {id: 'electronics', title: 'Electronics', icon: 'phone-portrait', color: '#06b6d4'},
+    {id: 'jewelry', title: 'Jewelry', icon: 'diamond', color: '#facc15'},
+    {id: 'gifts', title: 'Gifts', icon: 'gift', color: '#f43f5e'},
+    {id: 'books', title: 'Books', icon: 'book', color: '#8b5cf6'},
+    {id: 'fragile', title: 'Fragile', icon: 'warning', color: '#ef4444'},
+    {id: 'medicine', title: 'Medicine', icon: 'medical', color: '#10b981'},
+    {id: 'others', title: 'Others', icon: 'ellipsis-horizontal', color: '#9ca3af'}
+];
+
 
 
 /**

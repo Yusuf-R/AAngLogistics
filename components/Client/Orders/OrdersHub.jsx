@@ -99,19 +99,19 @@ const OrdersHub = ({
             colors: ['#7C3AED', '#5B21B6'],
             action: () => router.push('/client/orders/create')
         },
-        // {
-        //     id: 'rates',
-        //     title: 'Check Rates',
-        //     icon: BarChart3,
-        //     colors: ['#3B82F6', '#1D4ED8'],
-        //     action: () => navigation?.navigate('CheckRates')
-        // },
+        {
+            id: 'rates',
+            title: 'Rates',
+            icon: BarChart3,
+            colors: ['#10A1A6', '#5E5AE4'],
+            action: () => router.push('/client/orders/manage')
+        },
         {
             id: 'pickup',
             title: 'Manage',
             icon: Truck,
             colors: ['#3B82F6', '#1D4ED8'],
-            action: () => router.push('/client/orders/create')
+            action: () => router.push('/client/orders/manage')
         },
 
         {
@@ -477,7 +477,7 @@ const OrdersHub = ({
                 <View style={[styles.fabContainer, {bottom: insets.bottom + 20}]}>
                     <Pressable
                         style={styles.fab}
-                        onPress={() => handleCardPress('fab', onCreateOrder)}
+                        onPress={() =>  router.push('/client/orders/create')}
                     >
                         <LinearGradient
                             colors={['#3B82F6', '#1D4ED8']}
