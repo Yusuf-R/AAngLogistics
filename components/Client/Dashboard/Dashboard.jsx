@@ -131,10 +131,10 @@ const TransactionHistory = ({ transactions, onSeeAll }) => (
 // Main Dashboard Component
 function Dashboard ({userData}) {
     const [user] = useState({
-        name: userData.fullName,
-        balance: userData.walletBalance || 0,
-        cardNumber: userData.cardNumber || '1234 5678 9012 3456',
-        avatar: userData.avatar || null
+        name: userData?.fullName || null,
+        balance: userData?.walletBalance || 0,
+        cardNumber: userData?.cardNumber || '1234 5678 9012 3456',
+        avatar: userData?.avatar || null
     });
 
     const [transactions] = useState([

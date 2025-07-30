@@ -553,11 +553,48 @@ class ClientUtils {
         }
     }
 
+    static async GetAllClientOrders() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/order/all',
+            });
+            if (response.status === 200) {
+                console.log({axiosData: response.data});
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
     static async GetOrders() {
         try {
             const response = await axiosPrivate({
                 method: "GET",
                 url: '/order/get',
+            });
+            if (response.status === 200) {
+
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async DeleteOrder(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "DELETE",
+                url: '/order/delete',
+                data: obj,
             });
             if (response.status === 200) {
                 return response.data;

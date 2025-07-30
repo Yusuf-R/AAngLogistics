@@ -66,6 +66,7 @@ export const ROUTES = {
     // Add other nested routes here
     'ORDER-CREATE': '/client/orders/create',
     'ORDER-MANAGE': '/client/orders/manage',
+    'ORDER-VIEW': '/client/orders/view',
 };
 
 // Explicit list of routes where Tab Bar should appear
@@ -96,6 +97,7 @@ export const TAB_BAR_HIDDEN_EXCEPTIONS = [
     //  ORDERS
     '/client/orders/create',
     '/client/orders/manage',
+    '/client/orders/view',
 
 
 ];

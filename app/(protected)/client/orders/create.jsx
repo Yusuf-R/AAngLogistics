@@ -1,14 +1,13 @@
 import { useEffect } from "react";
 import {ActivityIndicator, SafeAreaView, Text, StyleSheet, Pressable} from "react-native";
 import { useQuery } from "@tanstack/react-query";
+import {queryClient} from "../../../../lib/queryClient"
 import { useSessionStore } from "../../../../store/useSessionStore";
 import ClientUtils from "../../../../utils/ClientUtilities";
 import SessionManager from "../../../../lib/SessionManager";
 import OrderCreationFlow from "../../../../components/Client/Orders/OrderCreation";
 
 function CreateOrder() {
-    const userData = useSessionStore((state) => state.user);
-    const setUser = useSessionStore((state) => state.setUser);
 
     const {
         data,
@@ -25,16 +24,17 @@ function CreateOrder() {
     useEffect(() => {
         const syncUserSession = async () => {
             if (isSuccess && data) {
-                const { user } = data;
+                const { user, order } = data;
+                // Update user session
                 await SessionManager.updateUser(user);
-                setUser(user);
+                await SessionManager.updateAllOrderData(order);
+                console.log('✅ Order data cache cleared - fresh data will be fetched on next manage screen visit');
             }
         };
-
         syncUserSession();
-    }, [isSuccess, data]);
+    }, [isSuccess, data, ]);
 
-    if (isLoading || !userData) {
+    if (isLoading) {
         return (
             <SafeAreaView style={styles.centeredContainer}>
                 <ActivityIndicator size="large" color="#3B82F6" />
@@ -60,7 +60,7 @@ function CreateOrder() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-            <OrderCreationFlow userData={userData} />
+            <OrderCreationFlow/>
         </SafeAreaView>
     );
 }

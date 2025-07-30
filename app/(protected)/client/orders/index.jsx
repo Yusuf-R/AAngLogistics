@@ -1,42 +1,93 @@
-import React, {useState, useEffect, useCallback} from 'react';
-import {Text, StyleSheet, View, SafeAreaView, Alert, StatusBar} from "react-native";
+import React, { useState, useEffect } from 'react';
+import {
+    Text,
+    StyleSheet,
+    View,
+    SafeAreaView,
+    Alert,
+    StatusBar,
+    ActivityIndicator,
+    Pressable
+} from "react-native";
 import OrdersHub from "../../../../components/Client/Orders/OrdersHub";
-import {useSessionStore} from "../../../../store/useSessionStore";
+import { useSessionStore } from "../../../../store/useSessionStore";
+import { useQuery } from "@tanstack/react-query";
+import ClientUtils from "../../../../utils/ClientUtilities";
+import SessionManager from "../../../../lib/SessionManager";
 
 function OrdersScreen() {
     const userData = useSessionStore((state) => state.user);
+    const allOrderData = useSessionStore((state) => state.allOrderData);
 
-    // Recent Order Mocks
-    const [recentOrders, setRecentOrders] = useState([
-        {
-            id: '1',
-            orderType: 'instant',
-            package: {category: 'document', description: 'Legal documents'},
-            pickup: {address: 'Home'},
-            dropoff: {address: 'Law Office'},
-            createdAt: new Date(Date.now() - 86400000) // 1 day ago
-        },
-        {
-            id: '2',
-            orderType: 'scheduled',
-            package: {category: 'parcel', description: 'Birthday gift'},
-            pickup: {address: 'Shopping Mall'},
-            dropoff: {address: 'Friend\'s House'},
-            createdAt: new Date(Date.now() - 172800000) // 2 days ago
+    const {
+        data,
+        isLoading,
+        isError,
+        error,
+    } = useQuery({
+        queryKey: ["GetAllClientOrder"],
+        queryFn: ClientUtils.GetAllClientOrders,
+        enabled: !allOrderData,
+        staleTime: Infinity,
+        cacheTime: Infinity,
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        retry: 2,
+    });
+
+    useEffect(() => {
+        if (data?.order?.orders && data?.order?.statistics) {
+            SessionManager.updateAllOrderData(data.order);
         }
-    ]);
+    }, [data]);
+    // Manual refresh (used by OrdersHub when e.g. a new draft is saved)
+    const handleManualRefresh = async () => {
+        try {
+            const updated = await ClientUtils.GetAllClientOrders();
+            if (updated?.orders) {
+                await SessionManager.updateAllOrderData(updated.orders); // handles everything
+            }
+        } catch (err) {
+            console.log("🔁 Manual refresh failed:", err);
+        }
+    };
+
+    const isInitialLoading = isLoading && !allOrderData;
+
+    if (isInitialLoading || !userData) {
+        return (
+            <SafeAreaView style={styles.centeredContainer}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text style={styles.loadingText}>Loading your orders...</Text>
+            </SafeAreaView>
+        );
+    }
+
+    if (isError && !allOrderData) {
+        return (
+            <SafeAreaView style={styles.centeredContainer}>
+                <Text style={styles.errorTitle}>😓 Something went wrong</Text>
+                <Text style={styles.errorMessage}>
+                    {error?.message || "Unable to load your orders. Please check your connection."}
+                </Text>
+                <Pressable style={styles.retryButton} onPress={handleManualRefresh}>
+                    <Text style={styles.retryButtonText}>Retry</Text>
+                </Pressable>
+            </SafeAreaView>
+        );
+    }
 
     return (
-        <>
-            <SafeAreaView style={styles.container}>
-                <StatusBar barStyle="dark-content"/>
-                <OrdersHub
-                    userData={userData}
-                    recentOrders={recentOrders}
-                    onRecentOrdersChange={setRecentOrders}
-                />
-            </SafeAreaView>
-        </>
+        <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="dark-content" />
+            <OrdersHub
+                userData={userData}
+                allOrderData={allOrderData}
+                onRefresh={handleManualRefresh}
+                isRefreshing={isLoading && !!allOrderData}
+            />
+        </SafeAreaView>
     );
 }
 
@@ -44,6 +95,41 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
+    },
+    centeredContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        paddingHorizontal: 24,
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 16,
+        color: '#333',
+    },
+    errorTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#dc2626',
+        marginBottom: 8,
+    },
+    errorMessage: {
+        fontSize: 14,
+        color: '#555',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    retryButton: {
+        backgroundColor: '#3B82F6',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: '#fff',
+        fontWeight: '600',
+        fontSize: 16,
     },
 });
 

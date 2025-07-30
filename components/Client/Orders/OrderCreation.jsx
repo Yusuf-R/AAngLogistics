@@ -1,37 +1,44 @@
 // OrderCreationFlow.js - Enhanced Main orchestrator component
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, {useCallback, useRef, useState} from 'react';
 import {
-    View,
-    Text,
+    Alert,
     Animated,
     Dimensions,
-    StatusBar,
     KeyboardAvoidingView,
     Platform,
+    StatusBar,
     StyleSheet,
-    Alert
+    Text,
+    View
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import {LinearGradient} from 'expo-linear-gradient';
+import {BlurView} from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from "expo-router";
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useRouter} from "expo-router";
 
 // Import utilities
-import {
-    ORDER_STEPS
-} from '../../../utils/Constant'
+import {ORDER_STEPS} from '../../../utils/Constant'
 
 // Import components
 import ProgressIndicator from './ProgressIndicator';
 import FloatingActionPanel from './FloatingActionPanel';
 import CustomHeader from "../CustomHeader";
 import Step1 from "./Step1";
+import {useOrderStore} from "../../../store/useOrderStore";
+import {useSessionStore} from "../../../store/useSessionStore";
 
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-function OrderCreationFlow({userData}) {
+function OrderCreationFlow() {
+    // Zustand store actions
+    const userData = useSessionStore((state) => state.user);
+    const allOrderData = useSessionStore((state) => state.allOrderData);
+
+    const addOrder = useOrderStore(state => state.addOrder);
+    const saveDraftProgress = useOrderStore(state => state.saveDraftProgress);
+
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const [orderData, setOrderData] = useState({
@@ -39,6 +46,7 @@ function OrderCreationFlow({userData}) {
         orderType: 'instant',
         priority: 'normal',
         scheduledPickup: null,
+        status: 'draft',
 
         // Package details
         package: {
@@ -52,6 +60,7 @@ function OrderCreationFlow({userData}) {
             description: '',
             specialInstructions: '',
             images: [],
+            video: ''
         },
 
         // Location details
@@ -86,16 +95,24 @@ function OrderCreationFlow({userData}) {
         // Metadata
         metadata: {
             channel: 'mobile',
-            createdBy: 'client'
+            createdBy: 'client',
+            draftProgress: {
+                step: 0,
+                lastSaved: null,
+                completedSteps: []
+            }
         }
     });
 
     // Step refs for validation access
     const stepRefs = useRef(Array(ORDER_STEPS.length).fill(null).map(() => React.createRef()));
+
     // Core state management
     const [currentStep, setCurrentStep] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [hasErrors, setHasErrors] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [orderId, setOrderId] = useState(userData.orderData._id);
 
     const goToNextStep = useCallback(async () => {
         if (currentStep >= ORDER_STEPS.length - 1) {
@@ -164,6 +181,71 @@ function OrderCreationFlow({userData}) {
         }
     }, [currentStep, orderData, router]);
 
+    const validateCurrentStep = async () => {
+        const currentStepRef = stepRefs.current[currentStep];
+        if (!currentStepRef || !currentStepRef.submit) {
+            return { valid: false, data: null };
+        }
+
+        return await currentStepRef.submit();
+    };
+
+    const saveCurrentProgress = useCallback(async () => {
+        setIsSaving(true);
+
+        try {
+            // Validate current step
+            const result = await validateCurrentStep();
+
+            if (!result.valid) {
+                setHasErrors(true);
+                throw new Error('Please fix errors before saving');
+            }
+
+            // Merge current step data
+            const updatedOrderData = {
+                ...orderData,
+                ...result.data,
+                metadata: {
+                    ...orderData.metadata,
+                    draftProgress: {
+                        step: currentStep,
+                        lastSaved: new Date().toISOString(),
+                        completedSteps: [...new Set([...orderData.metadata.draftProgress.completedSteps, currentStep])]
+                    }
+                }
+            };
+
+            setOrderData(updatedOrderData);
+
+            // Save to store (this could also make an API call)
+            if (orderId) {
+                saveDraftProgress(orderId, {
+                    orderData: updatedOrderData,
+                    step: currentStep,
+                    lastSaved: new Date().toISOString()
+                });
+
+                // If this is the first save, add to orders list
+                if (currentStep === 0 && !orderData.metadata.draftProgress.lastSaved) {
+                    addOrder({
+                        _id: orderId,
+                        orderRef: `ORD-${orderId.split('_')[1]}`,
+                        ...updatedOrderData
+                    });
+                }
+            }
+
+            setHasErrors(false);
+
+        } catch (error) {
+            console.error('❌ Save failed:', error);
+            throw error;
+        } finally {
+            setIsSaving(false);
+        }
+    }, [currentStep, orderData, orderId, saveDraftProgress, addOrder]);
+
     const renderStep = () => {
         const stepProps = {
             ref: (el) => {
@@ -180,6 +262,8 @@ function OrderCreationFlow({userData}) {
         }
     };
 
+    // Determine if save is enabled (no errors in current step)
+    const saveEnabled = !hasErrors;
     return (
         <>
             <View style={styles.container}>
@@ -215,12 +299,14 @@ function OrderCreationFlow({userData}) {
                 <FloatingActionPanel
                     onNext={goToNextStep}
                     onPrevious={goToPreviousStep}
+                    onSave={saveCurrentProgress}
                     totalSteps={ORDER_STEPS.length}
                     currentStep={currentStep}
                     hasErrors={hasErrors}
                     onSubmit={submitOrder}
+                    isSaving={isSaving}
+                    saveEnabled={saveEnabled}
                 />
-
                 {/* Loading Overlay */}
                 {isLoading && (
                     <BlurView intensity={20} style={styles.loadingOverlay}>

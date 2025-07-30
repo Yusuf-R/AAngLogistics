@@ -34,6 +34,13 @@ export default function OrdersLayout() {
                         headerShown: false
                     }}
                 />
+
+                <Stack.Screen
+                    name="view"
+                    options={{
+                        headerShown: false
+                    }}
+                />
             </Stack>
         </>
     );

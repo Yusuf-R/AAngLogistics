@@ -6,16 +6,19 @@ export const useSessionStore = create((set) => ({
     token: null,
     role: null,
     onboarded: null,
+    allOrderData: null,
 
     // Load session from SecureStorage on app start
     loadSession: async () => {
-        const [user, token, role, onboarded, refToken] = await Promise.all([
+        const [user, token, role, onboarded, refToken, allOrderData] = await Promise.all([
             SecureStorage.getUserData(),
             SecureStorage.getAccessToken(),
             SecureStorage.getRole(),
-            SecureStorage.hasOnboarded()
+            SecureStorage.hasOnboarded(),
+            SecureStorage.getRefreshToken(),
+            SecureStorage.getAllOrderData(),
         ]);
-        set({ user, token, role, onboarded, refToken });
+        set({ user, token, role, onboarded, refToken, allOrderData });
     },
 
     getCurrentSession: async () => {
@@ -40,6 +43,9 @@ export const useSessionStore = create((set) => ({
     setRole: (role) => set({ role }),
     setOnboarded: (value) => set({ onboarded: value }),
 
+    // Add setter for allOrderData
+    setAllOrderData: (allOrderData) => set({ allOrderData }),
+
     // Logout
-    clearSession: () => set({ user: null, token: null }),
+    clearSession: () => set({ user: null, token: null, allOrderData: null }),
 }));

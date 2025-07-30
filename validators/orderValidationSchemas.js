@@ -26,22 +26,22 @@ export const stepOneSchema = Yup.object().shape({
 
         weight: Yup.object().shape({
             value: Yup.number()
+                .typeError('Please enter a valid weight')
                 .positive('Weight must be positive')
-                .max(1000, 'Weight cannot exceed 1000kg'),
+                .max(1000, 'Weight cannot exceed 1000kg')
+                .required('Weight is required'),
             unit: Yup.string().oneOf(['kg', 'g'])
         }),
 
         value: Yup.number()
+            .typeError('Weight must be a number')
             .min(0, 'Value cannot be negative')
             .max(10000000, 'Value cannot exceed 10,000,000'),
 
         isFragile: Yup.boolean(),
 
         requiresSpecialHandling: Yup.boolean(),
-
-        specialInstructions: Yup.string()
-            .max(300, 'Special instructions cannot exceed 300 characters'),
-
+        specialInstructions: Yup.string().min(3, 'Special Instruction too short.').required('Please enter any instruction.'),
         images: Yup.array()
             .min(2, 'At least 2 images are required')
             .max(6, 'Maximum 6 images allowed'),

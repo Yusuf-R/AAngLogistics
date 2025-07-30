@@ -40,21 +40,39 @@ import {
     ChevronRight
 } from 'lucide-react-native';
 import {useNavigation} from "@react-navigation/native";
-import { router } from "expo-router";
+import {router} from "expo-router";
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
+// Recent Order Mocks (can be dynamic later)
+const recentOrders = [
+    {
+        id: '1',
+        orderType: 'instant',
+        package: { category: 'document', description: 'Legal documents' },
+        pickup: { address: 'Home' },
+        dropoff: { address: 'Law Office' },
+        createdAt: new Date(Date.now() - 86400000)
+    },
+    {
+        id: '2',
+        orderType: 'scheduled',
+        package: { category: 'parcel', description: 'Birthday gift' },
+        pickup: { address: 'Shopping Mall' },
+        dropoff: { address: 'Friend\'s House' },
+        createdAt: new Date(Date.now() - 172800000)
+    }
+];
+
 const OrdersHub = ({
                        userData,
-                       userStats = {totalOrders: 24, activeOrders: 2, completedOrders: 22},
-                       recentOrders = [],
-                       onTrackOrder = null
+                       allOrderData,
+                       onRefreshData = null,
+                       isRefreshing = false,
                    }) => {
-    const navigation = useNavigation();
     const insets = useSafeAreaInsets();
     const [activeCard, setActiveCard] = useState(null);
     const [greeting, setGreeting] = useState('');
-    const [refreshing, setRefreshing] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState('');
     const scrollY = useRef(new Animated.Value(0)).current;
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -113,7 +131,6 @@ const OrdersHub = ({
             colors: ['#3B82F6', '#1D4ED8'],
             action: () => router.push('/client/orders/manage')
         },
-
         {
             id: 'history',
             title: 'History',
@@ -159,7 +176,6 @@ const OrdersHub = ({
     const handleCardPress = async (cardId, action) => {
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         setActiveCard(cardId);
-
         setTimeout(() => {
             setActiveCard(null);
             if (action) action();
@@ -169,22 +185,15 @@ const OrdersHub = ({
     const handleTrackSearch = async () => {
         if (trackingNumber.trim()) {
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            // Handle tracking search
-            if (onTrackOrder) {
-                onTrackOrder(trackingNumber);
-            } else {
-                navigation?.navigate('TrackOrder', {trackingNumber});
-            }
+           console.log('Coming Soon');
         }
     };
 
     const onRefresh = async () => {
-        setRefreshing(true);
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        // Simulate refresh - replace with actual data fetching
-        setTimeout(() => {
-            setRefreshing(false);
-        }, 1000);
+        if (typeof onRefreshData === 'function') {
+            await onRefreshData();
+        }
     };
 
     const headerOpacity = scrollY.interpolate({
@@ -266,7 +275,7 @@ const OrdersHub = ({
                     style={styles.scrollView}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh}/>
+                        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh}/>
                     }
                     onScroll={Animated.event(
                         [{nativeEvent: {contentOffset: {y: scrollY}}}],
@@ -287,7 +296,7 @@ const OrdersHub = ({
                         <View style={styles.statsGrid}>
                             <View style={styles.statCard}>
                                 <View style={styles.statContent}>
-                                    <Text style={styles.statNumber}>{userStats.totalOrders}</Text>
+                                    <Text style={styles.statNumber}>{allOrderData.statistics.total}</Text>
                                     <Text style={styles.statLabel}>Total Orders</Text>
                                 </View>
                                 <View style={[styles.statIcon, {backgroundColor: '#EBF4FF'}]}>
@@ -298,7 +307,7 @@ const OrdersHub = ({
                             <View style={styles.statCard}>
                                 <View style={styles.statContent}>
                                     <Text style={[styles.statNumber, {color: '#10B981'}]}>
-                                        {userStats.activeOrders}
+                                        {allOrderData.statistics.active}
                                     </Text>
                                     <Text style={styles.statLabel}>Active</Text>
                                 </View>
@@ -310,7 +319,7 @@ const OrdersHub = ({
                             <View style={styles.statCard}>
                                 <View style={styles.statContent}>
                                     <Text style={[styles.statNumber, {color: '#8B5CF6'}]}>
-                                        {userStats.completedOrders}
+                                        {allOrderData.statistics.completed}
                                     </Text>
                                     <Text style={styles.statLabel}>Completed</Text>
                                 </View>
@@ -326,7 +335,6 @@ const OrdersHub = ({
                         <View style={styles.trackingCard}>
                             <LinearGradient
                                 colors={['#3B82F6', '#1D4ED8']}
-
                                 style={styles.trackingGradient}
                                 start={{x: 0, y: 0}}
                                 end={{x: 1, y: 1}}
@@ -477,7 +485,7 @@ const OrdersHub = ({
                 <View style={[styles.fabContainer, {bottom: insets.bottom + 20}]}>
                     <Pressable
                         style={styles.fab}
-                        onPress={() =>  router.push('/client/orders/create')}
+                        onPress={() => router.push('/client/orders/create')}
                     >
                         <LinearGradient
                             colors={['#3B82F6', '#1D4ED8']}

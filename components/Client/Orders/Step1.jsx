@@ -1,4 +1,4 @@
-// components/Step1.js
+// components/Step1.jsx
 import React, {useState, forwardRef, useImperativeHandle, useRef} from 'react';
 import {
     View,
@@ -44,7 +44,8 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                 isFragile: defaultValues.package?.isFragile || false,
                 requiresSpecialHandling: defaultValues.package?.requiresSpecialHandling || false,
                 specialInstructions: defaultValues.package?.specialInstructions || "",
-                images: defaultValues.package?.images || []
+                images: defaultValues.package?.images || [],
+                video: defaultValues.package?.video || null,
             },
         },
         resolver: yupResolver(stepOneSchema),
