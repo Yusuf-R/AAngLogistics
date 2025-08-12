@@ -553,6 +553,42 @@ class ClientUtils {
         }
     }
 
+    static async SaveDraft(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PATCH",
+                url: '/order/save',
+                data: obj,
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async SubmitOrder(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PATCH",
+                url: '/order/submit',
+                data: obj,
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
     static async GetAllClientOrders() {
         try {
             const response = await axiosPrivate({

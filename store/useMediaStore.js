@@ -14,6 +14,8 @@ const useMediaStore = create((set, get) => ({
     })),
 
     setVideo: (video) => set({ video }),
+    setImages: (images) => set({ images }),
+
 
     clearVideo: () => set({ video: null }),
 
@@ -22,7 +24,7 @@ const useMediaStore = create((set, get) => ({
     // Helper to check if media requirements are met
     isMediaValid: () => {
         const { images } = get();
-        return images.length >= 2; // At least 2 images required
+        return images.length >= 1; // At least 2 images required
     },
 
     // Get media summary for form validation
@@ -31,7 +33,7 @@ const useMediaStore = create((set, get) => ({
         return {
             imageCount: images.length,
             hasVideo: !!video,
-            isValid: images.length >= 2
+            isValid: images.length >= 1
         };
     }
 }));

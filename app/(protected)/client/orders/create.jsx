@@ -6,6 +6,7 @@ import { useSessionStore } from "../../../../store/useSessionStore";
 import ClientUtils from "../../../../utils/ClientUtilities";
 import SessionManager from "../../../../lib/SessionManager";
 import OrderCreationFlow from "../../../../components/Client/Orders/OrderCreation";
+import {useOrderStore} from "../../../../store/useOrderStore";
 
 function CreateOrder() {
 
@@ -24,10 +25,11 @@ function CreateOrder() {
     useEffect(() => {
         const syncUserSession = async () => {
             if (isSuccess && data) {
-                const { user, order } = data;
+                const { order } = data;
                 // Update user session
-                await SessionManager.updateUser(user);
                 await SessionManager.updateAllOrderData(order);
+                useOrderStore.getState().initDraft(order.orderData);
+                // could we have instead even store this orderData in our zustand useOrderStore?
                 console.log('✅ Order data cache cleared - fresh data will be fetched on next manage screen visit');
             }
         };

@@ -17,6 +17,7 @@ import SessionManager from "../../../../lib/SessionManager";
 
 function OrdersScreen() {
     const userData = useSessionStore((state) => state.user);
+
     const allOrderData = useSessionStore((state) => state.allOrderData);
 
     const {
@@ -53,9 +54,8 @@ function OrdersScreen() {
         }
     };
 
-    const isInitialLoading = isLoading && !allOrderData;
 
-    if (isInitialLoading || !userData) {
+    if (isLoading || !userData ||  !allOrderData) {
         return (
             <SafeAreaView style={styles.centeredContainer}>
                 <ActivityIndicator size="large" color="#3B82F6" />

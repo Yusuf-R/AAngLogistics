@@ -37,10 +37,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
     // Zustand store
     const {
         setSelectedOrder,
-        updateOrderStatus,
-        removeOrder,
         canResumeOrder,
-        getDraftProgress
     } = useOrderStore();
 
     // ✅ Enhanced filtering logic
@@ -81,17 +78,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
     };
 
     const handleResumeOrder = (order) => {
-        const progress = getDraftProgress(order._id);
-        const currentStep = progress?.step || 1;
-
-        setSelectedOrder(order);
-        router.push({
-            pathname: '/(protected)/client/orders/create',
-            params: {
-                resumeOrderId: order._id,
-                step: currentStep.toString()
-            }
-        });
+        console.log('To be determined')
     };
 
     // delete order operations
@@ -161,7 +148,6 @@ function ManageOrder({ allOrderData, onRefreshData }) {
 
         try {
             // await cancelOrder(order._id);
-            updateOrderStatus(order._id, 'cancelled');
 
             setModalConfig(prev => ({
                 ...prev,

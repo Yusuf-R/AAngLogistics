@@ -142,7 +142,7 @@ const MediaImageUploader = ({orderId}) => {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         } catch (error) {
-            console.error('Upload error:', error);
+            console.log('Upload error:', error);
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             Alert.alert(
                 'Upload Failed',
@@ -154,37 +154,6 @@ const MediaImageUploader = ({orderId}) => {
             setUploading(false);
         }
     }, [orderId, addImage]);
-
-    // const handleDeleteImage = useCallback(async (imageKey, imageName = 'image') => {
-    //     Alert.alert(
-    //         'Delete Image',
-    //         `Are you sure you want to delete this ${imageName}?`,
-    //         [
-    //             {text: 'Cancel', style: 'cancel'},
-    //             {
-    //                 text: 'Delete',
-    //                 style: 'destructive',
-    //                 onPress: async () => {
-    //                     try {
-    //                         // Delete from S3
-    //                         await ClientUtils.DeleteFile({key: imageKey});
-    //                         removeImage(imageKey);
-    //                         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    //
-    //                         // Close modal if deleting current selected image
-    //                         if (selectedImage?.key === imageKey) {
-    //                             setModalVisible(false);
-    //                             setSelectedImage(null);
-    //                         }
-    //                     } catch (error) {
-    //                         console.error('Delete error:', error);
-    //                         Alert.alert('Delete Failed', 'Failed to delete image. Please try again.');
-    //                     }
-    //                 },
-    //             },
-    //         ]
-    //     );
-    // }, [removeImage, selectedImage]);
 
     const handleDeleteImage = useCallback(async (imageKey, imageName = 'image') => {
         Alert.alert(

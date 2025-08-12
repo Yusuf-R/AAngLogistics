@@ -1,5 +1,5 @@
 // components/MediaVideoUploader.js
-import React, { useState, useCallback, useMemo } from 'react';
+import React, {useState, useCallback, useMemo, useEffect} from 'react';
 import {
     View,
     Text,
@@ -10,58 +10,53 @@ import {
     Dimensions,
     ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {Ionicons} from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Video, ResizeMode } from 'expo-av';
-import { LinearGradient } from 'expo-linear-gradient';
+import {useVideoPlayer, VideoView} from 'expo-video'
+import {LinearGradient} from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as FileSystem from 'expo-file-system';
 import useMediaStore from '../../../store/useMediaStore';
 import ClientUtils from "../../../utils/ClientUtilities";
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
-const MediaVideoUploader = ({ orderId }) => {
+const MediaVideoUploader = ({orderId}) => {
     const [uploading, setUploading] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
     const [previewVideo, setPreviewVideo] = useState(null);
     const [showPreviewModal, setShowPreviewModal] = useState(false);
-    const { video, setVideo, clearVideo } = useMediaStore();
+    const {video, setVideo, clearVideo} = useMediaStore();
+
+    // ADD these new state variables for video players
+    const previewPlayer = useVideoPlayer(video?.localUri || null, player => {
+        player.loop = false;
+        player.muted = false;
+    });
+
+    const modalPlayer = useVideoPlayer(video?.localUri || null, player => {
+        player.loop = false;
+        player.muted = false;
+    });
+
+    const confirmPlayer = useVideoPlayer(previewVideo?.uri || null, player => {
+        player.loop = true;
+        player.muted = false;
+    });
+
 
     // Memoized values for performance
     const hasVideo = useMemo(() => !!video, [video]);
     const statusText = useMemo(() => `Max 33 seconds • ${hasVideo ? '1/1' : '0/1'} video`, [hasVideo]);
 
     const requestPermission = useCallback(async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
             Alert.alert('Permission Required', 'Please grant camera roll permission to upload videos.');
             return false;
         }
         return true;
-    }, []);
-
-    const checkVideoDuration = useCallback(async (videoUri) => {
-        try {
-            // Get file info to check duration
-            const videoRef = React.createRef();
-
-            return new Promise((resolve) => {
-                const checkDuration = (status) => {
-                    if (status.isLoaded && status.durationMillis) {
-                        const durationSeconds = status.durationMillis / 1000;
-                        resolve(durationSeconds <= 33); // 33 seconds max
-                    }
-                };
-
-                // Create temporary video component for duration check
-                setTimeout(() => resolve(true), 3000); // Fallback timeout
-            });
-        } catch (error) {
-            console.error('Duration check error:', error);
-            return true; // Allow if we can't check
-        }
     }, []);
 
     const pickVideo = useCallback(async () => {
@@ -70,8 +65,8 @@ const MediaVideoUploader = ({ orderId }) => {
                 'Replace Video',
                 'You can only upload one video. Replace the current one?',
                 [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Replace', onPress: () => proceedWithVideoPicker() },
+                    {text: 'Cancel', style: 'cancel'},
+                    {text: 'Replace', onPress: () => proceedWithVideoPicker()},
                 ]
             );
             return;
@@ -195,14 +190,14 @@ const MediaVideoUploader = ({ orderId }) => {
             'Delete Video',
             'Are you sure you want to delete this video?',
             [
-                { text: 'Cancel', style: 'cancel' },
+                {text: 'Cancel', style: 'cancel'},
                 {
                     text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
                         setDeleting(true);
                         try {
-                            await ClientUtils.DeleteFile({ key: video.key });
+                            await ClientUtils.DeleteFile({key: video.key});
                             clearVideo();
                             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -222,9 +217,16 @@ const MediaVideoUploader = ({ orderId }) => {
         );
     }, [video, clearVideo, modalVisible]);
 
-    const openVideoModal = useCallback(() => {
+    const openVideoModal = useCallback(async () => {
+        if (video?.localUri && modalPlayer) {
+            try {
+                await modalPlayer.replaceAsync(video.localUri);
+            } catch (error) {
+                console.log('Failed to replace video:', error);
+            }
+        }
         setModalVisible(true);
-    }, []);
+    }, [video?.localUri, modalPlayer]);
 
     const closeModal = useCallback(() => {
         setModalVisible(false);
@@ -243,12 +245,12 @@ const MediaVideoUploader = ({ orderId }) => {
             >
                 {uploading ? (
                     <View style={styles.uploadingContainer}>
-                        <ActivityIndicator size="small" color="white" />
+                        <ActivityIndicator size="small" color="white"/>
                         <Text style={styles.uploadingText}>Uploading...</Text>
                     </View>
                 ) : (
                     <>
-                        <Ionicons name="videocam" size={32} color="white" />
+                        <Ionicons name="videocam" size={32} color="white"/>
                         <Text style={styles.uploadText}>Add Video</Text>
                         <Text style={styles.uploadSubtext}>Max 33 seconds</Text>
                     </>
@@ -257,224 +259,255 @@ const MediaVideoUploader = ({ orderId }) => {
         </Pressable>
     ), [hasVideo, uploading, pickVideo]);
 
+    useEffect(() => {
+        if (previewVideo?.uri) {
+            confirmPlayer.replaceAsync(previewVideo.uri);
+        }
+    }, [previewVideo?.uri]);
+
+    useEffect(() => {
+        if (showPreviewModal && previewVideo?.uri) {
+            confirmPlayer.play();
+        } else {
+            confirmPlayer.pause();
+        }
+    }, [showPreviewModal, previewVideo?.uri]);
+
+    useEffect(() => {
+        const handleModalVideo = async () => {
+            if (modalVisible && video?.localUri && modalPlayer) {
+                try {
+                    // Small delay to ensure modal is fully rendered
+                    setTimeout(async () => {
+                        await modalPlayer.replaceAsync(video.localUri);
+                        modalPlayer.play();
+                    }, 150);
+                } catch (error) {
+                    console.warn('Failed to setup modal video:', error);
+                }
+            } else if (modalPlayer) {
+                modalPlayer.pause();
+            }
+        };
+
+        handleModalVideo();
+    }, [modalVisible, video?.localUri, modalPlayer]);
+
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.subtitle}>{statusText}</Text>
-            </View>
-
-            <View style={styles.videoContainer}>
-                {hasVideo ? (
-                    <View style={styles.videoWrapper}>
-                        <Video
-                            source={{ uri: video.localUri }}
-                            style={[styles.videoPreview, deleting && styles.deletingVideo]}
-                            resizeMode={ResizeMode.COVER}
-                            shouldPlay={false}
-                            isLooping={false}
-                            useNativeControls={false}
-                        />
-
-                        {/* Deleting overlay */}
-                        {deleting && (
-                            <View style={styles.deletingOverlay}>
-                                <ActivityIndicator size="large" color="white" />
-                                <Text style={styles.deletingText}>Deleting...</Text>
-                            </View>
-                        )}
-
-                        <LinearGradient
-                            colors={['transparent', 'rgba(0,0,0,0.6)']}
-                            style={styles.videoOverlay}
-                        />
-
-                        <View style={styles.videoActions}>
-                            <Pressable
-                                style={[styles.actionButton, deleting && styles.disabledButton]}
-                                onPress={openVideoModal}
-                                disabled={deleting}
-                            >
-                                <Ionicons name="play-circle" size={20} color="white" />
-                            </Pressable>
-                            <Pressable
-                                style={[styles.actionButton, deleting && styles.disabledButton]}
-                                onPress={pickVideo}
-                                disabled={deleting}
-                            >
-                                <Ionicons name="camera" size={20} color="white" />
-                            </Pressable>
-                            <Pressable
-                                style={[styles.actionButton, styles.deleteButton, deleting && styles.disabledButton]}
-                                onPress={handleDeleteVideo}
-                                disabled={deleting}
-                            >
-                                {deleting ? (
-                                    <ActivityIndicator size={16} color="white" />
-                                ) : (
-                                    <Ionicons name="trash" size={20} color="white" />
-                                )}
-                            </Pressable>
-                        </View>
-                    </View>
-                ) : (
-                    renderUploadButton
-                )}
-            </View>
-
-            {/* Video Preview Modal (After Upload) */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={closeModal}
-            >
-                <View style={styles.modalContainer}>
-                    <Pressable style={styles.modalBackdrop} onPress={closeModal} />
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Video Preview</Text>
-                            <Pressable style={styles.closeButton} onPress={closeModal}>
-                                <Ionicons name="close" size={24} color="#374151" />
-                            </Pressable>
-                        </View>
-
-                        {video && (
-                            <>
-                                <Video
-                                    source={{ uri: video.localUri }}
-                                    style={styles.modalVideo}
-                                    resizeMode={ResizeMode.CONTAIN}
-                                    shouldPlay={true}
-                                    isLooping={false}
-                                    useNativeControls={true}
-                                />
-
-                                <View style={styles.videoMetadata}>
-                                    <Text style={styles.metadataText}>
-                                        {video.fileName || 'Unnamed video'}
-                                    </Text>
-                                    {video.uploadedAt && (
-                                        <Text style={styles.metadataSubtext}>
-                                            Uploaded: {new Date(video.uploadedAt).toLocaleDateString()}
-                                        </Text>
-                                    )}
-                                    {video.duration && (
-                                        <Text style={styles.metadataSubtext}>
-                                            Duration: {Math.round(video.duration / 1000)}s
-                                        </Text>
-                                    )}
-                                </View>
-                            </>
-                        )}
-
-                        <View style={styles.modalActions}>
-                            <Pressable
-                                style={styles.modalReplaceButton}
-                                onPress={() => {
-                                    closeModal();
-                                    pickVideo();
-                                }}
-                            >
-                                <Ionicons name="camera" size={18} color="white" />
-                                <Text style={styles.modalButtonText}>Replace</Text>
-                            </Pressable>
-                            <Pressable
-                                style={[
-                                    styles.modalDeleteButton,
-                                    deleting && styles.modalDeleteButtonDisabled
-                                ]}
-                                onPress={() => {
-                                    closeModal();
-                                    handleDeleteVideo();
-                                }}
-                                disabled={deleting}
-                            >
-                                {deleting ? (
-                                    <>
-                                        <ActivityIndicator size={16} color="white" />
-                                        <Text style={styles.modalButtonText}>Deleting...</Text>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Ionicons name="trash" size={18} color="white" />
-                                        <Text style={styles.modalButtonText}>Delete</Text>
-                                    </>
-                                )}
-                            </Pressable>
-                        </View>
-                    </View>
+        <>
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.subtitle}>{statusText}</Text>
                 </View>
-            </Modal>
 
-            {/* Upload Confirmation Modal (Before Upload) */}
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={showPreviewModal}
-                onRequestClose={() => setShowPreviewModal(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <Pressable
-                        style={styles.modalBackdrop}
-                        onPress={() => setShowPreviewModal(false)}
-                    />
-                    <View style={styles.previewModalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Upload this video?</Text>
-                            <Pressable
-                                style={styles.closeButton}
-                                onPress={() => setShowPreviewModal(false)}
-                            >
-                                <Ionicons name="close" size={24} color="#374151" />
-                            </Pressable>
-                        </View>
-
-                        {previewVideo && (
-                            <Video
-                                source={{ uri: previewVideo.uri }}
-                                style={styles.previewVideo}
-                                resizeMode={ResizeMode.CONTAIN}
-                                shouldPlay={true}
-                                isLooping={true}
-                                useNativeControls={true}
+                <View style={styles.videoContainer}>
+                    {hasVideo ? (
+                        <View style={styles.videoWrapper}>
+                            <VideoView
+                                player={previewPlayer}
+                                style={[styles.videoPreview, deleting && styles.deletingVideo]}
+                                contentFit="cover"
+                                nativeControls={false}
                             />
-                        )}
 
-                        <View style={styles.previewActions}>
-                            <Pressable
-                                style={styles.cancelButton}
-                                onPress={() => setShowPreviewModal(false)}
-                            >
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </Pressable>
+                            {/* Deleting overlay */}
+                            {deleting && (
+                                <View style={styles.deletingOverlay}>
+                                    <ActivityIndicator size="large" color="white"/>
+                                    <Text style={styles.deletingText}>Deleting...</Text>
+                                </View>
+                            )}
 
-                            <Pressable
-                                style={styles.confirmButton}
-                                onPress={() => previewVideo && uploadVideo(previewVideo)}
-                                disabled={uploading}
-                            >
-                                <LinearGradient
-                                    colors={uploading ? ['#9ca3af', '#6b7280'] : ['#8b5cf6', '#7c3aed']}
-                                    style={styles.confirmGradient}
+                            <LinearGradient
+                                colors={['transparent', 'rgba(0,0,0,0.6)']}
+                                style={styles.videoOverlay}
+                            />
+
+                            <View style={styles.videoActions}>
+                                <Pressable
+                                    style={[styles.actionButton, deleting && styles.disabledButton]}
+                                    onPress={openVideoModal}
+                                    disabled={deleting}
                                 >
-                                    {uploading ? (
+                                    <Ionicons name="play-circle" size={20} color="white"/>
+                                </Pressable>
+                                <Pressable
+                                    style={[styles.actionButton, deleting && styles.disabledButton]}
+                                    onPress={pickVideo}
+                                    disabled={deleting}
+                                >
+                                    <Ionicons name="camera" size={20} color="white"/>
+                                </Pressable>
+                                <Pressable
+                                    style={[styles.actionButton, styles.deleteButton, deleting && styles.disabledButton]}
+                                    onPress={handleDeleteVideo}
+                                    disabled={deleting}
+                                >
+                                    {deleting ? (
+                                        <ActivityIndicator size={16} color="white"/>
+                                    ) : (
+                                        <Ionicons name="trash" size={20} color="white"/>
+                                    )}
+                                </Pressable>
+                            </View>
+                        </View>
+                    ) : (
+                        renderUploadButton
+                    )}
+                </View>
+
+                {/* Video Preview Modal (After Upload) */}
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={closeModal}
+                >
+                    <View style={styles.modalContainer}>
+                        <Pressable style={styles.modalBackdrop} onPress={closeModal}/>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Video Preview</Text>
+                                <Pressable style={styles.closeButton} onPress={closeModal}>
+                                    <Ionicons name="close" size={24} color="#374151"/>
+                                </Pressable>
+                            </View>
+
+                            {video && (
+                                <>
+                                    <VideoView
+                                        player={modalPlayer}
+                                        style={styles.modalVideo}
+                                        contentFit="contain"
+                                        nativeControls={true}
+                                        key={`modal-video-${modalVisible}`}
+                                    />
+
+                                    <View style={styles.videoMetadata}>
+                                        <Text style={styles.metadataText}>
+                                            {video.fileName || 'Unnamed video'}
+                                        </Text>
+                                        {video.uploadedAt && (
+                                            <Text style={styles.metadataSubtext}>
+                                                Uploaded: {new Date(video.uploadedAt).toLocaleDateString()}
+                                            </Text>
+                                        )}
+                                        {video.duration && (
+                                            <Text style={styles.metadataSubtext}>
+                                                Duration: {Math.round(video.duration / 1000)}s
+                                            </Text>
+                                        )}
+                                    </View>
+                                </>
+                            )}
+
+                            <View style={styles.modalActions}>
+                                <Pressable
+                                    style={styles.modalReplaceButton}
+                                    onPress={() => {
+                                        closeModal();
+                                        pickVideo();
+                                    }}
+                                >
+                                    <Ionicons name="camera" size={18} color="white"/>
+                                    <Text style={styles.modalButtonText}>Replace</Text>
+                                </Pressable>
+                                <Pressable
+                                    style={[
+                                        styles.modalDeleteButton,
+                                        deleting && styles.modalDeleteButtonDisabled
+                                    ]}
+                                    onPress={() => {
+                                        closeModal();
+                                        handleDeleteVideo();
+                                    }}
+                                    disabled={deleting}
+                                >
+                                    {deleting ? (
                                         <>
-                                            <ActivityIndicator size="small" color="white" />
-                                            <Text style={styles.confirmButtonText}>Uploading...</Text>
+                                            <ActivityIndicator size={16} color="white"/>
+                                            <Text style={styles.modalButtonText}>Deleting...</Text>
                                         </>
                                     ) : (
                                         <>
-                                            <Ionicons name="cloud-upload" size={18} color="white" />
-                                            <Text style={styles.confirmButtonText}>Upload Video</Text>
+                                            <Ionicons name="trash" size={18} color="white"/>
+                                            <Text style={styles.modalButtonText}>Delete</Text>
                                         </>
                                     )}
-                                </LinearGradient>
-                            </Pressable>
+                                </Pressable>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Modal>
-        </View>
+                </Modal>
+
+                {/* Upload Confirmation Modal (Before Upload) */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={showPreviewModal}
+                    onRequestClose={() => setShowPreviewModal(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <Pressable
+                            style={styles.modalBackdrop}
+                            onPress={() => setShowPreviewModal(false)}
+                        />
+                        <View style={styles.previewModalContent}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Upload this video?</Text>
+                                <Pressable
+                                    style={styles.closeButton}
+                                    onPress={() => setShowPreviewModal(false)}
+                                >
+                                    <Ionicons name="close" size={24} color="#374151"/>
+                                </Pressable>
+                            </View>
+
+                            {previewVideo && (
+                                <VideoView
+                                    player={confirmPlayer}
+                                    style={styles.previewVideo}
+                                    contentFit="contain"
+                                    nativeControls={true}
+                                />
+                            )}
+
+                            <View style={styles.previewActions}>
+                                <Pressable
+                                    style={styles.cancelButton}
+                                    onPress={() => setShowPreviewModal(false)}
+                                >
+                                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                                </Pressable>
+
+                                <Pressable
+                                    style={styles.confirmButton}
+                                    onPress={() => previewVideo && uploadVideo(previewVideo)}
+                                    disabled={uploading}
+                                >
+                                    <LinearGradient
+                                        colors={uploading ? ['#9ca3af', '#6b7280'] : ['#8b5cf6', '#7c3aed']}
+                                        style={styles.confirmGradient}
+                                    >
+                                        {uploading ? (
+                                            <>
+                                                <ActivityIndicator size="small" color="white"/>
+                                                <Text style={styles.confirmButtonText}>Uploading...</Text>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Ionicons name="cloud-upload" size={18} color="white"/>
+                                                <Text style={styles.confirmButtonText}>Upload Video</Text>
+                                            </>
+                                        )}
+                                    </LinearGradient>
+                                </Pressable>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            </View>
+        </>
     );
 };
 

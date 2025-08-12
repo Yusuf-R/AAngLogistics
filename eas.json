@@ -8,19 +8,19 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_USE_FABRIC": "0"
+        "EXPO_USE_FABRIC": "1"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_USE_FABRIC": "0"
+        "EXPO_USE_FABRIC": "1"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_USE_FABRIC": "0"
+        "EXPO_USE_FABRIC": "1"
       }
     }
   },

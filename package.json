@@ -65,6 +65,7 @@
     "react-native-google-places-autocomplete": "^2.5.7",
     "react-native-maps": "^1.23.8",
     "react-native-maps-directions": "^1.9.0",
+    "react-native-mmkv": "^3.3.0",
     "react-native-modal": "^14.0.0-rc.1",
     "react-native-pager-view": "6.7.1",
     "react-native-reanimated": "~3.17.4",
@@ -78,7 +79,8 @@
     "tailwindcss": "^3.4.17",
     "toastify-react-native": "^7.2.0",
     "yup": "^1.6.1",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "expo-file-system": "~18.1.11"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

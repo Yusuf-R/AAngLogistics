@@ -10,13 +10,16 @@ export const useSessionStore = create((set) => ({
 
     // Load session from SecureStorage on app start
     loadSession: async () => {
-        const [user, token, role, onboarded, refToken, allOrderData] = await Promise.all([
-            SecureStorage.getUserData(),
+        const [ token, role, onboarded, refToken] = await Promise.all([
             SecureStorage.getAccessToken(),
             SecureStorage.getRole(),
             SecureStorage.hasOnboarded(),
             SecureStorage.getRefreshToken(),
-            SecureStorage.getAllOrderData(),
+        ]);
+        // Load from MMKV (faster)
+        const [user, allOrderData] = await Promise.all([
+            SecureStorage.getUserData(), // Now uses MMKV
+            SecureStorage.getAllOrderData(), // Now uses MMKV
         ]);
         set({ user, token, role, onboarded, refToken, allOrderData });
     },

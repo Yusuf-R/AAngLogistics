@@ -161,7 +161,7 @@ const OrdersHub = ({
         }
     ];
 
-    const mockCurrentShipments = userData.currentOrders?.length > 0 ? userData.currentOrders : [
+    const mockCurrentShipments = [
         {
             id: '1',
             title: 'Macbook pro M2',

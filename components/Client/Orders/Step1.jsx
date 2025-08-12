@@ -19,17 +19,21 @@ import {ORDER_TYPES, PACKAGE_CATEGORIES} from '../../../utils/Constant';
 import {useForm, Controller} from 'react-hook-form';
 import {yupResolver} from '@hookform/resolvers/yup';
 import {stepOneSchema} from "../../../validators/orderValidationSchemas";
-import { Picker } from '@react-native-picker/picker';
+import {Picker} from '@react-native-picker/picker';
 import useMediaStore from "../../../store/useMediaStore";
 import MediaImageUploader from "./MediaImageUploader";
 import MediaVideoUploader from "./MediaVideoUploader";
 import {useSessionStore} from "../../../store/useSessionStore";
+import {useOrderStore} from "../../../store/useOrderStore";
 
 
-const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
+const Step1 = forwardRef(({defaultValues}, ref) => {
+    const {
+        orderData,
+    } = useOrderStore();
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const { images, video, addImage, removeImage, setVideo, clearVideo } = useMediaStore();
+    const {images, video, addImage, removeImage, setVideo, clearVideo} = useMediaStore();
     const userData = useSessionStore((state) => state.user);
 
     const {control, handleSubmit, watch, setValue, formState: {errors}} = useForm({
@@ -39,8 +43,16 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
             package: {
                 category: defaultValues.package?.category || "",
                 description: defaultValues.package?.description || "",
-                dimensions: defaultValues.package?.dimensions || {length: "", width: "", height: ""},
-                weight: defaultValues.package?.weight || {value: "", unit: "kg"},
+                dimensions: {
+                    length: defaultValues.package?.dimensions?.length ?? "",
+                    width: defaultValues.package?.dimensions?.width ?? "",
+                    height: defaultValues.package?.dimensions?.height ?? "",
+                    unit: defaultValues.package?.dimensions?.unit ?? "cm"
+                },
+                weight: {
+                    value: defaultValues.package?.weight?.value ?? "",
+                    unit: defaultValues.package?.weight?.unit ?? "kg"
+                },
                 isFragile: defaultValues.package?.isFragile || false,
                 requiresSpecialHandling: defaultValues.package?.requiresSpecialHandling || false,
                 specialInstructions: defaultValues.package?.specialInstructions || "",
@@ -59,35 +71,27 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
 
     // 🟢 Expose submit()
     useImperativeHandle(ref, () => ({
-        submit: handleSubmit(
-            (data) => {
-                // Check media validation
-                const mediaValid = useMediaStore.getState().isMediaValid();
-                if (!mediaValid) {
-                    return {
-                        valid: false,
-                        error: 'Please upload at least 2 images to proceed'
-                    };
-                }
-
-                // Add media data to form data
-                const { images, video } = useMediaStore.getState();
-                const completeData = {
-                    ...data,
-                    package: {
-                        ...data.package,
-                        images: images,
-                        video: video
+        submit: () =>
+            new Promise((resolve) => {
+                handleSubmit(
+                    (data) => {
+                        const {images, video} = useMediaStore.getState();
+                        const completeData = {
+                            ...data,
+                            package: {
+                                ...data.package,
+                                images,
+                                video
+                            }
+                        };
+                        resolve({valid: true, data: completeData});
+                    },
+                    (errors) => {
+                        console.log("Validation errors:", errors);
+                        resolve({valid: false, errors});
                     }
-                };
-
-                return { valid: true, data: completeData };
-            },
-            (errors) => {
-                console.log("Validation errors:", errors);
-                return { valid: false, errors };
-            }
-        )
+                )(); // ← very important to invoke this
+            }),
     }));
     const animatedHeight = useRef(new Animated.Value(0)).current;
     const scaleValues = useRef(
@@ -356,8 +360,8 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                         style={styles.dimensionField}
                                         placeholder="L"
                                         keyboardType="numeric"
-                                        value={field.value}
-                                        onChangeText={field.onChange}
+                                        value={field.value?.toString() ?? ''}
+                                        onChangeText={(val) => field.onChange(Number(val))}
                                     />
                                 </View>
                             )}
@@ -372,8 +376,8 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                         style={styles.dimensionField}
                                         placeholder="W"
                                         keyboardType="numeric"
-                                        value={field.value}
-                                        onChangeText={field.onChange}
+                                        value={field.value?.toString() ?? ''}
+                                        onChangeText={(val) => field.onChange(Number(val))}
                                     />
                                 </View>
                             )}
@@ -388,8 +392,8 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                         style={styles.dimensionField}
                                         placeholder="H"
                                         keyboardType="numeric"
-                                        value={field.value}
-                                        onChangeText={field.onChange}
+                                        value={field.value?.toString() ?? ''}
+                                        onChangeText={(val) => field.onChange(Number(val))}
                                     />
                                 </View>
                             )}
@@ -405,7 +409,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                         <Controller
                             control={control}
                             name="package.weight.value"
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <TextInput
                                     style={[
                                         styles.weightInput,
@@ -414,7 +418,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                     placeholder="0.0"
                                     keyboardType="numeric"
                                     value={field.value?.toString() ?? ''}
-                                    onChangeText={field.onChange}
+                                    onChangeText={(val) => field.onChange(Number(val))}
                                 />
                             )}
                         />
@@ -423,7 +427,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                         <Controller
                             control={control}
                             name="package.weight.unit"
-                            render={({ field }) => (
+                            render={({field}) => (
                                 <View style={styles.unitDropdownContainer}>
                                     <Picker
                                         selectedValue={field.value}
@@ -432,8 +436,8 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                         prompt="Select unit"
                                         mode="dropdown"
                                     >
-                                        <Picker.Item label="kg" value="kg" />
-                                        <Picker.Item label="g" value="g" />
+                                        <Picker.Item label="kg" value="kg"/>
+                                        <Picker.Item label="g" value="g"/>
                                     </Picker>
                                 </View>
                             )}
@@ -449,7 +453,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                 <Controller
                     control={control}
                     name="package.isFragile"
-                    render={({ field }) => (
+                    render={({field}) => (
                         <View style={styles.section}>
                             <Animated.View style={[styles.advancedContainer]}>
                                 <Pressable
@@ -465,7 +469,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                     <Switch
                                         value={field.value}
                                         onValueChange={field.onChange}
-                                        trackColor={{ false: "#d1d5db", true: "#10b981" }}
+                                        trackColor={{false: "#d1d5db", true: "#10b981"}}
                                         thumbColor={field.value ? "#ffffff" : "#f3f4f6"}
                                         ios_backgroundColor="#d1d5db"
                                     />
@@ -479,7 +483,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                 <Controller
                     control={control}
                     name="package.requiresSpecialHandling"
-                    render={({ field }) => (
+                    render={({field}) => (
                         <View style={styles.section}>
                             <Animated.View style={[styles.advancedContainer]}>
                                 <Pressable
@@ -495,7 +499,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                     <Switch
                                         value={field.value}
                                         onValueChange={field.onChange}
-                                        trackColor={{ false: "#d1d5db", true: "#10b981" }}
+                                        trackColor={{false: "#d1d5db", true: "#10b981"}}
                                         thumbColor={field.value ? "#ffffff" : "#f3f4f6"}
                                         ios_backgroundColor="#d1d5db"
                                     />
@@ -536,7 +540,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                     render={({field}) => (
                         <View style={styles.sectionDescription}>
                             <Text style={styles.label}>Images Upload</Text>
-                            <MediaImageUploader orderId={userData?.orderData?._id} />
+                            <MediaImageUploader orderId={orderData?._id}/>
                         </View>
                     )}
                 />
@@ -550,7 +554,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                     render={({field}) => (
                         <View style={styles.sectionDescription}>
                             <Text style={styles.label}>Video Upload</Text>
-                            <MediaVideoUploader orderId="ORD-1234" />
+                            <MediaVideoUploader orderId={orderData?._id}/>
                         </View>
                     )}
                 />
@@ -571,7 +575,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                 />
                                 <Text style={[
                                     styles.mediaStatusText,
-                                    { color: images.length >= 2 ? "#10b981" : "#f59e0b" }
+                                    {color: images.length >= 2 ? "#10b981" : "#f59e0b"}
                                 ]}>
                                     Images: {images.length}/6 {images.length >= 2 ? "✓" : "(Min 2 required)"}
                                 </Text>
@@ -584,7 +588,7 @@ const Step1 = forwardRef(({defaultValues, onComplete}, ref) => {
                                 />
                                 <Text style={[
                                     styles.mediaStatusText,
-                                    { color: video ? "#10b981" : "#9ca3af" }
+                                    {color: video ? "#10b981" : "#9ca3af"}
                                 ]}>
                                     Video: {video ? "Uploaded" : "Optional"}
                                 </Text>

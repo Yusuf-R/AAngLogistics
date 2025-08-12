@@ -66,7 +66,13 @@ export default ({ config }) => ({
                     "Allow $(PRODUCT_NAME) to access your Face ID biometric data."
             }
         ],
-        "expo-video",
+        [
+            "expo-video",
+            {
+                "supportsBackgroundPlayback": true,
+                "supportsPictureInPicture": true
+            }
+        ],
         [
             "expo-image-picker",
             {
@@ -78,10 +84,11 @@ export default ({ config }) => ({
             "expo-build-properties",
             {
                 android: {
-                    newArchEnabled: false
+                    newArchEnabled: true,
+                    extraProguardRules: "-keep class com.facebook.jni.** { *; }"
                 },
                 ios: {
-                    newArchEnabled: false
+                    newArchEnabled: true
                 }
             }
         ]
