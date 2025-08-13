@@ -34,8 +34,8 @@ const MediaImageUploader = ({orderId}) => {
 
     // Memoized values for performance
     const canAddMore = useMemo(() => images.length < 6, [images.length]);
-    const isValid = useMemo(() => images.length >= 2, [images.length]);
-    const imageCount = useMemo(() => `${images.length}/6 images • Min 2 required`, [images.length]);
+    const isValid = useMemo(() => images.length >= 3, [images.length]);
+    const imageCount = useMemo(() => `${images.length}/6 images • Min 3 required`, [images.length]);
 
     const requestPermission = useCallback(async () => {
         const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -445,7 +445,7 @@ const MediaImageUploader = ({orderId}) => {
                     <View style={styles.warningContainer}>
                         <Ionicons name="warning" size={16} color="#f59e0b"/>
                         <Text style={styles.warningText}>
-                            Please upload at least 2 images to proceed
+                            Please upload at least 3 images to proceed
                         </Text>
                     </View>
                 )}

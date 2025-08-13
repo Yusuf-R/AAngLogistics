@@ -1,164 +1,123 @@
 // components/ConfirmationModal.js
 import React from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
-import LottieView from 'lottie-react-native';
+import {Modal, View, Text, Pressable, StyleSheet} from 'react-native';
+import {BlurView} from 'expo-blur';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSpring,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import {Ionicons} from '@expo/vector-icons';
 
-const loader = require('@/assets/animations/loader/spin-loader.json');
-const successAnim = require('@/assets/animations/loader/success.json');
-const failedAnim = require('@/assets/animations/loader/failed.json');
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-const ConfirmationModal = ({
-                               visible,
-                               status = 'confirm', // 'confirm' | 'loading' | 'success' | 'error'
-                               title = 'Confirm',
-                               message = 'Are you sure you want to proceed?',
-                               onConfirm,    // called when YES is pressed
-                               onCancel,     // called when NO is pressed or Close
-                               onRetry,      // optional: retry function after error
-                               showRetryOnError = true,
-                           }) => {
-    const getAnimation = () => {
-        switch (status) {
-            case 'success':
-                return successAnim;
-            case 'error':
-                return failedAnim;
-            case 'loading':
-                return loader;
-            default:
-                return null;
-        }
+export default function ConfirmationModal({
+                                              visible,
+                                              status = 'confirm', // confirm | success | error | loading
+                                              title = 'Confirm',
+                                              message = 'Are you sure?',
+                                              onConfirm,
+                                              onCancel,
+                                              onRetry,
+                                          }) {
+    const scale = useSharedValue(0.8);
+
+    React.useEffect(() => {
+        scale.value = withSpring(visible ? 1 : 0.8, {damping: 15});
+    }, [visible]);
+
+    const cardStyle = useAnimatedStyle(() => ({transform: [{scale: scale.value}]}));
+
+    const iconProps = {
+        confirm: {name: 'help-circle', color: '#3b82f6'},
+        success: {name: 'checkmark-circle', color: '#10b981'},
+        error: {name: 'close-circle', color: '#ef4444'},
+        loading: {name: 'reload', color: '#6b7280'},
+    }[status];
+
+    const handle = (fn) => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        fn?.();
     };
 
     return (
-        <Modal
-            transparent
-            animationType="fade"
-            visible={visible}
-            onRequestClose={onCancel}
-        >
-            <View style={styles.overlay}>
-                <View style={styles.modalBox}>
-                    {status === 'confirm' && (
-                        <>
-                            <Text style={styles.title}>{title}</Text>
-                            <Text style={styles.text}>{message}</Text>
-                            <View style={styles.buttonGroup}>
-                                <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-                                    <Text style={styles.cancelText}>No</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.confirmButton} onPress={onConfirm}>
-                                    <Text style={styles.confirmText}>Yes</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </>
-                    )}
-                    {status !== 'confirm' && (
-                        <>
-                            <LottieView
-                                source={getAnimation()}
-                                autoPlay
-                                loop={status === 'loading'}
-                                style={{ width: 100, height: 100 }}
-                            />
-                            <Text style={styles.text}>{message}</Text>
-                            {status === 'error' && (
-                                <View style={styles.buttonGroup}>
-                                    {onRetry && showRetryOnError && (
-                                        <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-                                            <Text style={styles.retryText}>Try Again</Text>
-                                        </TouchableOpacity>
-                                    )}
-                                    <TouchableOpacity style={styles.closeButton} onPress={onCancel}>
-                                        <Text style={styles.closeText}>Close</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
-                        </>
-                    )}
-                </View>
-            </View>
+        <Modal transparent visible={visible} onRequestClose={() => handle(onCancel)}>
+            <BlurView intensity={85} tint="dark" style={styles.backdrop}>
+                <Animated.View style={[styles.card, cardStyle]}>
+                    <Ionicons {...iconProps} size={52} style={styles.icon}/>
+                    <Text style={styles.title}>{title}</Text>
+                    <Text style={styles.message}>{message}</Text>
+
+                    <View style={styles.row}>
+                        {status === 'confirm' && (
+                            <>
+                                <AnimatedPressable style={styles.btnOutline} onPress={() => handle(onCancel)}>
+                                    <Text style={styles.outlineTxt}>Cancel</Text>
+                                </AnimatedPressable>
+                                <AnimatedPressable style={styles.btnFill} onPress={() => handle(onConfirm)}>
+                                    <Text style={styles.fillTxt}>Confirm</Text>
+                                </AnimatedPressable>
+                            </>
+                        )}
+                        {status === 'error' && (
+                            <>
+                                {onRetry && (
+                                    <AnimatedPressable style={styles.btnOutline} onPress={() => handle(onRetry)}>
+                                        <Text style={styles.outlineTxt}>Retry</Text>
+                                    </AnimatedPressable>
+                                )}
+                                <AnimatedPressable style={styles.btnFill} onPress={() => handle(onCancel)}>
+                                    <Text style={styles.fillTxt}>Close</Text>
+                                </AnimatedPressable>
+                            </>
+                        )}
+                        {status === 'success' && (
+                            <AnimatedPressable style={styles.btnFill} onPress={() => handle(onCancel)}>
+                                <Text style={styles.fillTxt}>Done</Text>
+                            </AnimatedPressable>
+                        )}
+                    </View>
+                </Animated.View>
+            </BlurView>
         </Modal>
     );
-};
+}
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    modalBox: {
+    backdrop: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+    card: {
+        width: 320,
         backgroundColor: '#fff',
-        padding: 24,
-        borderRadius: 16,
+        borderRadius: 24,
+        padding: 28,
         alignItems: 'center',
-        minWidth: 280,
+        elevation: 20,
     },
+    icon: {marginBottom: 12},
     title: {
-        fontSize: 18,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#374151',
-        marginBottom: 8,
-        textAlign: 'center',
+        fontSize: 20,
+        fontFamily: 'PoppinsBold',
+        color: '#111827',
+        marginBottom: 4
     },
-    text: {
-        fontSize: 15,
-        fontFamily: 'PoppinsRegular',
-        color: '#374151',
-        textAlign: 'center',
+    message: {fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 24, fontFamily: 'PoppinsRegular'},
+    row: {flexDirection: 'row', gap: 12, width: '100%'},
+    btnOutline: {
+        flex: 1,
+        paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 12,
+        alignItems: 'center',
     },
-    buttonGroup: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '50%',
-        marginTop: 24,
+    btnFill: {
+        flex: 1,
+        paddingVertical: 12,
+        backgroundColor: '#3b82f6',
+        borderRadius: 12,
+        alignItems: 'center',
     },
-    confirmButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        backgroundColor: '#60a5fa',
-        borderRadius: 8,
-    },
-    confirmText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    cancelButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        backgroundColor: '#E5E5E5',
-        borderRadius: 8,
-    },
-    cancelText: {
-        color: '#374151',
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    retryButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        backgroundColor: '#60a5fa',
-        borderRadius: 8,
-    },
-    retryText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
-    },
-    closeButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        backgroundColor: '#E5E5E5',
-        borderRadius: 8,
-    },
-    closeText: {
-        color: '#374151',
-        fontWeight: '600',
-        fontSize: 14,
-    },
+    outlineTxt: {fontSize: 15, color: '#374151', fontFamily: 'PoppinsSemiBold'},
+    fillTxt: {fontSize: 15, color: '#fff', fontFamily: 'PoppinsSemiBold'},
 });
-
-export default ConfirmationModal;

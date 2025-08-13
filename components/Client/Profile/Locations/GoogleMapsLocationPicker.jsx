@@ -9,7 +9,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     Dimensions,
-    Image
+    Image, DeviceEventEmitter
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import MapView, {Marker, PROVIDER_GOOGLE} from 'react-native-maps';
@@ -41,7 +41,12 @@ const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
     const router = useRouter();
     const mapRef = useRef(null);
-    const {setMapLocation, currentEditLocation, clearMapLocation, updateCurrentEditLocationCoordinates} = useSavedLocationStore();
+    const {
+        setMapLocation,
+        currentEditLocation,
+        clearMapLocation,
+        updateCurrentEditLocationCoordinates
+    } = useSavedLocationStore();
 
     const [currentRegion, setCurrentRegion] = useState({
         latitude: 6.5158, // Lagos, Nigeria
@@ -52,21 +57,16 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
     const [markerPosition, setMarkerPosition] = useState(null);
     const [selectedAddress, setSelectedAddress] = useState('');
     const [isLocationConfirmed, setIsLocationConfirmed] = useState(false);
+    const [mapReady, setMapReady] = React.useState(false);
 
     useEffect(() => {
         if (mode === 'edit' && currentEditLocation && currentEditLocation.coordinates) {
             const {coordinates, address} = currentEditLocation;
-            console.log({
-                mode,
-                lat: coordinates.lat,
-                lng: coordinates.lng,
-            })
             if (coordinates?.lat && coordinates?.lng) {
                 const location = {
                     latitude: coordinates.lat,
                     longitude: coordinates.lng
                 };
-                console.log('Setting marker from edit mode:', location);
                 setMarkerPosition(location);
                 setCurrentRegion({
                     ...location,
@@ -100,7 +100,6 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
             }
 
             const location = await Location.getCurrentPositionAsync({});
-            console.log('Current location from library:', location);
 
             const newRegion = {
                 latitude: location.coords.latitude,
@@ -116,13 +115,11 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                 longitude: location.coords.longitude,
             };
             setMarkerPosition(initialMarker);
-            console.log('Setting initial marker at current location:', initialMarker);
-
             if (mapRef.current) {
                 mapRef.current.animateToRegion(newRegion, 1000);
             }
         } catch (error) {
-            console.error('Error getting current location:', error);
+            console.log('Error getting current location:', error);
         }
     };
 
@@ -150,7 +147,7 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                 mapRef.current.animateToRegion(newRegion, 1000);
             }
         } else {
-            console.error('Invalid details received from place select:', details);
+            console.log('Invalid details received from place select:', details);
         }
     };
 
@@ -168,7 +165,6 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
             if (addressResult.length > 0) {
                 const address = addressResult[0];
                 const formattedAddress = `${address.name || ''} ${address.street || ''}, ${address.city || ''}, ${address.region || ''}, ${address.country || ''}`.trim();
-                console.log('Formatted address:', formattedAddress);
                 setSelectedAddress(formattedAddress);
                 setIsLocationConfirmed(true);
             }
@@ -201,7 +197,7 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
         if (mode === 'create') {
             router.push('/client/profile/location/create');
         } else {
-            updateCurrentEditLocationCoordinates (locationData);
+            updateCurrentEditLocationCoordinates(locationData);
             router.replace('/client/profile/location/edit');
         }
     };
@@ -210,6 +206,27 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
         clearMapLocation();
         router.back();
     };
+
+    useEffect(() => {
+        const t = setTimeout(() => setMapReady(true), 100);
+        return () => {
+            setMapReady(false);
+            clearTimeout(t);
+        };
+    }, []);
+
+    useEffect(() => {
+        const errorHandler = (error) => {
+            console.log('Map Error:', error);
+        };
+
+        const subscription = DeviceEventEmitter.addListener(
+            'onError',
+            errorHandler
+        );
+
+        return () => subscription.remove();
+    }, []);
 
     return (
         <>
@@ -274,43 +291,49 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                 </View>
 
                 {/* Map View */}
-                <MapView
-                    ref={mapRef}
-                    style={styles.map}
-                    initialRegion={currentRegion}
-                    region={currentRegion}
-                    onPress={handleMapPress}
-                    provider={PROVIDER_GOOGLE}
-                    showsMyLocationButton={false}
-                    showsUserLocation={true}
-                    zoomControlEnabled={true}
-                    showsCompass={true}
-                    showsScale={true}
-                    loadingEnabled={true}
-                    mapType="standard"
-                    onMapReady={() => {
-                        console.log('Map is ready');
-                    }}
-                    onRegionChangeComplete={(region) => {
-                        console.log('Region changed:', region);
-                    }}
-                >
-                    {markerPosition && (
-                        <Marker
-                            coordinate={markerPosition}
-                            title="Selected Location"
-                            pinColor={COLORS.success}
-                            identifier="selectedLocation"
-                            description={selectedAddress || "Selected location"}
-                            draggable={true}
-                            onDragStart={() => {
-                                console.log('Marker drag started');
+                {mapReady && (
+                    <>
+                        <MapView
+                            ref={mapRef}
+                            style={styles.map}
+                            initialRegion={currentRegion}
+                            // region={currentRegion}
+                            onPress={handleMapPress}
+                            provider={PROVIDER_GOOGLE}
+                            showsMyLocationButton={false}
+                            showsUserLocation={true}
+                            zoomControlEnabled={true}
+                            showsCompass={true}
+                            showsScale={true}
+                            loadingEnabled={false}
+                            mapType="standard"
+                            removeClippedSubviews={false}
+                            onMapReady={() => {
+                                console.log('Map is ready');
+                            }}
+                            onRegionChangeComplete={(region) => {
+                                console.log('A');
                             }}
                         >
-                        </Marker>
+                            {markerPosition && (
+                                <Marker
+                                    coordinate={markerPosition}
+                                    title="Selected Location"
+                                    pinColor={COLORS.success}
+                                    identifier="selectedLocation"
+                                    description={selectedAddress || "Selected location"}
+                                    draggable={true}
+                                    onDragStart={() => {
+                                        console.log('Marker drag started');
+                                    }}
+                                >
+                                </Marker>
 
-                    )}
-                </MapView>
+                            )}
+                        </MapView>
+
+                    </>
+                )}
 
                 {/* Selected Address Display */}
                 {selectedAddress && (

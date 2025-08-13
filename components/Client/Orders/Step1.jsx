@@ -1,5 +1,5 @@
 // components/Step1.jsx
-import React, {useState, forwardRef, useImperativeHandle, useRef} from 'react';
+import React, {useState, forwardRef, useImperativeHandle, useRef, useEffect} from 'react';
 import {
     View,
     Text,
@@ -33,7 +33,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
     } = useOrderStore();
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const {images, video, addImage, removeImage, setVideo, clearVideo} = useMediaStore();
+    const {images, video } = useMediaStore();
     const userData = useSessionStore((state) => state.user);
 
     const {control, handleSubmit, watch, setValue, formState: {errors}} = useForm({
@@ -75,13 +75,11 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
             new Promise((resolve) => {
                 handleSubmit(
                     (data) => {
-                        const {images, video} = useMediaStore.getState();
+                        // const {images, video} = useMediaStore.getState();
                         const completeData = {
                             ...data,
                             package: {
                                 ...data.package,
-                                images,
-                                video
                             }
                         };
                         resolve({valid: true, data: completeData});
@@ -90,7 +88,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                         console.log("Validation errors:", errors);
                         resolve({valid: false, errors});
                     }
-                )(); // ← very important to invoke this
+                )();
             }),
     }));
     const animatedHeight = useRef(new Animated.Value(0)).current;
@@ -149,6 +147,15 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
         result.setMilliseconds(0);
         return result;
     }
+
+    // keep form in sync
+    useEffect(() => {
+        setValue('package.images', images, {shouldValidate: true});
+    }, [images, setValue]);
+
+    useEffect(() => {
+        setValue('package.video', video, {shouldValidate: true});
+    }, [video, setValue]);
 
     return (
         <>
@@ -905,19 +912,19 @@ const styles = StyleSheet.create({
     },
 
     weightInput: {
-        flex: 2.5,
+        flex: 2.0,
         borderWidth: 1,
         borderColor: '#d1d5db',
         borderRadius: 10,
         paddingHorizontal: 20,
-        marginRight: 10,
+        marginRight: 25,
     },
 
     unitDropdownContainer: {
         flex: 1,
         borderWidth: 1,
         borderColor: '#d1d5db',
-        borderRadius: 30,
+        borderRadius: 50,
         overflow: 'hidden',
     },
 
@@ -926,7 +933,6 @@ const styles = StyleSheet.create({
         width: '100%',
         fontFamily: 'PoppinsRegular',
         backgroundColor: '#d4dfed',
-        color: 'green',
     },
 
     // Toggle Styles

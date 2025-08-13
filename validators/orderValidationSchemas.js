@@ -43,8 +43,9 @@ export const stepOneSchema = Yup.object().shape({
         requiresSpecialHandling: Yup.boolean(),
         specialInstructions: Yup.string().min(3, 'Special Instruction too short.').required('Please enter any instruction.'),
         images: Yup.array()
-            .min(2, 'At least 2 images are required')
-            .max(6, 'Maximum 6 images allowed'),
+            .min(3, 'At least 3 images are required')
+            .max(6, 'Maximum 6 images allowed')
+            .required(),
 
         video: Yup.object().nullable() // Video is optional
     })

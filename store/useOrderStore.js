@@ -47,23 +47,18 @@ export const useOrderStore = create((set, get) => ({
     saveDraft: async () => {
         const { orderData } = get();
         if (!orderData) throw new Error('Missing orderData');
-        console.log('Saving draft order data:', orderData);
         // await ClientUtils.SaveDraft(orderData); // backend handles ID from payload
     },
 
     // Move between steps, saving first
     goToStep: async (step) => {
-        console.log('🟣 goToStep() called with', step);
         // await get().saveDraft();
         set({ currentStep: step });
-        console.log('🟢 goToStep() completed');
     },
 
     goNext: async () => {
-        console.log('🟠 goNext() called');
         const next = get().currentStep + 1;
         await get().goToStep(next);
-        console.log('🟢 goNext() done');
     },
 
     goPrevious: async () => {

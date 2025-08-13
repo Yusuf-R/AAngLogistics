@@ -28,6 +28,8 @@ import Step1 from "./Step1";
 import Step2 from "./Step2";
 import {useOrderStore} from "../../../store/useOrderStore";
 import useMediaStore from "../../../store/useMediaStore";
+import ExitOrderModal from "./ExitOrderModal";
+
 
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -40,12 +42,15 @@ function OrderCreationFlow() {
         saveDraft,
         goNext,
         goPrevious,
+        clearDraft
     } = useOrderStore();
+    const { resetMedia } = useMediaStore();
 
     // Core state management
     const [isLoading, setIsLoading] = useState(false);
     const [hasErrors, setHasErrors] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [showExitModal, setShowExitModal] = useState(false);
 
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -72,9 +77,6 @@ function OrderCreationFlow() {
                     }
                 }
             };
-            console.log({
-                updated,
-            })
             updateOrderData(updated);
         }
 
@@ -91,15 +93,16 @@ function OrderCreationFlow() {
         await goNext();
     }, [currentStep, orderData]);
 
-    // const saveCurrentProgress = useCallback(async () => {
-    //     const result = await validateCurrentStep();
-    //     if (!result.valid) {
-    //         setHasErrors(true);
-    //         return;
-    //     }
-    //     setHasErrors(false);
-    //     await saveDraft();
-    // }, [currentStep, orderData]);
+    const handleBackPress = () => {
+        setShowExitModal(true);
+    };
+
+    const confirmExit = () => {
+        clearDraft();
+        resetMedia();
+        setShowExitModal(false);
+        router.back();
+    };
 
     const saveCurrentProgress = useCallback(async () => {
         setIsSaving(true);
@@ -160,7 +163,6 @@ function OrderCreationFlow() {
                 return null; // Handle additional steps as needed
         }
     };
-    // Sync media store on mount (in case of resume)
     useEffect(() => {
         const { images, video } = orderData?.package || {};
         useMediaStore.getState().setImages(images || []);
@@ -175,7 +177,7 @@ function OrderCreationFlow() {
                 {/* Header */}
                 <CustomHeader
                     title="Create Order"
-                    onBackPress={() => router.back()}
+                    onBackPress={handleBackPress}
                 />
 
                 {/* Progress Header */}
@@ -213,7 +215,11 @@ function OrderCreationFlow() {
                     </BlurView>
                 )}
             </View>
-
+            <ExitOrderModal
+                visible={showExitModal}
+                onClose={() => setShowExitModal(false)}
+                onConfirm={confirmExit}
+            />
         </>
     );
 }

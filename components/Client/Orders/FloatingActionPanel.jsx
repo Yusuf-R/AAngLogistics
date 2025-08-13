@@ -66,7 +66,6 @@ function FloatingActionPanel({
 
         try {
             const result = await onNext();
-            console.log('🟣 onNext resolved:', result);
         } catch (err) {
             console.log('❌ onNext threw an error:', err);
         }
