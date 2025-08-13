@@ -441,6 +441,9 @@ function LocationForm({
                                     />
                                 )}
                             />
+                            {errors.contactPerson?.name && (
+                                <Text style={styles.errorText}>{errors.contactPerson.name.message}</Text>
+                            )}
 
                             <Controller
                                 name="contactPerson.phone"
@@ -457,6 +460,9 @@ function LocationForm({
                                     />
                                 )}
                             />
+                            {errors.contactPerson?.phone && (
+                                <Text style={styles.errorText}>{errors.contactPerson.phone.message}</Text>
+                            )}
 
 
                             <Controller
@@ -474,7 +480,11 @@ function LocationForm({
                                     />
                                 )}
                             />
+                            {errors.contactPerson?.alternatePhone && (
+                                <Text style={styles.errorText}>{errors.contactPerson.alternatePhone.message}</Text>
+                            )}
                         </View>
+
 
                         {/* Special Instructions */}
                         <View style={styles.inputGroup}>
@@ -601,7 +611,7 @@ const styles = StyleSheet.create({
     errorText: {
         fontSize: 12,
         color: COLORS.error,
-        marginTop: 4,
+        marginTop: 2,
         fontFamily: 'PoppinsRegular',
     },
     addressInputContainer: {

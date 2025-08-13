@@ -560,7 +560,7 @@ class ClientUtils {
                 url: '/order/save',
                 data: obj,
             });
-            if (response.status === 201) {
+            if (response.status === 200) {
                 return response.data;
             } else {
                 throw new Error(response.error);

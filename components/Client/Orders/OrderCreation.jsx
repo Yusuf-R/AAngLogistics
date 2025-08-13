@@ -77,6 +77,9 @@ function OrderCreationFlow() {
                     }
                 }
             };
+            console.log({
+                updated,
+            })
             updateOrderData(updated);
         }
 

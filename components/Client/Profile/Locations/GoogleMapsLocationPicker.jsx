@@ -263,7 +263,7 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                         minLength={1}
                         timeout={1000}
                         autoFillOnNotFound={false}
-                        currentLocation={false}
+                        currentLocation={true}
                         currentLocationLabel="Current location"
                         disableScroll={false}
                         enableHighAccuracyLocation={true}
@@ -297,11 +297,10 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                             ref={mapRef}
                             style={styles.map}
                             initialRegion={currentRegion}
-                            // region={currentRegion}
                             onPress={handleMapPress}
                             provider={PROVIDER_GOOGLE}
                             showsMyLocationButton={false}
-                            showsUserLocation={true}
+                            showsUserLocation={false}
                             zoomControlEnabled={true}
                             showsCompass={true}
                             showsScale={true}
@@ -326,6 +325,30 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                                     onDragStart={() => {
                                         console.log('Marker drag started');
                                     }}
+                                    onDragEnd={(e) => {
+                                        const newCoordinate = e.nativeEvent.coordinate;
+                                        setMarkerPosition(newCoordinate);
+                                        setCurrentRegion({
+                                            ...currentRegion,
+                                            latitude: newCoordinate.latitude,
+                                            longitude: newCoordinate.longitude
+                                        });
+                                        // Reverse geocode to get address from new coordinates
+                                        Location.reverseGeocodeAsync({
+                                            latitude: newCoordinate.latitude,
+                                            longitude: newCoordinate.longitude,
+                                        }).then((addressResult) => {
+                                            if (addressResult.length > 0) {
+                                                const address = addressResult[0];
+                                                const formattedAddress = `${address.name || ''} ${address.street || ''}, ${address.city || ''}, ${address.region || ''}, ${address.country || ''}`.trim();
+                                                setSelectedAddress(formattedAddress);
+                                                setIsLocationConfirmed(true);
+                                            }
+                                        }).catch((error) => {
+                                            console.log('Error reverse geocoding:', error);
+                                        });
+                                    }}
+
                                 >
                                 </Marker>
 

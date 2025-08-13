@@ -34,7 +34,6 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
     const {images, video } = useMediaStore();
-    const userData = useSessionStore((state) => state.user);
 
     const {control, handleSubmit, watch, setValue, formState: {errors}} = useForm({
         defaultValues: {
