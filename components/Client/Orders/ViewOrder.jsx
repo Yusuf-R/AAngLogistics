@@ -20,6 +20,9 @@ const {width} = Dimensions.get('window');
 
 function ViewOrder({selectedOrder, updateOrderStatus}) {
 
+    console.log({
+        selectedOrder
+    })
     // ✅ Action handlers
     const handleCallDriver = () => {
         if (selectedOrder.driver?.phone) {

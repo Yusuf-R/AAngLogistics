@@ -7,6 +7,7 @@ export const useSessionStore = create((set) => ({
     role: null,
     onboarded: null,
     allOrderData: null,
+    orderStatistics: null,
 
     // Load session from SecureStorage on app start
     loadSession: async () => {
@@ -17,11 +18,12 @@ export const useSessionStore = create((set) => ({
             SecureStorage.getRefreshToken(),
         ]);
         // Load from MMKV (faster)
-        const [user, allOrderData] = await Promise.all([
+        const [user, allOrderData, orderStatistics] = await Promise.all([
             SecureStorage.getUserData(), // Now uses MMKV
             SecureStorage.getAllOrderData(), // Now uses MMKV
+            SecureStorage.getOrderStatistics() // Now uses MMKV
         ]);
-        set({ user, token, role, onboarded, refToken, allOrderData });
+        set({ user, token, role, onboarded, refToken, allOrderData, orderStatistics });
     },
 
     getCurrentSession: async () => {
@@ -48,7 +50,8 @@ export const useSessionStore = create((set) => ({
 
     // Add setter for allOrderData
     setAllOrderData: (allOrderData) => set({ allOrderData }),
+    setOrderStatistics: (orderStatistics) => set({ orderStatistics }),
 
     // Logout
-    clearSession: () => set({ user: null, token: null, allOrderData: null }),
+    clearSession: () => set({ user: null, token: null, allOrderData: null, orderStatistics: null }),
 }));

@@ -46,14 +46,14 @@ function ManageOrder({ allOrderData, onRefreshData }) {
 
         switch (activeTab) {
             case 'Draft':
-                return allOrderData.orders.filter(order => order.status === 'draft');
+                return allOrderData.filter(order => order.status === 'draft');
             case 'Pending':
-                return allOrderData.orders.filter(order => order.status === 'pending' || order.status === 'broadcast');
+                return allOrderData.filter(order => order.status === 'pending' || order.status === 'broadcast');
             case 'Ongoing':
                 const ongoingStatuses = ['confirmed', 'assigned', 'en_route_pickup', 'arrived_pickup', 'picked_up', 'in_transit', 'arrived_dropoff'];
-                return allOrderData.orders.filter(order => ongoingStatuses.includes(order.status));
+                return allOrderData.filter(order => ongoingStatuses.includes(order.status));
             case 'Completed':
-                return allOrderData.orders.filter(order => ['delivered', 'cancelled', 'failed', 'returned'].includes(order.status));
+                return allOrderData.filter(order => ['delivered', 'cancelled', 'failed', 'returned'].includes(order.status));
             default:
                 return [];
         }
@@ -104,7 +104,8 @@ function ManageOrder({ allOrderData, onRefreshData }) {
             const { order } = await ClientUtilities.DeleteOrder({ orderId });
 
             // update the SessionManager with the deleted order
-            await SessionManager.updateAllOrderData(order);
+            await SessionManager.updateAllOrderData(order.orders);
+            await SessionManager.updateOrderStatistics(order.statistics);
 
             setModalConfig(prev => ({
                 ...prev,

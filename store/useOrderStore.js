@@ -1,6 +1,9 @@
 // store/useOrderStore.js
 import { create } from 'zustand';
 import ClientUtils from '../utils/ClientUtilities'
+import SessionManager from "../lib/SessionManager";
+import SecureStorage from "../lib/SecureStorage";
+import {upsertOrder} from "../lib/upsert";
 
 export const useOrderStore = create((set, get) => ({
     // --- State ---
@@ -48,7 +51,12 @@ export const useOrderStore = create((set, get) => ({
         const { orderData } = get();
         if (!orderData) throw new Error('Missing orderData');
         try {
-            await ClientUtils.SaveDraft(orderData);
+            const {order} = await ClientUtils.SaveDraft(orderData);
+            // pull current allOrderData from session storage
+            const allOrderData = await SecureStorage.getAllOrderData();
+            // update just that one order inside orders[]
+            const updatedAll = upsertOrder(allOrderData, order);
+            await SessionManager.updateAllOrderData(updatedAll);
         } catch (error) {
             console.error('Failed to save draft:', error);
             throw new Error('Failed to save draft');

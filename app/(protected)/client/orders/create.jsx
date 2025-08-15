@@ -27,7 +27,8 @@ function CreateOrder() {
             if (isSuccess && data) {
                 const { order } = data;
                 // Update user session
-                await SessionManager.updateAllOrderData(order);
+                await SessionManager.updateAllOrderData(order.orders);
+                await SessionManager.updateOrderStatistics(order.statistics);
                 useOrderStore.getState().initDraft(order.orderData);
                 // could we have instead even store this orderData in our zustand useOrderStore?
                 console.log('✅ Order data cache cleared - fresh data will be fetched on next manage screen visit');

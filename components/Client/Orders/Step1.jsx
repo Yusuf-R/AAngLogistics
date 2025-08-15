@@ -575,15 +575,15 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                         <View style={styles.mediaStatusRow}>
                             <View style={styles.mediaStatusItem}>
                                 <Ionicons
-                                    name={images.length >= 2 ? "checkmark-circle" : "alert-circle"}
+                                    name={images.length >= 3 ? "checkmark-circle" : "alert-circle"}
                                     size={20}
-                                    color={images.length >= 2 ? "#10b981" : "#f59e0b"}
+                                    color={images.length >= 3 ? "#10b981" : "#f59e0b"}
                                 />
                                 <Text style={[
                                     styles.mediaStatusText,
-                                    {color: images.length >= 2 ? "#10b981" : "#f59e0b"}
+                                    {color: images.length >= 3 ? "#10b981" : "#f59e0b"}
                                 ]}>
-                                    Images: {images.length}/6 {images.length >= 2 ? "✓" : "(Min 2 required)"}
+                                    Images: {images.length}/6 {images.length >= 3 ? "✓" : "(Min 3 required)"}
                                 </Text>
                             </View>
                             <View style={styles.mediaStatusItem}>

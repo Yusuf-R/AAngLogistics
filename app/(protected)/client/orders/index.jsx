@@ -19,6 +19,7 @@ function OrdersScreen() {
     const userData = useSessionStore((state) => state.user);
 
     const allOrderData = useSessionStore((state) => state.allOrderData);
+    const orderStatistics = useSessionStore((state) => state.orderStatistics);
 
     const {
         data,
@@ -39,15 +40,17 @@ function OrdersScreen() {
 
     useEffect(() => {
         if (data?.order?.orders && data?.order?.statistics) {
-            SessionManager.updateAllOrderData(data.order);
+            SessionManager.updateAllOrderData(data.order.orders);
+            SessionManager.updateOrderStatistics(data.order.statistics);
         }
     }, [data]);
     // Manual refresh (used by OrdersHub when e.g. a new draft is saved)
     const handleManualRefresh = async () => {
         try {
             const updated = await ClientUtils.GetAllClientOrders();
-            if (updated?.orders) {
-                await SessionManager.updateAllOrderData(updated.orders); // handles everything
+            if (updated?.order) {
+                await SessionManager.updateAllOrderData(updated.order.orders);
+                await SessionManager.updateOrderStatistics(updated.order.statistics);
             }
         } catch (err) {
             console.log("🔁 Manual refresh failed:", err);
@@ -84,6 +87,7 @@ function OrdersScreen() {
             <OrdersHub
                 userData={userData}
                 allOrderData={allOrderData}
+                orderStatistics={orderStatistics}
                 onRefresh={handleManualRefresh}
                 isRefreshing={isLoading && !!allOrderData}
             />

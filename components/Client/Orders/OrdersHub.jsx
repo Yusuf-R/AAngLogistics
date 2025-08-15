@@ -67,6 +67,7 @@ const recentOrders = [
 const OrdersHub = ({
                        userData,
                        allOrderData,
+                       orderStatistics,
                        onRefreshData = null,
                        isRefreshing = false,
                    }) => {
@@ -296,7 +297,7 @@ const OrdersHub = ({
                         <View style={styles.statsGrid}>
                             <View style={styles.statCard}>
                                 <View style={styles.statContent}>
-                                    <Text style={styles.statNumber}>{allOrderData.statistics.total}</Text>
+                                    <Text style={styles.statNumber}>{orderStatistics.total}</Text>
                                     <Text style={styles.statLabel}>Total Orders</Text>
                                 </View>
                                 <View style={[styles.statIcon, {backgroundColor: '#EBF4FF'}]}>
@@ -307,7 +308,7 @@ const OrdersHub = ({
                             <View style={styles.statCard}>
                                 <View style={styles.statContent}>
                                     <Text style={[styles.statNumber, {color: '#10B981'}]}>
-                                        {allOrderData.statistics.active}
+                                        {orderStatistics.active}
                                     </Text>
                                     <Text style={styles.statLabel}>Active</Text>
                                 </View>
@@ -319,7 +320,7 @@ const OrdersHub = ({
                             <View style={styles.statCard}>
                                 <View style={styles.statContent}>
                                     <Text style={[styles.statNumber, {color: '#8B5CF6'}]}>
-                                        {allOrderData.statistics.completed}
+                                        {orderStatistics.completed}
                                     </Text>
                                     <Text style={styles.statLabel}>Completed</Text>
                                 </View>
