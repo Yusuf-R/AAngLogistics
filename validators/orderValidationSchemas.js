@@ -1,6 +1,10 @@
 // validationSchemas.js - Yup validation schemas for each step
 import * as Yup from 'yup';
 
+const PHONE_REGEX = /^(\+2340\d{10}|\+234\d{10}|0\d{10})$/;
+const LOCATION_TYPES = ['residential','commercial','office','mall','hospital','school','other'];
+
+
 // Step 1: Order Type & Basic Info
 export const stepOneSchema = Yup.object().shape({
     orderType: Yup.string().required('Please select an order type.'),
@@ -51,3 +55,52 @@ export const stepOneSchema = Yup.object().shape({
     })
 });
 
+
+// Step 2: Location & Contact Details
+const geoJSONPoint = Yup.object({
+    type: Yup.string().oneOf(['Point']).required(),
+    coordinates: Yup.array()
+        .of(Yup.number().typeError('Coordinate must be a number'))
+        .length(2, 'Coordinates must be [lng, lat]')
+        .test('lng-range', 'Longitude must be between -180 and 180', (arr) =>
+            Array.isArray(arr) ? arr[0] >= -180 && arr[0] <= 180 : false
+        )
+        .test('lat-range', 'Latitude must be between -90 and 90', (arr) =>
+            Array.isArray(arr) ? arr[1] >= -90 && arr[1] <= 90 : false
+        )
+        .required('Coordinates are required'),
+});
+
+const locationShape = Yup.object({
+    address: Yup.string().trim().min(3, 'Enter a valid address').required('Address is required'),
+    coordinates: geoJSONPoint.required(),
+    landmark: Yup.string().trim().max(140),
+    contactPerson: Yup.object({
+        name: Yup.string().trim().max(80),
+        phone: Yup.string().trim().matches(PHONE_REGEX, 'Enter a valid phone'),
+        alternatePhone: Yup.string().trim().matches(PHONE_REGEX, 'Enter a valid phone'),
+    }),
+    extraInformation: Yup.string().trim().max(240),
+    locationType: Yup.string().oneOf(LOCATION_TYPES).default('residential'),
+    building: Yup.object({
+        name: Yup.string().trim().max(100),
+        floor: Yup.string().trim().max(20),
+        unit: Yup.string().trim().max(20),
+    }),
+});
+
+export const stepTwoSchema = Yup.object({
+    location: Yup.object({
+        pickUp: locationShape.required(),
+        dropOff: locationShape.required(),
+    })
+        .required()
+        .test('distinct-points', 'Pick-up and Drop-off cannot be the same location', function (loc) {
+            if (!loc?.pickUp?.coordinates || !loc?.dropOff?.coordinates) return true;
+            const a = loc.pickUp.coordinates.coordinates;
+            const b = loc.dropOff.coordinates.coordinates;
+            if (!Array.isArray(a) || !Array.isArray(b)) return true;
+            const same = Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6;
+            return !same;
+        }),
+});

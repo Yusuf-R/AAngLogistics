@@ -17,8 +17,13 @@ export const useSavedLocationStore = create((set, get) => ({
     setMapLocation: (locationData) => set({
         selectedMapLocation: {
             address: locationData.address,
-            latitude: locationData.latitude,
-            longitude: locationData.longitude,
+            coordinates: {
+                type: "Point",
+                coordinates: [
+                    locationData.longitude || locationData.coordinates?.coordinates?.[0],
+                    locationData.latitude || locationData.coordinates?.coordinates?.[1]
+                ]
+            },
             placeId: locationData.placeId || null,
             formattedAddress: locationData.formattedAddress || locationData.address
         }
