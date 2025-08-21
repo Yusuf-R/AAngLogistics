@@ -1,7 +1,18 @@
 // components/Step2.jsx
-import React, {forwardRef, useImperativeHandle, useMemo, useState} from 'react';
-import {View, Text, TextInput, ScrollView, Pressable, StyleSheet, Animated, Dimensions, Easing} from 'react-native';
-import {useForm, FormProvider} from 'react-hook-form';
+import React, {forwardRef, useImperativeHandle, useMemo, useState, useEffect} from 'react';
+import {
+    View,
+    Text,
+    TextInput,
+    ScrollView,
+    Pressable,
+    StyleSheet,
+    Animated,
+    Dimensions,
+    Easing,
+    Modal
+} from 'react-native';
+import {useForm, FormProvider, useWatch} from 'react-hook-form';
 import {yupResolver} from '@hookform/resolvers/yup';
 import {stepTwoSchema} from '../../../validators/orderValidationSchemas';
 import {useSessionStore} from "../../../store/useSessionStore";
@@ -9,15 +20,20 @@ import Step2TabsBar from './Step2TabBar';
 import PickUpPanel from './PickUpPanel';
 import DropOffPanel from "./DropOffPanel";
 import SummaryPanel from "./SummaryPanel";
+import CustomAlert from "./CustomAlert";
 import {useOrderStore} from "../../../store/useOrderStore";
+import {useOrderLocationStore} from "../../../store/useOrderLocationStore";
+import SearchMap from "./SearchMap"
 
 
-const PHONE_HINT = 'e.g., 07012345678 or +2347012345678';
 const PHONE_REGEX = /^(\+2340\d{10}|\+234\d{10}|0\d{10})$/;
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 
 function hasMin(loc) {
+    console.log({
+        loc
+    })
     if (!loc) return false;
     const hasAddr = !!(loc.address && String(loc.address).trim());
     const coords = loc.coordinates?.coordinates;
@@ -40,41 +56,58 @@ function debounce(fn, ms = 500) {
 const Step2 = forwardRef(({defaultValues}, ref) => {
     const userData = useSessionStore((state) => state.user);
     const {orderData, updateOrderData, saveDraft} = useOrderStore();
-    const savedPlaces = userData.savedLocations;
+    // Zustand store for map management
+    const {
+        isMapOpen,
+        selectedPickupLocation,
+        selectedDropoffLocation,
+        openMapForPickup,
+        openMapForDropoff,
+        closeMap
+    } = useOrderLocationStore();
     const methods = useForm({
         resolver: yupResolver(stepTwoSchema),
         mode: 'onChange',
+        shouldUnregister: false,
         defaultValues: defaultValues || {
-            location: {
-                pickUp: {
-                    address: '', coordinates: {type: 'Point', coordinates: []},
-                    contactPerson: {name: '', phone: '', alternatePhone: ''},
-                    landmark: '', extraInformation: '', locationType: 'residential',
-                    building: {name: '', floor: '', unit: ''}
-                },
-                dropOff: {
-                    address: '', coordinates: {type: 'Point', coordinates: []},
-                    contactPerson: {name: '', phone: '', alternatePhone: ''},
-                    landmark: '', extraInformation: '', locationType: 'residential',
-                    building: {name: '', floor: '', unit: ''}
-                },
+            defaultValues: defaultValues || {
+                location: {
+                    pickUp: {
+                        address: '',
+                        coordinates: {type: 'Point', coordinates: []},
+                        contactPerson: {name: '', phone: '', alternatePhone: ''},
+                        landmark: '',
+                        extraInformation: '',
+                        locationType: 'residential',
+                        building: {name: '', floor: '', unit: ''}
+                    },
+                    dropOff: {
+                        address: '',
+                        coordinates: {type: 'Point', coordinates: []},
+                        contactPerson: {name: '', phone: '', alternatePhone: ''},
+                        landmark: '',
+                        extraInformation: '',
+                        locationType: 'residential',
+                        building: {name: '', floor: '', unit: ''}
+                    }
+                }
             }
         }
     });
-    const {control, handleSubmit, setValue, formState: {errors}, getValues} = methods;
+    const {control, handleSubmit, setValue, formState: {errors}, getValues, trigger} = methods;
 
-    // Expose imperative API just like Step1
 
     const [activeTab, setActiveTab] = useState('pickup'); // 'pickup' | 'dropoff' | 'summary'
+    const [mapModalVisible, setMapModalVisible] = useState(false);
     const [nudge, setNudge] = useState('');
+    const [alert, setAlert] = useState(null);
     const [slideAnim] = useState(new Animated.Value(0));
 
-    const pickup = getValues('location.pickUp');
-    const dropoff = getValues('location.dropOff');
+    const pickup = useWatch({control: methods.control, name: 'location.pickUp'});
+    const dropoff = useWatch({control: methods.control, name: 'location.dropOff'});
 
-    const pickupComplete = useMemo(() => hasMin(pickup), [pickup?.address, pickup?.coordinates, pickup?.contactPerson]);
-    const dropoffComplete = useMemo(() => hasMin(dropoff), [dropoff?.address, dropoff?.coordinates, dropoff?.contactPerson]);
-    const summaryLocked = !(pickupComplete && dropoffComplete);
+    const pickupComplete = useMemo(() => hasMin(pickup), [pickup]);
+    const dropoffComplete = useMemo(() => hasMin(dropoff), [dropoff]);
 
     // Persist (debounced)
     const persist = debounce(() => {
@@ -87,6 +120,7 @@ const Step2 = forwardRef(({defaultValues}, ref) => {
     }, 500);
 
 
+    // Expose imperative API just like Step1
     useImperativeHandle(ref, () => ({
         submit: () =>
             new Promise((resolve) => {
@@ -97,13 +131,42 @@ const Step2 = forwardRef(({defaultValues}, ref) => {
             }),
     }));
 
+
+    // Handle map location updates
+    useEffect(() => {
+        if (!selectedPickupLocation) return;
+        const lat = selectedPickupLocation.latitude ?? 0;
+        const lng = selectedPickupLocation.longitude ?? 0;
+
+        // ✅ Update form ONLY
+        setValue('location.pickUp.address',
+            selectedPickupLocation.address || selectedPickupLocation.formattedAddress || '',
+            {shouldDirty: true, shouldValidate: true}
+        );
+        setValue('location.pickUp.coordinates.coordinates', [lng, lat],
+            {shouldDirty: true, shouldValidate: true}
+        );
+        // closeMap();
+    }, [selectedPickupLocation]);
+
+    useEffect(() => {
+        if (!selectedDropoffLocation) return;
+        const lat = selectedDropoffLocation.latitude ?? 0;
+        const lng = selectedDropoffLocation.longitude ?? 0;
+
+        // ✅ Update form ONLY
+        setValue('location.dropOff.address',
+            selectedDropoffLocation.address || selectedDropoffLocation.formattedAddress || '',
+            {shouldDirty: true, shouldValidate: true}
+        );
+        setValue('location.dropOff.coordinates.coordinates', [lng, lat],
+            {shouldDirty: true, shouldValidate: true}
+        );
+        // closeMap();
+    }, [selectedDropoffLocation]);
+
+
     const handleTabChange = (key) => {
-        if (key === 'summary' && summaryLocked) {
-            setNudge('Complete Pick-up and Drop-off to review the route.');
-            setTimeout(() => setNudge(''), 3000);
-            return;
-        }
-        setNudge('');
         setActiveTab(key);
 
         // Animate tab transition
@@ -115,52 +178,121 @@ const Step2 = forwardRef(({defaultValues}, ref) => {
         }).start();
     };
 
-    const onSelectSavedPlace = (place) => {
-        // place: { address, coordinates:{ lat, lng }, landmark, contactPerson, ... }
-        methods.setValue('location.pickUp', {
-            address: place.address || '',
-            coordinates: {type: 'Point', coordinates: [place.coordinates?.lng ?? 0, place.coordinates?.lat ?? 0]},
-            landmark: place.landmark || '',
-            contactPerson: place.contactPerson || {name: '', phone: '', alternatePhone: ''},
-            extraInformation: place.extraInformation || '',
-            locationType: place.locationType || 'residential',
-            building: place.building || {name: '', floor: '', unit: ''}
-        }, {shouldValidate: true});
-        persist();
+    const validateAndSavePickup = async () => {
+        try {
+            // Validate pickup data
+            const isValid = await trigger('location.pickUp');
+            if (!isValid) {
+                setAlert({
+                    type: 'error',
+                    title: 'Validation Failed',
+                    message: 'Please fix the errors in pickup information',
+                    duration: 4000
+                });
+                return false;
+            }
+
+            // Additional business logic validation
+            const currentPickup = getValues('location.pickUp');
+            if (!hasMin(currentPickup)) {
+                setAlert({
+                    type: 'error',
+                    title: 'Incomplete Pickup',
+                    message: 'Address, coordinates, and contact information are required',
+                    duration: 4000
+                });
+                return false;
+            }
+
+            setAlert({
+                type: 'success',
+                title: 'Pickup Saved',
+                message: 'Pickup information saved successfully!',
+                duration: 3000
+            });
+            return true;
+        } catch (error) {
+            setAlert({
+                type: 'error',
+                title: 'Save Failed',
+                message: 'Failed to save pickup information',
+                duration: 4000
+            });
+            return false;
+        }
     };
 
-    const onLocationUpdate = (type, locationData) => {
-        const path = type === 'pickup' ? 'location.pickUp' : 'location.dropOff';
-        methods.setValue(path, locationData, {shouldValidate: true});
-        persist();
+    const validateAndSaveDropoff = async () => {
+        try {
+            const isValid = await trigger('location.dropOff');
+            if (!isValid) {
+                setAlert({
+                    type: 'error',
+                    title: 'Validation Failed',
+                    message: 'Please fix the errors in dropoff information',
+                    duration: 3000
+                });
+                return false;
+            }
+
+            const currentDropoff = getValues('location.dropOff');
+            if (!hasMin(currentDropoff)) {
+                setAlert({
+                    type: 'error',
+                    title: 'Incomplete Dropoff',
+                    message: 'Address, coordinates, and contact information are required',
+                    duration: 3000
+                });
+                return false;
+            }
+
+            setAlert({
+                type: 'success',
+                title: 'Dropoff Saved',
+                message: 'Dropoff information saved successfully!',
+                duration: 3000
+            });
+            return true;
+        } catch (error) {
+            setAlert({
+                type: 'error',
+                title: 'Save Failed',
+                message: 'Failed to save dropoff information',
+                duration: 3000
+            });
+            return false;
+        }
     };
 
-    const onOpenAutocomplete = () => {
-        // you’ll wire this to your Google Places sheet; when user picks:
-        // methods.setValue('location.pickUp.address', selectedAddress, { shouldValidate:true });
-        // methods.setValue('location.pickUp.coordinates', { type:'Point', coordinates:[lng,lat] }, { shouldValidate:true });
-        // persist();
-    };
+    const notify = (type, title, message, duration = 3000) => setAlert({type, title, message, duration});
+
 
     return (
         <>
             <View style={styles.container}>
                 <FormProvider {...methods}>
 
-                        <Step2TabsBar
-                            active={activeTab}
-                            onChange={handleTabChange}
-                            pickupComplete={pickupComplete}
-                            dropoffComplete={dropoffComplete}
-                            summaryLocked={summaryLocked}
-                        />
+                    <Step2TabsBar
+                        active={activeTab}
+                        onChange={handleTabChange}
+                    />
 
-                        {/* Nudge Message */}
-                        {nudge ? (
-                            <View style={styles.nudgeContainer}>
-                                <Text style={styles.nudgeText}>{nudge}</Text>
-                            </View>
-                        ) : null}
+                    {alert && (
+                        <CustomAlert
+                            type={alert.type}
+                            title={alert.title}
+                            message={alert.message}
+                            onClose={() => setAlert(null)}
+                            duration={alert.duration}
+                        />
+                    )}
+
+                    {/* Nudge Message */}
+                    {nudge ? (
+                        <View style={styles.nudgeContainer}>
+                            <Text style={styles.nudgeText}>{nudge}</Text>
+                        </View>
+                    ) : null}
                     {/* Content Area with Animation */}
                     <View style={styles.contentContainer}>
                         <Animated.View style={[
@@ -176,46 +308,54 @@ const Step2 = forwardRef(({defaultValues}, ref) => {
                         ]}>
                             {/* Pickup Panel */}
                             <View style={styles.panel}>
-                                {activeTab === 'pickup' && (
-                                    <PickUpPanel
-                                        control={methods.control}
-                                        errors={errors}
-                                        savedPlaces={savedPlaces}
-                                        onLocationUpdate={(data) => onLocationUpdate('pickup', data)}
-                                        onPersist={persist}
-                                    />
-                                )}
+                                <PickUpPanel
+                                    control={methods.control}
+                                    errors={methods.formState.errors}
+                                    savedPlaces={userData.savedLocations}
+                                    onOpenMap={openMapForPickup}
+                                    onValidateAndSave={validateAndSavePickup}
+                                    notify={notify}
+                                />
                             </View>
 
                             {/* Dropoff Panel */}
                             <View style={styles.panel}>
-                                {activeTab === 'dropoff' && (
-                                    <DropOffPanel
-                                        control={methods.control}
-                                        errors={errors}
-                                        savedPlaces={savedPlaces}
-                                        onLocationUpdate={(data) => onLocationUpdate('dropoff', data)}
-                                        onPersist={persist}
-                                    />
-                                )}
+                                <DropOffPanel
+                                    control={methods.control}
+                                    errors={methods.formState.errors}
+                                    savedPlaces={userData.savedLocations}
+                                    onOpenMap={openMapForDropoff}
+                                    onValidateAndSave={validateAndSaveDropoff}
+                                    notify={notify}
+                                />
                             </View>
 
                             {/* Summary Panel */}
                             <View style={styles.panel}>
-                                {activeTab === 'summary' && (
-                                    <SummaryPanel
-                                        pickup={pickup}
-                                        dropoff={dropoff}
-                                        pickupComplete={pickupComplete}
-                                        dropoffComplete={dropoffComplete}
-                                    />
-                                )}
+                                <SummaryPanel
+                                    pickupData={pickup}
+                                    dropoffData={dropoff}
+                                    pickupComplete={pickupComplete}
+                                    dropoffComplete={dropoffComplete}
+                                    onSwitchToPickup={() => handleTabChange('pickup')}
+                                    onSwitchToDropoff={() => handleTabChange('dropoff')}
+                                />
                             </View>
+
                         </Animated.View>
                     </View>
 
+                    {/* Map Modal */}
+                    <Modal
+                        visible={isMapOpen}
+                        animationType="slide"
+                        presentationStyle="fullScreen"
+                        onRequestClose={closeMap}
+                    >
+                        <SearchMap/>
+                    </Modal>
                     {/* Bottom spacer for floating buttons */}
-                    <View style={styles.bottomSpacer} />
+                    <View style={styles.bottomSpacer}/>
                 </FormProvider>
             </View>
         </>
@@ -256,7 +396,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     bottomSpacer: {
-        height: 100,
+        height: 80,
     },
 });
 

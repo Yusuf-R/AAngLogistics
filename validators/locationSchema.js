@@ -19,7 +19,8 @@ const locationSchema = yup.object().shape({
     contactPerson: yup.object().shape({
         name: yup
             .string()
-            .max(50, 'Name cannot exceed 50 characters'),
+            .max(50, 'Name cannot exceed 50 characters')
+            .required('Contact name is required'),
         phone: yup
             .string()
             .nullable()
