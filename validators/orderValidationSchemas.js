@@ -78,7 +78,12 @@ const locationShape = Yup.object({
     contactPerson: Yup.object({
         name: Yup.string().trim().max(80).required('Contact name is required'),
         phone: Yup.string().trim().matches(PHONE_REGEX, 'Enter a valid phone'),
-        alternatePhone: Yup.string().trim().nullable().notRequired().matches(PHONE_REGEX, 'Enter a valid alternate phone'),
+        alternatePhone: Yup.string()
+            .trim()
+            .nullable()
+            .notRequired()
+            .matches(PHONE_REGEX, 'Enter a valid alternate phone number')
+            .transform((value) => value === '' ? null : value),
     }),
     extraInformation: Yup.string().trim().max(240),
     locationType: Yup.string().oneOf(LOCATION_TYPES).default('residential'),

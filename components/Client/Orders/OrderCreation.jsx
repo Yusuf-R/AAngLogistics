@@ -26,6 +26,7 @@ import FloatingActionPanel from './FloatingActionPanel';
 import CustomHeader from "../CustomHeader";
 import Step1 from "./Step1";
 import Step2 from "./Step2";
+import Step3 from "./Step3";
 import {useOrderStore} from "../../../store/useOrderStore";
 import useMediaStore from "../../../store/useMediaStore";
 import ExitOrderModal from "./ExitOrderModal";
@@ -162,6 +163,8 @@ function OrderCreationFlow() {
                 return <Step1 {...stepProps} />;
             case 1:
                 return <Step2 {...stepProps} />;
+            case 2:
+                return <Step3 {...stepProps} />;
             default:
                 return null; // Handle additional steps as needed
         }

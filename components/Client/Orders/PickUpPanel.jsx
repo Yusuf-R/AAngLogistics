@@ -62,7 +62,7 @@ export default function PickUpPanel({
         setValue('location.pickUp.contactPerson', place.contactPerson || {
             name: '',
             phone: '',
-            alternatePhone: ''
+            alternatePhone: null
         }, {shouldValidate: true, shouldDirty: true});
 
         setValue('location.pickUp.extraInformation', place.extraInformation || '', {
