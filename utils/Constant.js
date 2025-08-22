@@ -124,7 +124,7 @@ export const canUserChangePassword = (userData) => {
 
     // 1. Backend explicitly says it's allowed
     if (userData.passwordChangeAllowed === true) {
-        return { allowed: true, reason: null };
+        return {allowed: true, reason: null};
     }
 
     // 2. Backend explicitly says it's not allowed
@@ -144,7 +144,7 @@ export const canUserChangePassword = (userData) => {
                 reason: 'Account created with social login only'
             };
         }
-        return { allowed: true, reason: null };
+        return {allowed: true, reason: null};
     }
 
     // 4. Check primary provider (second fallback)
@@ -1370,7 +1370,6 @@ export const serviceFeatures = [
 ];
 
 
-
 // Order Utilities
 // orderUtils.js - Utility functions for order creation
 export const ORDER_TYPES = [
@@ -1422,7 +1421,6 @@ export const PACKAGE_CATEGORIES = [
 ];
 
 
-
 /**
  * Calculate estimated pricing for an order
  * @param {Object} orderData - The order data object
@@ -1431,7 +1429,7 @@ export const PACKAGE_CATEGORIES = [
 export const calculateOrderPricing = async (orderData) => {
     try {
         // Extract relevant data for pricing calculation
-        const { pickup, dropoff, package: packageData, vehicleRequirements, orderType } = orderData;
+        const {pickup, dropoff, package: packageData, vehicleRequirements, orderType} = orderData;
 
         // Calculate distance (you might want to use a proper distance calculation service)
         const distance = calculateDistance(
@@ -1465,12 +1463,18 @@ export const calculateOrderPricing = async (orderData) => {
             total: Math.round(total),
             currency: 'NGN',
             breakdown: [
-                { label: 'Base Price', amount: basePrice },
-                { label: `Distance (${Math.round(distance * 100) / 100}km)`, amount: Math.round(distancePrice) },
-                { label: 'Vehicle Type', amount: Math.round((basePrice + distancePrice) * (vehicleMultiplier - 1)) },
-                { label: 'Package Type', amount: Math.round((basePrice + distancePrice) * vehicleMultiplier * (packageMultiplier - 1)) },
-                { label: 'Urgency Fee', amount: Math.round((basePrice + distancePrice) * vehicleMultiplier * packageMultiplier * (urgencyMultiplier - 1)) },
-                { label: 'Tax (7.5%)', amount: Math.round(tax) }
+                {label: 'Base Price', amount: basePrice},
+                {label: `Distance (${Math.round(distance * 100) / 100}km)`, amount: Math.round(distancePrice)},
+                {label: 'Vehicle Type', amount: Math.round((basePrice + distancePrice) * (vehicleMultiplier - 1))},
+                {
+                    label: 'Package Type',
+                    amount: Math.round((basePrice + distancePrice) * vehicleMultiplier * (packageMultiplier - 1))
+                },
+                {
+                    label: 'Urgency Fee',
+                    amount: Math.round((basePrice + distancePrice) * vehicleMultiplier * packageMultiplier * (urgencyMultiplier - 1))
+                },
+                {label: 'Tax (7.5%)', amount: Math.round(tax)}
             ]
         };
     } catch (error) {
@@ -1585,54 +1589,6 @@ export const getDeviceInfo = async () => {
 };
 
 /**
- * Validate order data before submission
- * @param {Object} orderData - Complete order data
- * @returns {Object} - Validation result with errors if any
- */
-export const validateOrderData = (orderData) => {
-    const errors = {};
-
-    // Required fields validation
-    if (!orderData.orderType) errors.orderType = 'Order type is required';
-    if (!orderData.package?.category) errors.packageCategory = 'Package category is required';
-    if (!orderData.package?.description?.trim()) errors.packageDescription = 'Package description is required';
-    if (!orderData.pickup?.address) errors.pickupAddress = 'Pickup address is required';
-    if (!orderData.dropoff?.address) errors.dropoffAddress = 'Delivery address is required';
-    if (!orderData.vehicleRequirements || orderData.vehicleRequirements.length === 0) {
-        errors.vehicleRequirements = 'At least one vehicle type must be selected';
-    }
-
-    // Coordinate validation
-    if (!orderData.pickup?.coordinates?.lat || !orderData.pickup?.coordinates?.lng) {
-        errors.pickupCoordinates = 'Pickup location coordinates are required';
-    }
-    if (!orderData.dropoff?.coordinates?.lat || !orderData.dropoff?.coordinates?.lng) {
-        errors.dropoffCoordinates = 'Delivery location coordinates are required';
-    }
-
-    // Package validation
-    if (orderData.package?.weight?.value && orderData.package.weight.value < 0) {
-        errors.packageWeight = 'Package weight must be positive';
-    }
-    if (orderData.package?.value && orderData.package.value < 0) {
-        errors.packageValue = 'Package value must be positive';
-    }
-
-    // Contact information validation
-    if (orderData.pickup?.contactPerson?.phone && !isValidPhoneNumber(orderData.pickup.contactPerson.phone)) {
-        errors.pickupPhone = 'Invalid pickup contact phone number';
-    }
-    if (orderData.dropoff?.contactPerson?.phone && !isValidPhoneNumber(orderData.dropoff.contactPerson.phone)) {
-        errors.dropoffPhone = 'Invalid delivery contact phone number';
-    }
-
-    return {
-        isValid: Object.keys(errors).length === 0,
-        errors
-    };
-};
-
-/**
  * Validate phone number format
  * @param {string} phone - Phone number to validate
  * @returns {boolean} - Whether the phone number is valid
@@ -1695,3 +1651,105 @@ export const timeAgo = (date) => {
     if (days === 1) return `Yesterday`;
     return `${days}d ago`;
 }
+
+// Vehicle selection constants
+/**
+ * Some constant criterion for delivery options
+ */
+// utils/vehicleRules.js
+export const VEHICLE_PROFILES = {
+    bicycle: {
+        maxWeightKg: 10,
+        maxVolumeL: 40,
+        maxDistanceKm: 12,
+        fragileOk: false,
+        speedTier: 1,
+        costTier: 1,
+        stability: 1,
+        foodOk: true
+    },
+    motorcycle: {
+        maxWeightKg: 25,
+        maxVolumeL: 100,
+        maxDistanceKm: 75,
+        fragileOk: 'limited',
+        speedTier: 3,
+        costTier: 2,
+        stability: 2,
+        foodOk: true
+    },
+    tricycle: {
+        maxWeightKg: 80,
+        maxVolumeL: 300,
+        maxDistanceKm: 75,
+        fragileOk: true,
+        speedTier: 2,
+        costTier: 3,
+        stability: 3,
+        foodOk: true
+    },
+    car: {
+        maxWeightKg: 200,
+        maxVolumeL: 600,
+        maxDistanceKm: 500,
+        fragileOk: true,
+        speedTier: 3,
+        costTier: 4,
+        stability: 4,
+        foodOk: true
+    },
+    van: {
+        maxWeightKg: 800,
+        maxVolumeL: 2500,
+        maxDistanceKm: 500,
+        fragileOk: true,
+        speedTier: 2,
+        costTier: 5,
+        stability: 5,
+        foodOk: true
+    },
+    truck: {
+        maxWeightKg: 3000,
+        maxVolumeL: 10000,
+        maxDistanceKm: 500,
+        fragileOk: true,
+        speedTier: 1,
+        costTier: 6,
+        stability: 6,
+        foodOk: false
+    },
+};
+
+export const CATEGORY_HINTS = {
+    food: {prefer: ['bicycle', 'motorcycle', 'tricycle', 'car'], avoid: ['truck', 'van']},
+    document: {prefer: ['bicycle', 'motorcycle', 'tricycle', 'car'], avoid: []},
+    fragile: {prefer: ['car', 'van'], avoid: ['bicycle']},
+    electronics: {prefer: ['motorcycle', 'tricycle', 'car', 'van'], avoid: ['bicycle']},
+    furniture: {prefer: ['van', 'truck'], avoid: ['bicycle', 'motorcycle']},
+    medicine: {prefer: ['motorcycle', 'car'], avoid: []},
+    parcel: {prefer: ['motorcycle', 'car'], avoid: []},
+    clothing: {prefer: ['motorcycle', 'car'], avoid: []},
+    jewelry: {prefer: ['motorcycle', 'car', 'van'], avoid: ['bicycle']},
+    gifts: {prefer: ['motorcycle', 'car'], avoid: []},
+    others: {prefer: [], avoid: []},
+};
+
+export function haversineKm([lng1, lat1], [lng2, lat2]) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+export function volumeLiters(dimensions) {
+    if (!dimensions) return 0;
+    const {length = 0, width = 0, height = 0, unit = 'cm'} = dimensions;
+    const toCm = unit === 'inch' ? 2.54 : 1;
+    const cm3 = (length * toCm) * (width * toCm) * (height * toCm);
+    return cm3 / 1000; // L
+};
+
+export const ALL_TYPES = ['bicycle', 'motorcycle', 'tricycle', 'car', 'van', 'truck'];

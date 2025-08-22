@@ -109,3 +109,9 @@ export const stepTwoSchema = Yup.object({
             return !same;
         }),
 });
+
+export const stepThreeSchema = Yup.object({
+    vehicleRequirements: Yup.array()
+        .of(Yup.mixed().oneOf(['bicycle','motorcycle','tricycle','car','van','truck']))
+        .min(1, 'Select at least one vehicle type')
+});
