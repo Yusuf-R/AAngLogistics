@@ -1,6 +1,7 @@
 import {Text, View, Pressable} from "react-native";
+import {forwardRef} from "react";
 
-function Step3 () {
+const Step3 = forwardRef(({defaultValues}, ref) => {
     return (
         <>
             <View className="flex-1 items-center justify-center">
@@ -15,6 +16,6 @@ function Step3 () {
             </Pressable>
         </>
     )
-}
+});
 
 export default Step3;

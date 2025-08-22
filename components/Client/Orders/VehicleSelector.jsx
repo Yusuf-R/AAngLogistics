@@ -57,6 +57,27 @@ export const VehicleSelector = ({
             time: '45-60 mins',
             price: 3500,
             suitable: ['heavy items', 'bulk delivery']
+        },
+        {
+            id: 'electric-scooter',
+            name: 'Electric Scooter',
+            icon: 'bicycle-outline',
+            capacity: '< 10kg',
+            time: '15-20 mins',
+            price: 600,
+            eco: true,
+            suitable: ['small parcels', 'documents']
+        },
+        // car
+        {
+            id: 'car',
+            name: 'Car',
+            icon: 'car-sport-outline',
+            capacity: '< 100kg',
+            time: '20-30 mins',
+            price: 1500,
+            popular: true,
+            suitable: ['documents', 'small parcels', 'food']
         }
     ];
 
