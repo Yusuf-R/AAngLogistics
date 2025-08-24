@@ -1,515 +1,511 @@
-import React, {useState, forwardRef, useImperativeHandle, useEffect, useMemo} from 'react';
+// components/Step3.jsx
+import React, {useState, forwardRef, useImperativeHandle, useEffect} from 'react';
 import {
     View,
     Text,
     Pressable,
-    ScrollView,
     StyleSheet,
     Animated,
     Dimensions,
-    Alert
+    Image,
+    ScrollView
 } from 'react-native';
 import {useForm, Controller} from 'react-hook-form';
 import {yupResolver} from '@hookform/resolvers/yup';
 import {stepThreeSchema} from '../../../validators/orderValidationSchemas';
 import {useOrderStore} from "../../../store/useOrderStore";
-import {Ionicons} from '@expo/vector-icons';
-import {LinearGradient} from 'expo-linear-gradient';
-import {VEHICLE_PROFILES, VehicleSelectionEngine} from '../../../utils/VehicleSelectionEngine';
+import CustomAlert from "./CustomAlert";
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
-const Step3 = forwardRef(({defaultValues}, ref) => {
-    const {orderData, updateOrderData} = useOrderStore();
-    const [selectedVehicles, setSelectedVehicles] = useState(new Set());
-    const [showDetails, setShowDetails] = useState({});
-    const [animatedValues] = useState({});
+const vehicleImages = {
+    bicycle: require('../../../assets/images/bicycle.jpg'),
+    motorcycle: require('../../../assets/images/motorcycle.jpg'),
+    tricycle: require('../../../assets/images/tricycle.jpg'),
+    car: require('../../../assets/images/car.jpg'),
+    van: require('../../../assets/images/van.jpg'),
+    truck: require('../../../assets/images/truck.jpg')
+};
 
-    // Initialize form
-    const {control, handleSubmit, setValue, watch, formState: {errors}} = useForm({
+const VEHICLES = [
+    {id: 'bicycle', name: 'Bicycle', image: vehicleImages.bicycle},
+    {id: 'motorcycle', name: 'Motorcycle', image: vehicleImages.motorcycle},
+    {id: 'tricycle', name: 'Tricycle', image: vehicleImages.tricycle},
+    {id: 'car', name: 'Car', image: vehicleImages.car},
+    {id: 'van', name: 'Van', image: vehicleImages.van},
+    {id: 'truck', name: 'Truck', image: vehicleImages.truck}
+];
+
+const VALID_VEHICLES = ['bicycle', 'motorcycle', 'tricycle', 'car', 'van', 'truck'];
+
+const Step3 = forwardRef(({defaultValues}, ref) => {
+    const {orderData} = useOrderStore();
+
+    // Initialize with proper persisted data
+    const [selectedVehicles, setSelectedVehicles] = useState(() => {
+        const savedVehicles = defaultValues?.vehicleRequirements || orderData?.vehicleRequirements || [];
+        const validVehicles = savedVehicles.filter(vehicle =>
+            VALID_VEHICLES.includes(vehicle)
+        );
+        return new Set(validVehicles);
+    });
+
+    const [recommendations, setRecommendations] = useState(new Set());
+    const [alert, setAlert] = useState(null);
+    const [maxLimitNotification, setMaxLimitNotification] = useState(false);
+
+    const [animatedValues] = useState(
+        VEHICLES.reduce((acc, vehicle) => {
+            acc[vehicle.id] = {
+                scale: new Animated.Value(1)
+            };
+            return acc;
+        }, {})
+    );
+
+    const {control, handleSubmit, setValue, formState: {errors}, clearErrors} = useForm({
         resolver: yupResolver(stepThreeSchema),
         mode: 'onChange',
         defaultValues: {
-            vehicleRequirements: defaultValues?.vehicleRequirements || orderData?.vehicleRequirements || []
+            vehicleRequirements: Array.from(selectedVehicles)
         }
     });
 
-    const watchedVehicles = watch('vehicleRequirements');
+    // Smart recommendation engine
+    useEffect(() => {
+        const generateRecommendations = () => {
+            const recs = new Set();
+            const packageWeight = orderData?.package?.weight?.value || 0;
+            const distance = calculateDistance();
+            const category = orderData?.package?.category;
+            const isFragile = orderData?.package?.isFragile;
 
-    // Initialize vehicle selection engine
-    const vehicleEngine = useMemo(() => {
-        return new VehicleSelectionEngine(orderData);
+            const weightKg = orderData?.package?.weight?.unit === 'g' ? packageWeight / 1000 : packageWeight;
+
+            if (weightKg <= 5 && distance <= 15) recs.add('bicycle');
+            if (weightKg <= 25 && distance <= 40) recs.add('motorcycle');
+            if (category === 'food' || weightKg <= 50) recs.add('motorcycle');
+            if (isFragile || category === 'electronics') recs.add('car');
+            if (weightKg > 80) recs.add('van');
+            if (weightKg > 200) recs.add('truck');
+
+            if (recs.size >= 4) {
+                return new Set();
+            }
+
+            if (recs.size === 0) {
+                recs.add('motorcycle');
+            }
+
+            return recs;
+        };
+
+        setRecommendations(generateRecommendations());
     }, [orderData]);
 
-    const evaluations = useMemo(() => {
-        return vehicleEngine.getAllEvaluations();
-    }, [vehicleEngine]);
+    const calculateDistance = () => {
+        const pickup = orderData?.location?.pickUp?.coordinates?.coordinates;
+        const dropoff = orderData?.location?.dropOff?.coordinates?.coordinates;
+        if (!pickup || !dropoff) return 10;
 
-    // Initialize animated values for each vehicle
-    useEffect(() => {
-        Object.keys(VEHICLE_PROFILES).forEach(vehicleType => {
-            if (!animatedValues[vehicleType]) {
-                animatedValues[vehicleType] = new Animated.Value(0);
-            }
-        });
-    }, []);
+        const R = 6371;
+        const dLat = (dropoff[1] - pickup[1]) * Math.PI / 180;
+        const dLon = (dropoff[0] - pickup[0]) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(pickup[1] * Math.PI / 180) * Math.cos(dropoff[1] * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
 
-    // Sync form with selected vehicles
     useEffect(() => {
-        setValue('vehicleRequirements', Array.from(selectedVehicles), {shouldValidate: true});
+        const vehicleArray = Array.from(selectedVehicles);
+        setValue('vehicleRequirements', vehicleArray, {shouldValidate: false});
     }, [selectedVehicles, setValue]);
 
-    // Initialize selected vehicles from default values
-    useEffect(() => {
-        if (watchedVehicles && watchedVehicles.length > 0) {
-            setSelectedVehicles(new Set(watchedVehicles));
-        }
-    }, []);
-
-    // Expose imperative API
     useImperativeHandle(ref, () => ({
         submit: () =>
             new Promise((resolve) => {
                 handleSubmit(
                     (data) => {
                         if (!data.vehicleRequirements || data.vehicleRequirements.length === 0) {
-                            Alert.alert(
-                                'No Vehicle Selected',
-                                'Please select at least one vehicle type for your delivery.'
-                            );
+                            setAlert({
+                                type: 'error',
+                                title: 'Validation Failed',
+                                message: 'Select at least one vehicle type',
+                                duration: 2000
+                            });
                             return resolve({
                                 valid: false,
-                                errors: {vehicleRequirements: 'At least one vehicle must be selected'}
+                                errors: {vehicleRequirements: 'Select at least one vehicle type'}
+                            });
+                        }
+
+                        if (data.vehicleRequirements.length > 4) {
+                            setAlert({
+                                type: 'error',
+                                title: 'Validation Failed',
+                                message: 'Maximum 4 vehicle types allowed',
+                                duration: 2000
+                            });
+                            return resolve({
+                                valid: false,
+                                errors: {vehicleRequirements: 'Maximum 4 vehicle types allowed'}
                             });
                         }
 
                         resolve({valid: true, data});
                     },
                     (errs) => {
+                        setAlert({
+                            type: 'error',
+                            title: 'Validation Failed',
+                            message: 'Please fix all validation errors',
+                            duration: 2000
+                        });
                         resolve({valid: false, errors: errs});
                     }
                 )();
-            }),
+            })
     }));
 
-    const handleVehicleToggle = (vehicleType, evaluation) => {
-        if (evaluation.status === 'disabled') return;
+    const handleVehicleToggle = (vehicleId) => {
+        if (errors.vehicleRequirements) {
+            clearErrors('vehicleRequirements');
+        }
 
         const newSelected = new Set(selectedVehicles);
-        if (newSelected.has(vehicleType)) {
-            newSelected.delete(vehicleType);
-            // Animate out
-            Animated.spring(animatedValues[vehicleType], {
-                toValue: 0,
-                useNativeDriver: true,
-                tension: 100,
-                friction: 8
-            }).start();
+
+        if (newSelected.has(vehicleId)) {
+            newSelected.delete(vehicleId);
         } else {
-            newSelected.add(vehicleType);
-            // Animate in
-            Animated.spring(animatedValues[vehicleType], {
-                toValue: 1,
-                useNativeDriver: true,
-                tension: 100,
-                friction: 8
-            }).start();
+            if (newSelected.size >= 4) {
+                setMaxLimitNotification(true);
+
+                // Auto-hide the notification after 3 seconds
+                setTimeout(() => {
+                    setMaxLimitNotification(false);
+                }, 3000);
+                setAlert({
+                    type: 'error',
+                    title: 'Selection Limit Reached',
+                    message: 'You can select up to 4 vehicle types only.',
+                    duration: 2000
+                });
+                return;
+            }
+            newSelected.add(vehicleId);
         }
+
+        Animated.sequence([
+            Animated.timing(animatedValues[vehicleId].scale, {
+                toValue: 0.95,
+                duration: 80,
+                useNativeDriver: true
+            }),
+            Animated.spring(animatedValues[vehicleId].scale, {
+                toValue: 1,
+                tension: 500,
+                friction: 10,
+                useNativeDriver: true
+            })
+        ]).start();
+
         setSelectedVehicles(newSelected);
     };
 
-    const toggleDetails = (vehicleType) => {
-        setShowDetails(prev => ({
-            ...prev,
-            [vehicleType]: !prev[vehicleType]
-        }));
-    };
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'recommended':
-                return '#10B981';
-            case 'allowed':
-                return '#F59E0B';
-            case 'disabled':
-                return '#EF4444';
-            default:
-                return '#6B7280';
-        }
-    };
-
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case 'recommended':
-                return 'checkmark-circle';
-            case 'allowed':
-                return 'checkmark';
-            case 'disabled':
-                return 'close-circle';
-            default:
-                return 'help-circle';
-        }
-    };
-
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-NG', {
-            style: 'currency',
-            currency: 'NGN',
-            minimumFractionDigits: 0
-        }).format(amount);
-    };
-
-    const renderVehicleCard = (vehicleType, evaluation) => {
-        const profile = VEHICLE_PROFILES[vehicleType];
-        const isSelected = selectedVehicles.has(vehicleType);
-        const isDisabled = evaluation.status === 'disabled';
-        const statusColor = getStatusColor(evaluation.status);
-        const isDetailsOpen = showDetails[vehicleType];
-
-        return (
-            <Animated.View
-                key={vehicleType}
-                style={[
-                    styles.vehicleCard,
-                    isSelected && styles.selectedCard,
-                    isDisabled && styles.disabledCard,
-                    {
-                        borderColor: isSelected ? statusColor : '#E5E7EB',
-                        opacity: isDisabled ? 0.6 : 1,
-                        transform: [{
-                            scale: animatedValues[vehicleType]?.interpolate({
-                                inputRange: [0, 1],
-                                outputRange: [0.98, 1.02]
-                            }) || 1
-                        }]
-                    }
-                ]}
-            >
-                <Pressable
-                    onPress={() => handleVehicleToggle(vehicleType, evaluation)}
-                    disabled={isDisabled}
-                    style={styles.cardHeader}
-                >
-                    <View style={styles.vehicleInfo}>
-                        <View style={styles.vehicleIconContainer}>
-                            <Text style={styles.vehicleEmoji}>{profile.emoji}</Text>
-                            {isSelected && (
-                                <Animated.View
-                                    style={[
-                                        styles.selectionIndicator,
-                                        {backgroundColor: statusColor}
-                                    ]}
-                                >
-                                    <Ionicons name="checkmark" size={12} color="white"/>
-                                </Animated.View>
-                            )}
-                        </View>
-
-                        <View style={styles.vehicleDetails}>
-                            <View style={styles.vehicleTitleRow}>
-                                <Text style={[
-                                    styles.vehicleName,
-                                    isDisabled && styles.disabledText
-                                ]}>
-                                    {profile.name}
-                                </Text>
-                                <View style={[styles.statusBadge, {backgroundColor: statusColor + '20'}]}>
-                                    <Ionicons
-                                        name={getStatusIcon(evaluation.status)}
-                                        size={12}
-                                        color={statusColor}
-                                    />
-                                    <Text style={[styles.statusText, {color: statusColor}]}>
-                                        {evaluation.status}
-                                    </Text>
-                                </View>
-                            </View>
-
-                            <Text style={[
-                                styles.vehicleDescription,
-                                isDisabled && styles.disabledText
-                            ]}>
-                                {profile.description}
-                            </Text>
-
-                            <View style={styles.quickStats}>
-                                <View style={styles.statItem}>
-                                    <Ionicons name="time" size={14} color="#6B7280"/>
-                                    <Text style={styles.statText}>
-                                        {evaluation.estimatedTime ? `${evaluation.estimatedTime}min` : 'N/A'}
-                                    </Text>
-                                </View>
-                                <View style={styles.statItem}>
-                                    <Ionicons name="cash" size={14} color="#6B7280"/>
-                                    <Text style={styles.statText}>
-                                        {formatCurrency(evaluation.estimatedCost)}
-                                    </Text>
-                                </View>
-                                {evaluation.score > 0 && (
-                                    <View style={styles.statItem}>
-                                        <Ionicons name="star" size={14} color="#F59E0B"/>
-                                        <Text style={styles.statText}>
-                                            {evaluation.score.toFixed(0)}%
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-
-                            {evaluation.status === 'disabled' && (
-                                <Text style={styles.disabledReason}>
-                                    {evaluation.reason}
-                                </Text>
-                            )}
-                        </View>
-                    </View>
-
-                    <Pressable
-                        style={styles.detailsToggle}
-                        onPress={() => toggleDetails(vehicleType)}
-                    >
-                        <Ionicons
-                            name={isDetailsOpen ? "chevron-up" : "chevron-down"}
-                            size={20}
-                            color="#6B7280"
-                        />
-                    </Pressable>
-                </Pressable>
-
-                {isDetailsOpen && (
-                    <View style={styles.expandedDetails}>
-                        <View style={styles.capabilitiesGrid}>
-                            <View style={styles.capabilityItem}>
-                                <Text style={styles.capabilityLabel}>Max Weight</Text>
-                                <Text style={styles.capabilityValue}>{profile.capabilities.maxWeight}kg</Text>
-                            </View>
-                            <View style={styles.capabilityItem}>
-                                <Text style={styles.capabilityLabel}>Max Distance</Text>
-                                <Text style={styles.capabilityValue}>{profile.capabilities.maxDistance}km</Text>
-                            </View>
-                            <View style={styles.capabilityItem}>
-                                <Text style={styles.capabilityLabel}>Speed</Text>
-                                <Text style={styles.capabilityValue}>{profile.capabilities.speedKmh}km/h</Text>
-                            </View>
-                            <View style={styles.capabilityItem}>
-                                <Text style={styles.capabilityLabel}>Security</Text>
-                                <Text style={styles.capabilityValue}>{profile.restrictions.securityLevel}</Text>
-                            </View>
-                        </View>
-
-                        {Object.entries(evaluation.details).map(([key, detail]) => (
-                            <View key={key} style={styles.evaluationDetail}>
-                                <Text style={styles.evaluationLabel}>
-                                    {key.charAt(0).toUpperCase() + key.slice(1)}:
-                                </Text>
-                                <Text style={[
-                                    styles.evaluationValue,
-                                    {color: detail.status === 'disabled' ? '#EF4444' : '#6B7280'}
-                                ]}>
-                                    {detail.reason} ({detail.score}%)
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
-                )}
-            </Animated.View>
-        );
-    };
-
-
     return (
-        <>
-            <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>Choose Vehicle Type</Text>
-                    <Text style={styles.subtitle}>
-                        Select one or more vehicle types suitable for your delivery
-                    </Text>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            <View style={styles.header}>
+                <View style={styles.headerIcon}>
+                    <Text style={styles.headerIconText}>📦</Text>
                 </View>
-            </ScrollView>
-        </>
+                <View style={styles.headerContent}>
+                    <Text style={styles.headerTitle}>Delivery Method</Text>
+                    <Text style={styles.headerSubtitle}>Choose how you want your package delivered</Text>
+                </View>
+            </View>
+
+            {alert && (
+                <CustomAlert
+                    type={alert.type}
+                    title={alert.title}
+                    message={alert.message}
+                    onClose={() => setAlert(null)}
+                    duration={alert.duration}
+                />
+            )}
+
+            <View style={styles.content}>
+                <Controller
+                    control={control}
+                    name="vehicleRequirements"
+                    render={() => (
+                        <View style={styles.grid}>
+                            {VEHICLES.map((vehicle) => {
+                                const isSelected = selectedVehicles.has(vehicle.id);
+                                const isRecommended = recommendations.has(vehicle.id);
+
+                                return (
+                                    <Animated.View
+                                        key={vehicle.id}
+                                        style={[
+                                            styles.cardContainer,
+                                            {
+                                                transform: [{scale: animatedValues[vehicle.id].scale}]
+                                            }
+                                        ]}
+                                    >
+                                        <Pressable
+                                            style={[
+                                                styles.vehicleCard,
+                                                isSelected && styles.selectedCard // ONLY border changes here
+                                            ]}
+                                            onPress={() => handleVehicleToggle(vehicle.id)}
+                                        >
+                                            <View style={styles.imageContainer}>
+                                                <Image
+                                                    source={vehicle.image}
+                                                    style={styles.vehicleImage}
+                                                    resizeMode="cover"
+                                                />
+                                                <View style={styles.imageOverlay}/>
+                                            </View>
+
+                                            <View style={styles.textContainer}>
+                                                <Text style={[
+                                                    styles.vehicleName,
+                                                    isSelected && styles.selectedText
+                                                ]}>
+                                                    {vehicle.name}
+                                                </Text>
+                                            </View>
+
+                                            {isRecommended && !isSelected && (
+                                                <View style={styles.recommendedBadge}>
+                                                    <Text style={styles.recommendedIcon}>⭐</Text>
+                                                    <Text style={styles.recommendedText}>Recommended</Text>
+                                                </View>
+                                            )}
+
+                                            {isSelected && (
+                                                <View style={styles.selectedBadge}>
+                                                    <Text style={styles.checkmark}>✓</Text>
+                                                </View>
+                                            )}
+                                        </Pressable>
+                                    </Animated.View>
+                                );
+                            })}
+                        </View>
+                    )}
+                />
+
+                <View style={styles.errorContainer}>
+                    {maxLimitNotification && (
+                        <View style={styles.notificationBubble}>
+                            <Text style={styles.notificationText}>Max 4 allowed</Text>
+                        </View>
+                    )}
+                </View>
+
+                {errors?.vehicleRequirements && (
+                    <Text style={styles.errorText}>
+                        {errors.vehicleRequirements?.message}
+                    </Text>
+                )}
+            </View>
+
+            <View style={styles.bottomSpacer}/>
+        </ScrollView>
     );
 });
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
-        padding: 16
+        backgroundColor: '#F8FAFC'
     },
     header: {
-        marginBottom: 16
-    },
-    title: {
-        fontSize: 24,
-        fontFamily: 'PoppinsBold',
-        color: '#111827',
-        marginBottom: 4
-    },
-    subtitle: {
-        fontSize: 14,
-        color: '#6B7280'
-    },
-    vehicleCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        borderWidth: 2,
-        padding: 16,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3
-    },
-    selectedCard: {
-        borderColor: '#10B981'
-    },
-    disabledCard: {
-        backgroundColor: '#F3F4F6'
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    vehicleList: {
-        flex: 1,
-        marginTop: 8,
-        marginBottom: 32,
-        gap: 12,
-
-    },
-    vehicleInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        flex: 1
+        padding: 20,
+        backgroundColor: '#ffffff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e2e8f0',
     },
-    vehicleIconContainer: {
-        position: 'relative',
-        marginRight: 12
-    },
-    vehicleEmoji: {
-        fontSize: 32
-    },
-    selectionIndicator: {
-        position: 'absolute',
-        bottom: -4,
-        right: -4,
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+    headerIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#dbeafe',
+        alignItems: 'center',
         justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#FFFFFF'
+        marginRight: 16,
     },
-    vehicleDetails: {
-        flex: 1
+    headerIconText: {
+        fontSize: 20,
     },
-    vehicleTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 4
+    headerContent: {
+        flex: 1,
     },
-    vehicleName: {
+    headerTitle: {
         fontSize: 18,
-        fontWeight: '600',
-        color: '#111827',
-        marginRight: 8
+        fontFamily: 'PoppinsBold',
+        color: '#1e293b',
+        marginBottom: 4,
     },
-    disabledText: {
-        color: '#9CA3AF'
-    },
-    statusBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 8
-    },
-    statusText: {
-        fontSize: 12,
-        fontWeight: '500',
-        marginLeft: 4,
-        textTransform: 'capitalize'
-    },
-    vehicleDescription: {
+    headerSubtitle: {
         fontSize: 14,
-        color: '#6B7280',
-        marginBottom: 8
+        fontFamily: 'PoppinsBold',
+        color: '#64748b',
     },
-    quickStats: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 16
+    content: {
+        flex: 1,
+        padding: 16
     },
-    statItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4
-    },
-    statText: {
-        fontSize: 12,
-        color: '#6B7280'
-    },
-    disabledReason: {
-        marginTop: 8,
-        fontSize: 12,
-        color: '#EF4444'
-    },
-    detailsToggle: {
-        padding: 8
-    },
-    expandedDetails: {
-        marginTop: 16,
-        borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
-        paddingTop: 16
-    },
-    capabilitiesGrid: {
+    grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
-        marginBottom: 16
-    },
-    capabilityItem: {
-        width: '50%',
-        marginBottom: 8
-    },
-    capabilityLabel: {
-        fontSize: 12,
-        color: '#6B7280',
-        marginBottom: 2
-    },
-    capabilityValue: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#111827'
-    },
-    evaluationDetail: {
-        flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 8
+        gap: 12
     },
-    evaluationLabel: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#374151'
-    },
-    evaluationValue: {
-        fontSize: 14,
-        fontWeight: '600'
-    },
-    section: {
-        marginBottom: 24
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#111827',
+    cardContainer: {
+        width: (SCREEN_WIDTH - 48) / 2,
+        height: 200,
         marginBottom: 12
     },
-
-})
+    vehicleCard: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: '#E2E8F0',
+        position: 'relative',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+        overflow: 'hidden'
+    },
+    selectedCard: {
+        borderColor: '#3B82F6',
+        backgroundColor: '#EFF6FF',
+        shadowColor: '#3B82F6',
+        shadowOpacity: 0.15,
+        elevation: 4
+    },
+    imageContainer: {
+        width: '100%',
+        height: 150,
+        position: 'relative'
+    },
+    vehicleImage: {
+        width: '100%',
+        height: '100%',
+    },
+    imageOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 40,
+        backgroundColor: 'rgba(0, 0, 0, 0.3)'
+    },
+    textContainer: {
+        position: 'absolute',
+        bottom: 12,
+        left: 12,
+        right: 12,
+        alignItems: 'center'
+    },
+    vehicleName: {
+        fontSize: 14,
+        fontFamily: 'PoppinsBold',
+        color: '#374151',
+        letterSpacing: 0.5
+    },
+    selectedText: {
+        color: '#DD5E89',
+        textShadowColor: 'rgba(0, 0, 0, 0.1)',
+        textShadowOffset: {width: 1, height: 1},
+        textShadowRadius: 3
+    },
+    recommendedBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 2
+    },
+    recommendedIcon: {
+        fontSize: 12,
+        marginRight: 4,
+    },
+    recommendedText: {
+        fontSize: 10,
+        fontFamily: 'PoppinsBold',
+        color: '#64748B',
+    },
+    selectedBadge: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 3
+    },
+    checkmark: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: 'bold'
+    },
+    errorContainer: {
+        padding: 16,
+        borderRadius: 12,
+        marginTop: 16,
+        alignItems: 'center'
+    },
+    errorText: {
+        color: '#EF4444',
+        fontSize: 14,
+        fontFamily: 'PoppinsBold',
+        textAlign: 'center',
+        marginTop: 16,
+        fontWeight: '500'
+    },
+    notificationBubble: {
+        backgroundColor: '#DC2626',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginLeft: 8,
+    },
+    notificationText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontFamily: 'PoppinsBold',
+    },
+    bottomSpacer: {
+        height: 150,
+    },
+});
 
 export default Step3;

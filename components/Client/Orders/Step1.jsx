@@ -19,12 +19,12 @@ import {ORDER_TYPES, PACKAGE_CATEGORIES} from '../../../utils/Constant';
 import {useForm, Controller} from 'react-hook-form';
 import {yupResolver} from '@hookform/resolvers/yup';
 import {stepOneSchema} from "../../../validators/orderValidationSchemas";
-import {Picker} from '@react-native-picker/picker';
 import useMediaStore from "../../../store/useMediaStore";
 import MediaImageUploader from "./MediaImageUploader";
 import MediaVideoUploader from "./MediaVideoUploader";
 import {useSessionStore} from "../../../store/useSessionStore";
 import {useOrderStore} from "../../../store/useOrderStore";
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 
 const Step1 = forwardRef(({defaultValues}, ref) => {
@@ -33,30 +33,31 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
     } = useOrderStore();
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const {images, video } = useMediaStore();
+    const [showCategorySelection, setShowCategorySelection] = useState(true);
+    const {images, video} = useMediaStore();
 
     const {control, handleSubmit, watch, setValue, formState: {errors}} = useForm({
         defaultValues: {
-            orderType: defaultValues.orderType || "instant",
-            scheduledPickup: defaultValues.scheduledPickup || null,
+            orderType: defaultValues.orderType || orderData?.orderType || "instant",
+            scheduledPickup: defaultValues.scheduledPickup || orderData?.scheduledPickup ||null,
             package: {
-                category: defaultValues.package?.category || "",
-                description: defaultValues.package?.description || "",
+                category: defaultValues.package?.category || orderData?.package?.category || "",
+                description: defaultValues.package?.description || orderData?.package?.description || "",
                 dimensions: {
-                    length: defaultValues.package?.dimensions?.length ?? "",
-                    width: defaultValues.package?.dimensions?.width ?? "",
-                    height: defaultValues.package?.dimensions?.height ?? "",
-                    unit: defaultValues.package?.dimensions?.unit ?? "cm"
+                    length: defaultValues.package?.dimensions?.length || orderData?.package?.dimensions?.length || "",
+                    width: defaultValues.package?.dimensions?.width || orderData?.package?.dimensions?.width || "",
+                    height: defaultValues.package?.dimensions?.height || orderData?.package?.dimensions?.height || "",
+                    unit: defaultValues.package?.dimensions?.unit || orderData?.package?.dimensions?.unit ||  "cm"
                 },
                 weight: {
-                    value: defaultValues.package?.weight?.value ?? "",
-                    unit: defaultValues.package?.weight?.unit ?? "kg"
+                    value: defaultValues.package?.weight?.value || orderData?.package?.weight?.value || "",
+                    unit: defaultValues.package?.weight?.unit || orderData?.package?.weight?.unit || "kg"
                 },
-                isFragile: defaultValues.package?.isFragile || false,
-                requiresSpecialHandling: defaultValues.package?.requiresSpecialHandling || false,
-                specialInstructions: defaultValues.package?.specialInstructions || "",
-                images: defaultValues.package?.images || [],
-                video: defaultValues.package?.video || null,
+                isFragile: defaultValues.package?.isFragile || orderData?.package?.isFragile || false,
+                requiresSpecialHandling: defaultValues.package?.requiresSpecialHandling || orderData?.package?.requiresSpecialHandling || false,
+                specialInstructions: defaultValues.package?.specialInstructions || orderData?.package?.specialInstructions || "",
+                images: defaultValues.package?.images || orderData?.package?.images || [],
+                video: defaultValues.package?.video || orderData?.package?.video || null,
             },
         },
         resolver: yupResolver(stepOneSchema),
@@ -74,7 +75,6 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
             new Promise((resolve) => {
                 handleSubmit(
                     (data) => {
-                        // const {images, video} = useMediaStore.getState();
                         const completeData = {
                             ...data,
                             package: {
@@ -90,7 +90,9 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                 )();
             }),
     }));
+
     const animatedHeight = useRef(new Animated.Value(0)).current;
+
     const scaleValues = useRef(
         ORDER_TYPES.reduce((acc, type) => {
             acc[type.id] = new Animated.Value(type.id === selectedType ? 1 : 0.95);
@@ -294,35 +296,50 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                     name="package.category"
                     render={({field}) => (
                         <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Type</Text>
-                            <View style={styles.categoryGrid}>
-                                {PACKAGE_CATEGORIES.map((category) => {
-                                    const isSelected = field.value === category.id;
-                                    return (
-                                        <Pressable
-                                            key={category.id}
-                                            style={[
-                                                styles.categoryCard,
-                                                isSelected && [styles.selectedCategory, {borderColor: category.color}]
-                                            ]}
-                                            onPress={() => handleCategorySelect(category.id, field.onChange)}
-                                        >
-                                            <View style={[
-                                                styles.categoryIcon,
-                                                {backgroundColor: category.color + '20'}
-                                            ]}>
-                                                <Ionicons name={category.icon} size={18} color={category.color}/>
-                                            </View>
-                                            <Text style={[
-                                                styles.categoryTitle,
-                                                isSelected && {color: category.color}
-                                            ]}>
-                                                {category.title}
-                                            </Text>
-                                        </Pressable>
-                                    );
-                                })}
-                            </View>
+                            <Pressable
+                                style={styles.categorySectionHeader}
+                                onPress={() => setShowCategorySelection(!showCategorySelection)}
+                            >
+                                <Text style={styles.sectionType}>Type</Text>
+                                <AntDesign
+                                    name={showCategorySelection ? "downcircle" : "upcircle"}
+                                    size={18}
+                                    color="black"
+                                />
+                            </Pressable>
+                            {showCategorySelection && (
+                                <>
+                                    <View style={styles.categoryGrid}>
+                                        {PACKAGE_CATEGORIES.map((category) => {
+                                            const isSelected = field.value === category.id;
+                                            return (
+                                                <Pressable
+                                                    key={category.id}
+                                                    style={[
+                                                        styles.categoryCard,
+                                                        isSelected && [styles.selectedCategory, {borderColor: category.color}]
+                                                    ]}
+                                                    onPress={() => handleCategorySelect(category.id, field.onChange)}
+                                                >
+                                                    <View style={[
+                                                        styles.categoryIcon,
+                                                        {backgroundColor: category.color + '20'}
+                                                    ]}>
+                                                        <Ionicons name={category.icon} size={18}
+                                                                  color={category.color}/>
+                                                    </View>
+                                                    <Text style={[
+                                                        styles.categoryTitle,
+                                                        isSelected && {color: category.color}
+                                                    ]}>
+                                                        {category.title}
+                                                    </Text>
+                                                </Pressable>
+                                            );
+                                        })}
+                                    </View>
+                                </>
+                            )}
                         </View>
                     )}
                 />
@@ -355,52 +372,96 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
 
                 {/* Package Dimension */}
                 <View style={styles.section}>
-                    <Text style={styles.label}>Dimension (Optional)</Text>
-                    <View style={styles.dimensionsRow}>
+                    <Text style={styles.label}>Dimension [ L - W - H ] (Optional)</Text>
+                    {/* Unit Selection for Dimensions */}
+                    <View style={styles.dimensionContainer}>
+                        <View style={styles.dimensionsRow}>
+                            <Controller
+                                control={control}
+                                name="package.dimensions.length"
+                                render={({field}) => (
+                                    <View style={styles.dimensionInput}>
+                                        <TextInput
+                                            style={styles.dimensionField}
+                                            placeholder="L"
+                                            keyboardType="decimal-pad"
+                                            value={field.value?.toString() ?? ''}
+                                            onChangeText={(val) => {
+                                                const numVal = parseFloat(val) || '';
+                                                field.onChange(numVal);
+                                            }}
+                                        />
+                                    </View>
+                                )}
+                            />
+                            <Text style={styles.dimensionSeparator}>×</Text>
+                            <Controller
+                                control={control}
+                                name="package.dimensions.width"
+                                render={({field}) => (
+                                    <View style={styles.dimensionInput}>
+                                        <TextInput
+                                            style={styles.dimensionField}
+                                            placeholder="W"
+                                            keyboardType="decimal-pad"
+                                            value={field.value?.toString() ?? ''}
+                                            onChangeText={(val) => {
+                                                const numVal = parseFloat(val) || '';
+                                                field.onChange(numVal);
+                                            }}
+                                        />
+                                    </View>
+                                )}
+                            />
+                            <Text style={styles.dimensionSeparator}>×</Text>
+                            <Controller
+                                control={control}
+                                name="package.dimensions.height"
+                                render={({field}) => (
+                                    <View style={styles.dimensionInput}>
+                                        <TextInput
+                                            style={styles.dimensionField}
+                                            placeholder="H"
+                                            keyboardType="decimal-pad"
+                                            value={field.value?.toString() ?? ''}
+                                            onChangeText={(val) => {
+                                                const numVal = parseFloat(val) || '';
+                                                field.onChange(numVal);
+                                            }}
+                                        />
+                                    </View>
+                                )}
+                            />
+                        </View>
                         <Controller
                             control={control}
-                            name="package.dimensions.length"
+                            name="package.dimensions.unit"
                             render={({field}) => (
-                                <View style={styles.dimensionInput}>
-                                    <TextInput
-                                        style={styles.dimensionField}
-                                        placeholder="L"
-                                        keyboardType="numeric"
-                                        value={field.value?.toString() ?? ''}
-                                        onChangeText={(val) => field.onChange(Number(val))}
-                                    />
-                                </View>
-                            )}
-                        />
-                        <Text style={styles.dimensionSeparator}>x</Text>
-                        <Controller
-                            control={control}
-                            name="package.dimensions.width"
-                            render={({field}) => (
-                                <View style={styles.dimensionInput}>
-                                    <TextInput
-                                        style={styles.dimensionField}
-                                        placeholder="W"
-                                        keyboardType="numeric"
-                                        value={field.value?.toString() ?? ''}
-                                        onChangeText={(val) => field.onChange(Number(val))}
-                                    />
-                                </View>
-                            )}
-                        />
-                        <Text style={styles.dimensionSeparator}>x</Text>
-                        <Controller
-                            control={control}
-                            name="package.dimensions.height"
-                            render={({field}) => (
-                                <View style={styles.dimensionInput}>
-                                    <TextInput
-                                        style={styles.dimensionField}
-                                        placeholder="H"
-                                        keyboardType="numeric"
-                                        value={field.value?.toString() ?? ''}
-                                        onChangeText={(val) => field.onChange(Number(val))}
-                                    />
+                                <View style={styles.dimensionUnits}>
+                                    <Pressable
+                                        style={[
+                                            styles.cm,
+                                            field.value === 'cm' && styles.unitButtonSelected
+                                        ]}
+                                        onPress={() => field.onChange('cm')}
+                                    >
+                                        <Text style={[
+                                            styles.unitButtonText,
+                                            field.value === 'cm' && styles.unitButtonTextSelected
+                                        ]}>CM</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        style={[
+                                            styles.m,
+                                            field.value === 'inch' && styles.unitButtonSelected
+                                        ]}
+                                        onPress={() => field.onChange('inch')}
+                                    >
+                                        <Text style={[
+                                            styles.unitButtonText,
+                                            field.value === 'inch' && styles.unitButtonTextSelected
+                                        ]}>INCH</Text>
+                                    </Pressable>
                                 </View>
                             )}
                         />
@@ -410,41 +471,58 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                 {/* Weight Input */}
                 <View style={styles.section}>
                     <Text style={styles.label}>Weight</Text>
-                    <View style={styles.weightRow}>
-                        {/* Weight numeric input */}
+                    <View style={styles.weightContainer}>
                         <Controller
                             control={control}
                             name="package.weight.value"
                             render={({field}) => (
-                                <TextInput
-                                    style={[
-                                        styles.weightInput,
-                                        errors?.package?.weight?.value && styles.inputError
-                                    ]}
-                                    placeholder="0.0"
-                                    keyboardType="numeric"
-                                    value={field.value?.toString() ?? ''}
-                                    onChangeText={(val) => field.onChange(Number(val))}
-                                />
+                                <View style={styles.weightInputContainer}>
+                                    <TextInput
+                                        style={[
+                                            styles.weightValueInput,
+                                            errors?.package?.weight?.value && styles.inputError
+                                        ]}
+                                        placeholder="0.0"
+                                        keyboardType="decimal-pad"
+                                        value={field.value?.toString() ?? ''}
+                                        onChangeText={(val) => {
+                                            const numVal = parseFloat(val) || '';
+                                            field.onChange(numVal);
+                                        }}
+                                    />
+                                </View>
                             )}
                         />
 
-                        {/* Unit dropdown */}
                         <Controller
                             control={control}
                             name="package.weight.unit"
                             render={({field}) => (
-                                <View style={styles.unitDropdownContainer}>
-                                    <Picker
-                                        selectedValue={field.value}
-                                        style={styles.unitDropdown}
-                                        onValueChange={field.onChange}
-                                        prompt="Select unit"
-                                        mode="dropdown"
+                                <View style={styles.unitButtonContainer}>
+                                    <Pressable
+                                        style={[
+                                            styles.Kg,
+                                            field.value === 'kg' && styles.unitButtonSelected
+                                        ]}
+                                        onPress={() => field.onChange('kg')}
                                     >
-                                        <Picker.Item label="kg" value="kg"/>
-                                        <Picker.Item label="g" value="g"/>
-                                    </Picker>
+                                        <Text style={[
+                                            styles.unitButtonText,
+                                            field.value === 'kg' && styles.unitButtonTextSelected
+                                        ]}>KG</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        style={[
+                                            styles.G,
+                                            field.value === 'g' && styles.unitButtonSelected
+                                        ]}
+                                        onPress={() => field.onChange('g')}
+                                    >
+                                        <Text style={[
+                                            styles.unitButtonText,
+                                            field.value === 'g' && styles.unitButtonTextSelected
+                                        ]}>G</Text>
+                                    </Pressable>
                                 </View>
                             )}
                         />
@@ -621,6 +699,12 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         fontFamily: 'PoppinsRegular',
     },
+    categorySectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        gap: 15,
+    },
     sectionDescription: {
         marginTop: 12,
         marginHorizontal: 15,
@@ -630,7 +714,12 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 16,
         marginBottom: 6,
-        fontFamily: 'PoppinsSemiBold',
+        fontFamily: 'PoppinsBold',
+        color: '#111827',
+    },
+    sectionType: {
+        fontSize: 16,
+        fontFamily: 'PoppinsBold',
         color: '#111827',
     },
     sectionSubtitle: {
@@ -871,14 +960,28 @@ const styles = StyleSheet.create({
     },
 
     // Dimensions Styles
+
+    dimensionContainer: {
+        flexDirection: 'row',
+        gap: 25,
+    },
+
     dimensionsRow: {
         flexDirection: 'row',
+        flex: 0.7,
+        gap: 10,
         alignItems: 'center',
-        gap: 40,
+    },
+
+    dimensionUnits: {
+        flexDirection: 'row',
+        flex: 0.3,
+        gap: 10,
+        backgroundColor: '#f3f4f6',
+        borderRadius: 8,
     },
     dimensionInput: {
         flex: 1,
-        flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'white',
         borderWidth: 1,
@@ -903,35 +1006,86 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsBold',
         marginLeft: 4,
     },
+    cm: {
+        flex: 1,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+    },
+    m: {
+        flex: 1,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+    },
 
     // Weight Styles
+    weightContainer: {
+        flexDirection: 'row',
+        gap: 25,
+    },
+    weightInputContainer: {
+        flex: 0.6,
+    },
+    weightValueInput: {
+        backgroundColor: 'white',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 16,
+        fontFamily: 'PoppinsRegular',
+        color: '#111827',
+    },
     weightRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
 
-    weightInput: {
-        flex: 2.0,
-        borderWidth: 1,
-        borderColor: '#d1d5db',
-        borderRadius: 10,
-        paddingHorizontal: 20,
-        marginRight: 25,
+    // unit section
+    unitButtonContainer: {
+        flexDirection: 'row',
+        flex: 0.4,
+        gap: 20,
+        backgroundColor: '#f3f4f6',
+        borderRadius: 8,
     },
-
-    unitDropdownContainer: {
+    Kg: {
         flex: 1,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
         borderWidth: 1,
         borderColor: '#d1d5db',
-        borderRadius: 50,
-        overflow: 'hidden',
     },
-
-    unitDropdown: {
-        height: Platform.OS === 'android' ? 40 : undefined,
-        width: '100%',
-        fontFamily: 'PoppinsRegular',
-        backgroundColor: '#d4dfed',
+    G: {
+        flex: 1,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+    },
+    unitButtonSelected: {
+        backgroundColor: '#667eea',
+        shadowColor: '#667eea',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    unitButtonText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#6b7280',
+    },
+    unitButtonTextSelected: {
+        color: 'white',
     },
 
     // Toggle Styles
@@ -977,7 +1131,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     bottomSpacing: {
-        height: 80,
+        height: 150,
     },
 
     // Image and Video Upload Styles

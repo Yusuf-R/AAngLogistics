@@ -88,13 +88,22 @@ function OrderCreationFlow() {
     };
 
     const proceedToNextStep = useCallback(async () => {
-        const result = await validateCurrentStep();
-        if (!result.valid) {
-            setHasErrors(true);
-            return;
+        setIsSaving(true);
+        try {
+            const result = await validateCurrentStep();
+            if (!result.valid) {
+                setHasErrors(true);
+                return;
+            }
+            setHasErrors(false);
+            await goNext();
+        } catch (error) {
+            console.log('❌ Next step error :', error);
+            return { valid: false };
+        } finally {
+            setIsSaving(false);
         }
-        setHasErrors(false);
-        await goNext();
+
     }, [currentStep, orderData]);
 
     const handleBackPress = () => {
@@ -115,7 +124,7 @@ function OrderCreationFlow() {
 
             if (!result.valid) {
                 setHasErrors(true);
-                return result;  // Return early with validation result
+                return result;
             }
 
             await saveDraft();
