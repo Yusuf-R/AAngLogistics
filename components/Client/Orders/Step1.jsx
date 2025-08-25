@@ -25,6 +25,7 @@ import MediaVideoUploader from "./MediaVideoUploader";
 import {useSessionStore} from "../../../store/useSessionStore";
 import {useOrderStore} from "../../../store/useOrderStore";
 import AntDesign from '@expo/vector-icons/AntDesign';
+import DecimalInput from "../../DecimalInput/DecimalInput";
 
 
 const Step1 = forwardRef(({defaultValues}, ref) => {
@@ -39,7 +40,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
     const {control, handleSubmit, watch, setValue, formState: {errors}} = useForm({
         defaultValues: {
             orderType: defaultValues.orderType || orderData?.orderType || "instant",
-            scheduledPickup: defaultValues.scheduledPickup || orderData?.scheduledPickup ||null,
+            scheduledPickup: defaultValues.scheduledPickup || orderData?.scheduledPickup || null,
             package: {
                 category: defaultValues.package?.category || orderData?.package?.category || "",
                 description: defaultValues.package?.description || orderData?.package?.description || "",
@@ -47,7 +48,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                     length: defaultValues.package?.dimensions?.length || orderData?.package?.dimensions?.length || "",
                     width: defaultValues.package?.dimensions?.width || orderData?.package?.dimensions?.width || "",
                     height: defaultValues.package?.dimensions?.height || orderData?.package?.dimensions?.height || "",
-                    unit: defaultValues.package?.dimensions?.unit || orderData?.package?.dimensions?.unit ||  "cm"
+                    unit: defaultValues.package?.dimensions?.unit || orderData?.package?.dimensions?.unit || "cm"
                 },
                 weight: {
                     value: defaultValues.package?.weight?.value || orderData?.package?.weight?.value || "",
@@ -353,7 +354,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                     name="package.description"
                     render={({field}) => (
                         <View style={styles.sectionDescription}>
-                            <Text style={styles.label}>Description</Text>
+                            <Text style={styles.label}>Description *</Text>
                             <TextInput
                                 style={[styles.input, errors?.package?.description && styles.inputError]}
                                 placeholder="Enter package description"
@@ -376,62 +377,31 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                     {/* Unit Selection for Dimensions */}
                     <View style={styles.dimensionContainer}>
                         <View style={styles.dimensionsRow}>
-                            <Controller
-                                control={control}
-                                name="package.dimensions.length"
-                                render={({field}) => (
-                                    <View style={styles.dimensionInput}>
-                                        <TextInput
-                                            style={styles.dimensionField}
-                                            placeholder="L"
-                                            keyboardType="decimal-pad"
-                                            value={field.value?.toString() ?? ''}
-                                            onChangeText={(val) => {
-                                                const numVal = parseFloat(val) || '';
-                                                field.onChange(numVal);
-                                            }}
-                                        />
-                                    </View>
-                                )}
-                            />
+                            <View style={styles.dimensionInput}>
+                                <DecimalInput
+                                    control={control}
+                                    name="package.dimensions.length"
+                                    style={styles.dimensionField} placeholder="L"
+                                />
+                            </View>
                             <Text style={styles.dimensionSeparator}>×</Text>
-                            <Controller
-                                control={control}
-                                name="package.dimensions.width"
-                                render={({field}) => (
-                                    <View style={styles.dimensionInput}>
-                                        <TextInput
-                                            style={styles.dimensionField}
-                                            placeholder="W"
-                                            keyboardType="decimal-pad"
-                                            value={field.value?.toString() ?? ''}
-                                            onChangeText={(val) => {
-                                                const numVal = parseFloat(val) || '';
-                                                field.onChange(numVal);
-                                            }}
-                                        />
-                                    </View>
-                                )}
-                            />
+                            <View style={styles.dimensionInput}>
+                                <DecimalInput
+                                    control={control}
+                                    name="package.dimensions.width"
+                                    style={styles.dimensionField}
+                                    placeholder="W"
+                                />
+                            </View>
                             <Text style={styles.dimensionSeparator}>×</Text>
-                            <Controller
-                                control={control}
-                                name="package.dimensions.height"
-                                render={({field}) => (
-                                    <View style={styles.dimensionInput}>
-                                        <TextInput
-                                            style={styles.dimensionField}
-                                            placeholder="H"
-                                            keyboardType="decimal-pad"
-                                            value={field.value?.toString() ?? ''}
-                                            onChangeText={(val) => {
-                                                const numVal = parseFloat(val) || '';
-                                                field.onChange(numVal);
-                                            }}
-                                        />
-                                    </View>
-                                )}
-                            />
+                            <View style={styles.dimensionInput}>
+                                <DecimalInput
+                                    control={control}
+                                    name="package.dimensions.height"
+                                    style={styles.dimensionField}
+                                    placeholder="H"
+                                />
+                            </View>
                         </View>
                         <Controller
                             control={control}
@@ -472,27 +442,15 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                 <View style={styles.section}>
                     <Text style={styles.label}>Weight</Text>
                     <View style={styles.weightContainer}>
-                        <Controller
-                            control={control}
-                            name="package.weight.value"
-                            render={({field}) => (
-                                <View style={styles.weightInputContainer}>
-                                    <TextInput
-                                        style={[
-                                            styles.weightValueInput,
-                                            errors?.package?.weight?.value && styles.inputError
-                                        ]}
-                                        placeholder="0.0"
-                                        keyboardType="decimal-pad"
-                                        value={field.value?.toString() ?? ''}
-                                        onChangeText={(val) => {
-                                            const numVal = parseFloat(val) || '';
-                                            field.onChange(numVal);
-                                        }}
-                                    />
-                                </View>
-                            )}
-                        />
+                        <View style={styles.weightInputContainer}>
+                            <DecimalInput
+                                control={control}
+                                name="package.weight.value"
+                                style={styles.weightValueInput}
+                                precision={2}
+                                placeholder="0.00"
+                            />
+                        </View>
 
                         <Controller
                             control={control}

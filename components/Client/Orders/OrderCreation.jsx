@@ -27,6 +27,7 @@ import CustomHeader from "../CustomHeader";
 import Step1 from "./Step1";
 import Step2 from "./Step2";
 import Step3 from "./Step3";
+import Review from "./Review";
 import {useOrderStore} from "../../../store/useOrderStore";
 import useMediaStore from "../../../store/useMediaStore";
 import ExitOrderModal from "./ExitOrderModal";
@@ -174,6 +175,8 @@ function OrderCreationFlow() {
                 return <Step2 {...stepProps} />;
             case 2:
                 return <Step3 {...stepProps} />;
+            case 3:
+                return <Review {...stepProps} />;
             default:
                 return null; // Handle additional steps as needed
         }

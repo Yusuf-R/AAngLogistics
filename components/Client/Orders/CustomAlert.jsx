@@ -1,4 +1,4 @@
-// components/CustomAlert.jsx - Elegant replacement for Alert
+// components/CustomAlert.jsx
 import React, {useEffect, useRef} from 'react';
 import {
     View,
@@ -13,7 +13,7 @@ import {Ionicons} from '@expo/vector-icons';
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 const CustomAlert = ({
-                         type = 'info', // 'success', 'error', 'warning', 'info'
+                         type = 'info',
                          title,
                          message,
                          onClose,
@@ -21,6 +21,7 @@ const CustomAlert = ({
                      }) => {
     const slideAnim = useRef(new Animated.Value(-100)).current;
     const opacityAnim = useRef(new Animated.Value(0)).current;
+    const isMounted = useRef(true);
 
     const alertConfig = {
         success: {
@@ -48,29 +49,41 @@ const CustomAlert = ({
     const config = alertConfig[type] || alertConfig.info;
 
     useEffect(() => {
-        // Entrance animation
-        Animated.parallel([
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 400,
-                useNativeDriver: true,
-            }),
-            Animated.timing(opacityAnim, {
-                toValue: 1,
-                duration: 400,
-                useNativeDriver: true,
-            }),
-        ]).start();
+        isMounted.current = true;
+
+        // Defer the animation to the next frame to avoid useInsertionEffect conflict
+        const animationTimer = setTimeout(() => {
+            if (isMounted.current) {
+                Animated.parallel([
+                    Animated.timing(slideAnim, {
+                        toValue: 0,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(opacityAnim, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+            }
+        }, 0);
 
         // Auto dismiss
-        const timer = setTimeout(() => {
+        const dismissTimer = setTimeout(() => {
             handleClose();
         }, duration);
 
-        return () => clearTimeout(timer);
+        return () => {
+            isMounted.current = false;
+            clearTimeout(animationTimer);
+            clearTimeout(dismissTimer);
+        };
     }, [duration]);
 
     const handleClose = () => {
+        if (!isMounted.current) return;
+
         Animated.parallel([
             Animated.timing(slideAnim, {
                 toValue: -100,
@@ -83,7 +96,9 @@ const CustomAlert = ({
                 useNativeDriver: true,
             }),
         ]).start(() => {
-            onClose?.();
+            if (isMounted.current) {
+                onClose?.();
+            }
         });
     };
 

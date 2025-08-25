@@ -37,10 +37,11 @@ export const stepOneSchema = Yup.object().shape({
             unit: Yup.string().oneOf(['kg', 'g'])
         }),
 
-        value: Yup.number()
-            .typeError('Weight must be a number')
-            .min(0, 'Value cannot be negative')
-            .max(10000000, 'Value cannot exceed 10,000,000'),
+        // for insurance
+        // value: Yup.number()
+        //     .typeError('Weight must be a number')
+        //     .min(0, 'Value cannot be negative')
+        //     .max(10000000, 'Value cannot exceed 10,000,000'),
 
         isFragile: Yup.boolean(),
 
