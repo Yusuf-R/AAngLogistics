@@ -169,12 +169,6 @@ const Step2 = forwardRef(({defaultValues}, ref) => {
                             resolve({valid: true, data: data});
                         },
                         (errs) => {
-                            setAlert({
-                                type: 'error',
-                                title: 'Validation Failed',
-                                message: 'Please fix all validation errors',
-                                duration: 2000
-                            });
                             resolve({valid: false, errors: errs});
                         }
                     )();

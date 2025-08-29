@@ -151,8 +151,8 @@ export default function PickUpPanel({
                     style: 'destructive',
                     onPress: () => {
                         setValue('location.pickUp', {
-                            address: '',
-                            coordinates: {type: 'Point', coordinates: []},
+                            address: 'TBD',
+                            coordinates: {type: 'Point', coordinates: [1, 0]},
                             contactPerson: {name: '', phone: '', alternatePhone: ''},
                             landmark: '',
                             extraInformation: '',

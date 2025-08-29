@@ -29,12 +29,10 @@ import DecimalInput from "../../DecimalInput/DecimalInput";
 
 
 const Step1 = forwardRef(({defaultValues}, ref) => {
-    const {
-        orderData,
-    } = useOrderStore();
+    const orderData = useOrderStore((state) => state.orderData);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const [showCategorySelection, setShowCategorySelection] = useState(true);
+    const [showCategorySelection, setShowCategorySelection] = useState(false);
     const {images, video} = useMediaStore();
 
     const {control, handleSubmit, watch, setValue, formState: {errors}} = useForm({
@@ -165,7 +163,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
 
                 {/* Order Type Selection */}
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Priority</Text>
+                    <Text style={styles.sectionTitle}>Priority *</Text>
                     <View style={styles.typeGrid}>
                         {ORDER_TYPES.map((type) => (
                             <Animated.View
@@ -301,7 +299,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                                 style={styles.categorySectionHeader}
                                 onPress={() => setShowCategorySelection(!showCategorySelection)}
                             >
-                                <Text style={styles.sectionType}>Type</Text>
+                                <Text style={styles.sectionType}>Type *</Text>
                                 <AntDesign
                                     name={showCategorySelection ? "downcircle" : "upcircle"}
                                     size={18}
@@ -440,7 +438,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
 
                 {/* Weight Input */}
                 <View style={styles.section}>
-                    <Text style={styles.label}>Weight</Text>
+                    <Text style={styles.label}>Weight *</Text>
                     <View style={styles.weightContainer}>
                         <View style={styles.weightInputContainer}>
                             <DecimalInput

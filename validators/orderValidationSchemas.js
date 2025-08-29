@@ -56,7 +56,6 @@ export const stepOneSchema = Yup.object().shape({
     })
 });
 
-
 // Step 2: Location & Contact Details
 const geoJSONPoint = Yup.object({
     type: Yup.string().oneOf(['Point']).required(),
@@ -111,6 +110,7 @@ export const stepTwoSchema = Yup.object({
         }),
 });
 
+// Step3: Vehicle Requirements
 export const stepThreeSchema = Yup.object({
     vehicleRequirements: Yup.array()
         .of(Yup.mixed().oneOf(['bicycle','motorcycle','tricycle','car','van','truck']))
@@ -118,3 +118,6 @@ export const stepThreeSchema = Yup.object({
         .max(4, 'Maximum 4 vehicle types allowed')
         .required('Vehicle selection is required')
 });
+
+// Final Review & Confirmation (no additional fields, just a summary)
+export const reviewSchema = Yup.object({}); // No fields to validate here

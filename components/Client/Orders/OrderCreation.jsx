@@ -28,13 +28,14 @@ import Step1 from "./Step1";
 import Step2 from "./Step2";
 import Step3 from "./Step3";
 import Review from "./Review";
+import Payment from "./Payment";
+import CustomAlert from "./CustomAlert";
 import {useOrderStore} from "../../../store/useOrderStore";
 import useMediaStore from "../../../store/useMediaStore";
 import ExitOrderModal from "./ExitOrderModal";
 
 
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 function OrderCreationFlow() {
     const {
@@ -46,13 +47,22 @@ function OrderCreationFlow() {
         goPrevious,
         clearDraft
     } = useOrderStore();
-    const { resetMedia } = useMediaStore();
+    const {resetMedia} = useMediaStore();
 
     // Core state management
     const [isLoading, setIsLoading] = useState(false);
     const [hasErrors, setHasErrors] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [showExitModal, setShowExitModal] = useState(false);
+    const [apiError, setApiError] = useState(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const [alertVisible, setAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        type: 'error',
+        title: '',
+        message: '',
+    });
+
 
     const router = useRouter();
     const insets = useSafeAreaInsets();
@@ -62,7 +72,7 @@ function OrderCreationFlow() {
 
     const validateCurrentStep = async () => {
         const ref = stepRefs.current[currentStep];
-        if (!ref || !ref.submit) return { valid: false, data: null };
+        if (!ref || !ref.submit) return {valid: false, data: null};
 
         const result = await ref.submit();
 
@@ -88,19 +98,38 @@ function OrderCreationFlow() {
         return result;
     };
 
+    const showAlert = (type, title, message, showRetry = false) => {
+        setAlertConfig({type, title, message});
+        setAlertVisible(true);
+    };
+
+    const hideAlert = () => {
+        setAlertVisible(false);
+    };
+
     const proceedToNextStep = useCallback(async () => {
         setIsSaving(true);
+        setApiError(null);
         try {
             const result = await validateCurrentStep();
             if (!result.valid) {
                 setHasErrors(true);
-                return;
+                setIsSaving(false);
+                showAlert('error', 'Validation Error', 'Please check your inputs and try again.');
+                return {valid: false};
             }
             setHasErrors(false);
             await goNext();
+
         } catch (error) {
+            setIsSaving(false);
             console.log('❌ Next step error :', error);
-            return { valid: false };
+            showAlert(
+                'error',
+                'Unexpected Error',
+                'An unexpected error occurred. Please try again.',
+            );
+            return {valid: false, error: error.message};
         } finally {
             setIsSaving(false);
         }
@@ -125,15 +154,26 @@ function OrderCreationFlow() {
 
             if (!result.valid) {
                 setHasErrors(true);
+                showAlert('error', 'Validation Error', 'Please check your inputs and try again.');
                 return result;
             }
 
             await saveDraft();
             setHasErrors(false);
-            return { valid: true };
+            showAlert(
+                'success',
+                'Progress Saved',
+                'Your progress has been saved successfully.',
+            );
+            return {valid: true};
         } catch (error) {
             console.log('❌ Save failed:', error);
-            return { valid: false };
+            showAlert(
+                'error',
+                'Unexpected Error',
+                'An unexpected error occurred. Please try again.',
+            );
+            return {valid: false};
         } finally {
             setIsSaving(false);
         }
@@ -177,12 +217,14 @@ function OrderCreationFlow() {
                 return <Step3 {...stepProps} />;
             case 3:
                 return <Review {...stepProps} />;
+            case 4:
+                return <Payment {...stepProps} />;
             default:
                 return null; // Handle additional steps as needed
         }
     };
     useEffect(() => {
-        const { images, video } = orderData?.package || {};
+        const {images, video} = orderData?.package || {};
         useMediaStore.getState().setImages(images || []);
         useMediaStore.getState().setVideo(video || null);
     }, []);
@@ -198,9 +240,20 @@ function OrderCreationFlow() {
                     onBackPress={handleBackPress}
                 />
 
+                {/* Alert */}
+                {alertVisible && (
+                    <CustomAlert
+                        visible={alertVisible}
+                        type={alertConfig.type}
+                        title={alertConfig.title}
+                        message={alertConfig.message}
+                        onClose={hideAlert}
+                    />
+                )}
+
                 {/* Progress Header */}
                 <LinearGradient colors={["#FFF", "#FFF"]} style={styles.header}>
-                    <ProgressIndicator steps={ORDER_STEPS} currentStep={currentStep} />
+                    <ProgressIndicator steps={ORDER_STEPS} currentStep={currentStep}/>
                 </LinearGradient>
 
                 {/* Main Content */}
@@ -209,7 +262,7 @@ function OrderCreationFlow() {
                     behavior={Platform.OS === 'ios' ? 'padding' : null}
                     keyboardVerticalOffset={insets.top + 100}
                 >
-                        {renderStep()}
+                    {renderStep()}
                 </KeyboardAvoidingView>
 
                 {/* Floating Actions */}
@@ -277,7 +330,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         elevation: 8,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: {width: 0, height: 4},
         shadowOpacity: 0.3,
         shadowRadius: 8
     },

@@ -131,8 +131,8 @@ export default function DropOffPanel({
 
     const handleClearPickupData = () => {
         Alert.alert(
-            'Clear Pick-Up Data',
-            'Are you sure you want to clear all pick-up data?',
+            'Clear Drop-Off Data',
+            'Are you sure you want to clear all dropOff data?',
             [
                 {
                     text: 'Cancel',
@@ -143,15 +143,15 @@ export default function DropOffPanel({
                     style: 'destructive',
                     onPress: () => {
                         setValue('location.dropOff', {
-                            address: '',
-                            coordinates: {type: 'Point', coordinates: []},
+                            address: 'TBD',
+                            coordinates: {type: 'Point', coordinates: [0, 1]},
                             contactPerson: {name: '', phone: '', alternatePhone: ''},
                             landmark: '',
                             extraInformation: '',
                             locationType: 'residential',
                             building: {name: '', floor: '', unit: ''}
                         }, {shouldValidate: true, shouldDirty: true});
-                        notify('success', 'Data Cleared', 'Pick-up data has been cleared successfully.');
+                        notify('success', 'Data Cleared', 'Drop-off data has been cleared successfully.');
                     }
                 }
             ],

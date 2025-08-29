@@ -51,26 +51,15 @@ function FloatingActionPanel({
     };
 
     const handleNext = async () => {
-        if (hasErrors) {
-            Animated.sequence([
-                Animated.timing(scaleAnim, { toValue: 0.95, duration: 100, useNativeDriver: true }),
-                Animated.timing(scaleAnim, { toValue: 1.05, duration: 100, useNativeDriver: true }),
-                Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true })
-            ]).start();
-            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            return;
-        }
-
         createRippleEffect();
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
-            console.log({
-                caller: 'FloatingActionPanel',
-                currentStep,
-                fxn: onNext,
-            })
             const result = await onNext();
+            if (result?.error === 'SAVE_FAILED') {
+                await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                return;
+            }
             if (!result?.valid) {
                 Animated.sequence([
                     Animated.timing(scaleAnim, { toValue: 0.95, duration: 100, useNativeDriver: true }),
@@ -79,8 +68,6 @@ function FloatingActionPanel({
                 ]).start();
                 await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             }
-            console.log('✅ onNext completed successfully:', result);
-
         } catch (err) {
             console.log('❌ onNext threw an error:', err);
         }

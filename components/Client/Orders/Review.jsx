@@ -19,6 +19,7 @@ import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useOrderStore} from "../../../store/useOrderStore";
 import {ORDER_TYPES, PACKAGE_CATEGORIES} from '../../../utils/Constant';
+import { calculateTotalPrice } from '../../../utils/LogisticsPricingEngine';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -34,49 +35,152 @@ const reviewSchema = yup.object({
     })
 });
 
+const calculateIntelligentPricing = (orderData, insuranceData = {}) => {
+    // Transform your existing orderData structure to match the pricing engine
+    const pricingInput = {
+        // Package details
+        package: {
+            weight: {
+                value: orderData?.package?.weight?.value || 1,
+                unit: orderData?.package?.weight?.unit || 'kg'
+            },
+            category: orderData?.package?.category || 'parcel',
+            isFragile: orderData?.package?.isFragile || false,
+            requiresSpecialHandling: orderData?.package?. requiresSpecialHandling || false,
+            declaredValue: insuranceData.declaredValue || 0,
+            description: orderData?.package?.description
+        },
+
+        // Location information
+        location: {
+            pickUp: {
+                ...orderData?.location?.pickUp,
+                // Determine location type for surcharges
+                locationType: determineLocationType(orderData?.location?.pickUp?.address)
+            },
+            dropOff: {
+                ...orderData?.location?.dropOff,
+                locationType: determineLocationType(orderData?.location?.dropOff?.address)
+            }
+        },
+
+        // Service level
+        priority: orderData?.priority || 'normal',
+
+        // Insurance
+        insurance: {
+            isInsured: insuranceData.isInsured || false,
+            declaredValue: insuranceData.declaredValue || 0
+        },
+
+        // Route data if available
+        route: orderData?.route,
+
+        // Order type
+        orderType: orderData?.orderType,
+
+        vehicleRequirements: orderData?.vehicleRequirements || [],
+    };
+
+    // Get comprehensive pricing calculation
+    const pricingResult = calculateTotalPrice(pricingInput);
+
+    // Return simplified structure for your Review component
+    return {
+        // What the user sees
+        deliveryFee: pricingResult.displayBreakdown.deliveryService,
+        insuranceFee: pricingResult.displayBreakdown.insurance,
+        vat: pricingResult.displayBreakdown.vat,
+        discount: pricingResult.displayBreakdown.discount,
+        total: pricingResult.displayBreakdown.total,
+
+        // Internal data for backend/audit
+        backendPricing: pricingResult.backendPricing,
+
+        // Stakeholder breakdown (for your meetings)
+        stakeholderBreakdown: pricingResult.detailedBreakdown
+    };
+};
+
+const determineLocationType = (address) => {
+    if (!address) return 'residential';
+
+    const addressLower = address.toLowerCase();
+
+    if (addressLower.includes('hospital') || addressLower.includes('clinic') || addressLower.includes('medical')) {
+        return 'hospital';
+    }
+    if (addressLower.includes('mall') || addressLower.includes('shopping') || addressLower.includes('plaza')) {
+        return 'mall';
+    }
+    if (addressLower.includes('office') || addressLower.includes('corporate') || addressLower.includes('business')) {
+        return 'office';
+    }
+    if (addressLower.includes('school') || addressLower.includes('university') || addressLower.includes('college')) {
+        return 'school';
+    }
+
+    return 'residential';
+};
+
+const generateInputHash = (orderData, insurance) => {
+    const key = JSON.stringify({
+        pickup: orderData?.location?.pickUp?.coordinates,
+        dropoff: orderData?.location?.dropOff?.coordinates,
+        weight: orderData?.package?.weight?.value,
+        category: orderData?.package?.category,
+        insurance: insurance.isInsured,
+        declaredValue: insurance.declaredValue
+    });
+    // Simple hash for validation purposes
+    return btoa(key).slice(0, 10);
+};
+
 const Review = forwardRef(({defaultValues}, ref) => {
-    const {orderData} = useOrderStore();
+    const orderData = useOrderStore((state) => state.orderData);
 
     const {control, handleSubmit, watch, formState: {errors}} = useForm({
         resolver: yupResolver(reviewSchema),
         defaultValues: {
             insurance: {
                 isInsured: defaultValues?.insurance?.isInsured || false,
-                declaredValue: defaultValues?.insurance?.declaredValue || 50000,
+                declaredValue: defaultValues?.insurance?.declaredValue || 0,
             }
         }
     });
 
     const watchInsurance = watch('insurance');
 
-    // Enhanced pricing calculation with VAT included internally
-    const pricingCalculation = useMemo(() => {
-        // Base delivery fee (this would come from your backend)
-        const baseDeliveryFee = 15000;
+    // Enhanced pricing calculation aligned with PricingSchema
+    const useIntelligentPricing = (orderData, watchInsurance) => {
+        return useMemo(() => {
+            const intelligentPricing = calculateIntelligentPricing(orderData, watchInsurance);
 
-        // Insurance calculation
-        let insuranceFee = 0;
-        if (watchInsurance.isInsured && watchInsurance.declaredValue > 0) {
-            insuranceFee = watchInsurance.declaredValue * 0.02; // 2% of declared value
-        }
+            return {
+                // Keep the same structure your UI expects
+                deliveryFee: intelligentPricing.deliveryFee,
+                insuranceFee: intelligentPricing.insuranceFee,
+                vat: intelligentPricing.vat,
+                discount: intelligentPricing.discount,
+                total: intelligentPricing.total,
 
-        // Subtotal before VAT
-        const subtotal = baseDeliveryFee + insuranceFee;
+                // Additional data for backend submission
+                backendData: intelligentPricing.backendPricing,
 
-        // VAT calculation (7.5% - included internally)
-        const vat = subtotal * 0.075;
+                // Stakeholder data for your presentations
+                stakeholderData: intelligentPricing.stakeholderBreakdown,
 
-        // Final total with VAT included
-        const totalWithVAT = subtotal + vat;
+                // Validation data
+                metadata: {
+                    engineVersion: "1.0",
+                    calculationTimestamp: Date.now(),
+                    inputHash: generateInputHash(orderData, watchInsurance)
+                }
+            };
+        }, [orderData, watchInsurance.isInsured, watchInsurance.declaredValue]);
+    };
 
-        return {
-            deliveryFee: baseDeliveryFee,
-            insuranceFee: Math.round(insuranceFee),
-            subtotal: Math.round(subtotal),
-            vat: Math.round(vat),
-            total: Math.round(totalWithVAT)
-        };
-    }, [watchInsurance]);
+    const pricingCalculation = useIntelligentPricing(orderData, watchInsurance);
 
     const formatCurrency = (amount) => {
         return `₦${amount.toLocaleString()}`;
@@ -89,6 +193,13 @@ const Review = forwardRef(({defaultValues}, ref) => {
 
     const handleImageError = (index) => {
         console.log(`Image ${index} failed to load:`, orderData?.package?.images[index]?.url);
+        // Optional: Add a fallback image
+        return (
+            <View style={styles.fallbackImage}>
+                <Ionicons name="image" size={32} color="#9ca3af" />
+                <Text style={styles.fallbackText}>Image unavailable</Text>
+            </View>
+        );
     };
 
     useImperativeHandle(ref, () => ({
@@ -97,8 +208,39 @@ const Review = forwardRef(({defaultValues}, ref) => {
                 handleSubmit(
                     (data) => {
                         const reviewData = {
-                            ...data,
-                            pricing: pricingCalculation
+                            // Insurance data for your schema
+                            insurance: {
+                                isInsured: data.insurance.isInsured,
+                                declaredValue: data.insurance.declaredValue || 0,
+                                coverage: data.insurance.isInsured ? (data.insurance.declaredValue * 0.02) : 0,
+                                provider: data.insurance.isInsured ? "Default Provider" : null,
+                                policyNumber: data.insurance.isInsured ? `POL-${Date.now()}` : null
+                            },
+
+                            // Complete pricing data matching your PricingSchema
+                            pricing: {
+                                baseFare: pricingCalculation.backendData.baseFare,
+                                distanceFare: pricingCalculation.backendData.distanceFare,
+                                timeFare: pricingCalculation.backendData.timeFare || 0,
+                                weightFare: pricingCalculation.backendData.weightFare,
+                                priorityFare: pricingCalculation.backendData.priorityFare,
+                                surcharges: pricingCalculation.backendData.surcharges || [],
+                                discount: pricingCalculation.backendData.discount || {
+                                    amount: 0,
+                                    code: null,
+                                    reason: null
+                                },
+                                totalAmount: pricingCalculation.backendData.totalAmount,
+                                currency: pricingCalculation.backendData.currency || 'NGN'
+                            },
+
+                            // Additional validation flags
+                            validation: {
+                                pricingEngineVersion: "1.0",
+                                calculatedAt: new Date().toISOString(),
+                                vehicleTypeUsed: pricingCalculation.stakeholderData?.vehicleType,
+                                distanceCalculated: pricingCalculation.stakeholderData?.distance
+                            }
                         };
                         resolve({valid: true, data: reviewData});
                     },
@@ -260,7 +402,11 @@ const Review = forwardRef(({defaultValues}, ref) => {
                                 <ScrollView
                                     horizontal
                                     showsHorizontalScrollIndicator={false}
+                                    contentContainerStyle={styles.imagesScrollContainer}
                                     style={styles.imagesScrollView}
+                                    decelerationRate="fast"
+                                    snapToInterval={116} // width + margin for smooth snapping
+                                    snapToAlignment="start"
                                 >
                                     {orderData.package.images.map((image, index) => (
                                         <View key={image.id || index} style={styles.imageContainer}>
@@ -268,16 +414,23 @@ const Review = forwardRef(({defaultValues}, ref) => {
                                                 source={{
                                                     uri: image.url,
                                                     headers: {
+                                                        'Accept': 'image/*',
                                                         'Cache-Control': 'no-cache'
                                                     }
                                                 }}
                                                 style={styles.packageImage}
                                                 onError={() => handleImageError(index)}
-                                                // defaultSource={require('../../../assets/placeholder-image.png')} // Add a placeholder image
+                                                onLoad={() => console.log(`Image ${index} loaded successfully`)}
                                             />
+                                            <View style={styles.imageIndexBadge}>
+                                                <Text style={styles.imageIndexText}>{index + 1}</Text>
+                                            </View>
                                         </View>
                                     ))}
                                 </ScrollView>
+                                {orderData.package.images.length > 3 && (
+                                    <Text style={styles.scrollHint}>← Scroll to view all images →</Text>
+                                )}
                             </View>
                         )}
                     </View>
@@ -327,14 +480,14 @@ const Review = forwardRef(({defaultValues}, ref) => {
                                 name="insurance.declaredValue"
                                 render={({field}) => (
                                     <>
-                                        <Text style={styles.inputLabel}>Declared Item Value</Text>
+                                        <Text style={styles.inputLabel}>Declared Item Value (important)</Text>
                                         <View style={[styles.valueInputContainer, errors?.insurance?.declaredValue && styles.inputError]}>
                                             <Text style={styles.currencySymbol}>₦</Text>
                                             <TextInput
                                                 style={styles.valueInput}
-                                                placeholder="50,000"
+                                                placeholder="0"
                                                 keyboardType="numeric"
-                                                value={field.value?.toLocaleString() || ''}
+                                                value={field.value > 0 ? field.value.toLocaleString() : ''}
                                                 onChangeText={(value) => {
                                                     const numValue = parseInt(value.replace(/,/g, '')) || 0;
                                                     field.onChange(numValue);
@@ -394,28 +547,6 @@ const Review = forwardRef(({defaultValues}, ref) => {
                     </View>
                 </View>
 
-                {/* Proceed to Payment Button */}
-                <View style={styles.actionButtonContainer}>
-                    <LinearGradient
-                        colors={['#667eea', '#764ba2']}
-                        style={styles.actionButton}
-                    >
-                        <Pressable
-                            style={styles.actionButtonContent}
-                            onPress={() => {
-                                // This will be handled by parent component or navigation
-                                Alert.alert('Proceed to Payment', `Total: ${formatCurrency(pricingCalculation.total)}`);
-                            }}
-                        >
-                            <View style={styles.buttonTextContainer}>
-                                <Ionicons name="card" size={20} color="#ffffff" />
-                                <Text style={styles.actionButtonText}>
-                                    Proceed to Payment • {formatCurrency(pricingCalculation.total)}
-                                </Text>
-                            </View>
-                        </Pressable>
-                    </LinearGradient>
-                </View>
             {/* bottom space*/}
             <View style={{height: 130}} />
             </View>
@@ -690,6 +821,60 @@ const styles = StyleSheet.create({
         color: '#92400e',
         lineHeight: 18,
     },
+
+    imagesScrollContainer: {
+        paddingHorizontal: 16,
+        paddingRight: 32, // Extra padding at the end
+    },
+    imageContainer: {
+        marginRight: 12,
+        borderRadius: 12,
+        overflow: 'hidden',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        position: 'relative',
+    },
+    packageImage: {
+        width: 104,
+        height: 104,
+        backgroundColor: '#f3f4f6',
+        borderRadius: 12,
+    },
+    imageIndexBadge: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        borderRadius: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        minWidth: 20,
+        alignItems: 'center',
+    },
+    imageIndexText: {
+        fontSize: 10,
+        fontFamily: 'PoppinsBold',
+        color: '#ffffff',
+    },
+    scrollHint: {
+        fontSize: 11,
+        fontFamily: 'PoppinsRegular',
+        color: '#9ca3af',
+        textAlign: 'center',
+        marginTop: 8,
+        fontStyle: 'italic',
+    },
+    fallbackImage: {
+        width: 104,
+        height: 104,
+        backgroundColor: '#f3f4f6',
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     imagesContainer: {
         marginTop: 8,
     },
@@ -702,21 +887,10 @@ const styles = StyleSheet.create({
     imagesScrollView: {
         marginHorizontal: -4,
     },
-    imageContainer: {
-        marginHorizontal: 4,
-        borderRadius: 12,
-        overflow: 'hidden',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 1},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
-    packageImage: {
-        width: 100,
-        height: 100,
-        backgroundColor: '#f3f4f6',
-        borderRadius: 12,
+    fallbackText: {
+        fontSize: 10,
+        color: '#9ca3af',
+        marginTop: 4,
     },
     // Insurance Section Styles
     insuranceSection: {
@@ -767,9 +941,10 @@ const styles = StyleSheet.create({
         borderTopColor: '#f3f4f6',
     },
     inputLabel: {
+        marginTop: 10,
         fontSize: 14,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#374151',
+        fontFamily: 'PoppinsBold',
+        color: 'red',
         marginBottom: 8,
     },
     valueInputContainer: {

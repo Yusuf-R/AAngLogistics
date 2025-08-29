@@ -36,10 +36,43 @@ const VEHICLES = [
     {id: 'truck', name: 'Truck', image: vehicleImages.truck}
 ];
 
+const VEHICLE_CONSTRAINTS = {
+    bicycle: {
+        maxWeight: 5,
+        maxDistance: 15,
+        cannotHandle: ['fragile', 'cake', 'furniture', 'electronics']
+    },
+    motorcycle: {
+        maxWeight: 25,
+        maxDistance: 150,
+        cannotHandle: ['furniture']
+    },
+    tricycle: {
+        maxWeight: 100,
+        maxDistance: 170,
+        cannotHandle: []
+    },
+    car: {
+        maxWeight: 300,
+        maxDistance: Infinity,
+        cannotHandle: []
+    },
+    van: {
+        maxWeight: 500,
+        maxDistance: Infinity,
+        cannotHandle: []
+    },
+    truck: {
+        maxWeight: Infinity,
+        maxDistance: Infinity,
+        cannotHandle: []
+    }
+};
+
 const VALID_VEHICLES = ['bicycle', 'motorcycle', 'tricycle', 'car', 'van', 'truck'];
 
 const Step3 = forwardRef(({defaultValues}, ref) => {
-    const {orderData} = useOrderStore();
+    const orderData = useOrderStore((state) => state.orderData);
 
     // Initialize with proper persisted data
     const [selectedVehicles, setSelectedVehicles] = useState(() => {
@@ -53,6 +86,9 @@ const Step3 = forwardRef(({defaultValues}, ref) => {
     const [recommendations, setRecommendations] = useState(new Set());
     const [alert, setAlert] = useState(null);
     const [maxLimitNotification, setMaxLimitNotification] = useState(false);
+    const [rejectedVehicles, setRejectedVehicles] = useState(new Set());
+
+
 
     const [animatedValues] = useState(
         VEHICLES.reduce((acc, vehicle) => {
@@ -193,6 +229,13 @@ const Step3 = forwardRef(({defaultValues}, ref) => {
                 });
                 return;
             }
+            // Validate if vehicle can handle the package
+            const validation = canVehicleHandlePackage(vehicleId);
+
+            if (!validation.canHandle) {
+                showRejectionFeedback(vehicleId, validation.reason);
+                return;
+            }
             newSelected.add(vehicleId);
         }
 
@@ -212,6 +255,77 @@ const Step3 = forwardRef(({defaultValues}, ref) => {
 
         setSelectedVehicles(newSelected);
     };
+
+    const canVehicleHandlePackage = (vehicleId) => {
+        const packageCategory = orderData?.package?.category;
+        const packageWeight = orderData?.package?.weight?.value || 0;
+        const weightInKg = orderData?.package?.weight?.unit === 'g' ? packageWeight / 1000 : packageWeight;
+
+        const deliveryDistance = calculateDistance();
+
+        const constraints = VEHICLE_CONSTRAINTS[vehicleId];
+        if (!constraints) return true;
+
+
+
+        // Check distance limit first (most restrictive for short-range vehicles)
+        if (deliveryDistance > constraints.maxDistance) {
+            return {
+                canHandle: false,
+                reason: `Distance too far (${deliveryDistance.toFixed(1)}km )`
+            };
+        }
+
+        // Check weight limit
+        if (weightInKg > constraints.maxWeight) {
+            return {
+                canHandle: false,
+                reason: `Weight limit exceeded (${weightInKg}kg > ${constraints.maxWeight}kg)`
+            };
+        }
+
+        // Check category restrictions
+        if (constraints.cannotHandle.includes(packageCategory)) {
+            return {
+                canHandle: false,
+                reason: `Cannot handle ${packageCategory} items`
+            };
+        }
+
+        return { canHandle: true };
+    };
+
+    // Add this function to handle rejected selections with visual feedback
+    const showRejectionFeedback = (vehicleId, reason) => {
+        // Add to rejected set
+        setRejectedVehicles(prev => new Set([...prev, vehicleId]));
+
+        // Show alert
+        setAlert({
+            type: 'error',
+            title: 'Invalid Selection',
+            message: `${VEHICLES.find(v => v.id === vehicleId)?.name} ${reason}`,
+            duration: 2500
+        });
+
+        // Animate rejection (shake effect)
+        Animated.sequence([
+            Animated.timing(animatedValues[vehicleId].scale, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+            Animated.timing(animatedValues[vehicleId].scale, { toValue: 1.05, duration: 100, useNativeDriver: true }),
+            Animated.timing(animatedValues[vehicleId].scale, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+            Animated.timing(animatedValues[vehicleId].scale, { toValue: 1, duration: 100, useNativeDriver: true })
+        ]).start();
+
+        // Remove from rejected set after 2 seconds
+        setTimeout(() => {
+            setRejectedVehicles(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(vehicleId);
+                return newSet;
+            });
+        }, 2000);
+    };
+
 
     return (
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -258,7 +372,8 @@ const Step3 = forwardRef(({defaultValues}, ref) => {
                                         <Pressable
                                             style={[
                                                 styles.vehicleCard,
-                                                isSelected && styles.selectedCard // ONLY border changes here
+                                                isSelected && styles.selectedCard, // ONLY border changes here
+                                                rejectedVehicles.has(vehicle.id) && styles.rejectedCard
                                             ]}
                                             onPress={() => handleVehicleToggle(vehicle.id)}
                                         >
@@ -280,16 +395,22 @@ const Step3 = forwardRef(({defaultValues}, ref) => {
                                                 </Text>
                                             </View>
 
-                                            {isRecommended && !isSelected && (
+                                            {isRecommended && !isSelected && !rejectedVehicles.has(vehicle.id) && (
                                                 <View style={styles.recommendedBadge}>
                                                     <Text style={styles.recommendedIcon}>⭐</Text>
                                                     <Text style={styles.recommendedText}>Recommended</Text>
                                                 </View>
                                             )}
 
-                                            {isSelected && (
+                                            {isSelected && !rejectedVehicles.has(vehicle.id) && (
                                                 <View style={styles.selectedBadge}>
                                                     <Text style={styles.checkmark}>✓</Text>
+                                                </View>
+                                            )}
+
+                                            {rejectedVehicles.has(vehicle.id) && (
+                                                <View style={styles.rejectedBadge}>
+                                                    <Text style={styles.rejectedIcon}>✗</Text>
                                                 </View>
                                             )}
                                         </Pressable>
@@ -505,6 +626,33 @@ const styles = StyleSheet.create({
     },
     bottomSpacer: {
         height: 150,
+    },
+    rejectedCard: {
+        borderColor: '#EF4444',
+        backgroundColor: '#FEF2F2',
+        shadowColor: '#EF4444',
+        shadowOpacity: 0.2,
+    },
+    rejectedBadge: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#EF4444',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+        elevation: 3
+    },
+    rejectedIcon: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: 'bold'
     },
 });
 

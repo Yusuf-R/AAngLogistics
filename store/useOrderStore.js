@@ -58,7 +58,7 @@ export const useOrderStore = create((set, get) => ({
             const updatedAll = upsertOrder(allOrderData, order);
             await SessionManager.updateAllOrderData(updatedAll);
         } catch (error) {
-            console.error('Failed to save draft:', error);
+            console.log('Failed to save draft:', error);
             throw new Error('Failed to save draft');
         }
     },
@@ -69,8 +69,8 @@ export const useOrderStore = create((set, get) => ({
             await get().saveDraft();
             set({ currentStep: step });
         } catch (error) {
-            console.error('Failed to save draft before step change:', error);
-            throw new Error('Failed to save draft before step change');
+            console.log('Failed to save draft before step change:', error);
+            throw new Error('Failed to change step due to save error');
         }
     },
 
@@ -81,7 +81,9 @@ export const useOrderStore = create((set, get) => ({
 
     goPrevious: async () => {
         const prev = get().currentStep - 1;
-        if (prev >= 0) await get().goToStep(prev);
+        if (prev >= 0) {
+            set({ currentStep: prev });
+        }
     },
 
     // Clear the state (optional)
