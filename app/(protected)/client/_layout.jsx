@@ -9,11 +9,17 @@ import {useEffect, useRef} from "react";
 import {useNotificationStore} from "../../../store/useNotificationStore";
 import {useSessionStore} from "../../../store/useSessionStore";
 import useSocket from "../../../hooks/useSocket";
+import * as WebBrowser from 'expo-web-browser';
+
+
+
 
 export default function ClientTabsLayout() {
     const pathname = usePathname();
     const user = useSessionStore(state => state.user);
     const hasInitializedRef = useRef(false);
+
+    WebBrowser.maybeCompleteAuthSession();
 
     useSocket(user?.id);
 

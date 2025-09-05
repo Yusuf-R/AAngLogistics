@@ -1,5 +1,5 @@
 // app.config.js
-export default ({ config }) => ({
+export default ({config}) => ({
     ...config,
     name: "AAng Logistics",
     slug: "AAngLogistics",
@@ -19,6 +19,15 @@ export default ({ config }) => ({
         config: {
             usesNonExemptEncryption: false,
             googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+        },
+        infoPlist: {
+            ...config.ios?.infoPlist,
+            CFBundleURLTypes: [
+                {
+                    CFBundleURLSchemes: ["aang-logistics"],
+                    CFBundleURLName: "AAng Logistics Deep Links"
+                }
+            ]
         }
     },
     android: {
@@ -39,7 +48,23 @@ export default ({ config }) => ({
             googleMaps: {
                 apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
             }
-        }
+        },
+        intentFilters: [
+            {
+                action: "VIEW",
+                data: [
+                    {
+                        scheme: "aang-logistics",
+                        host: "payment-success"
+                    },
+                    {
+                        scheme: "aang-logistics",
+                        host: "payment-failed"
+                    }
+                ],
+                category: ["BROWSABLE", "DEFAULT"]
+            }
+        ]
     },
     web: {
         bundler: "metro",

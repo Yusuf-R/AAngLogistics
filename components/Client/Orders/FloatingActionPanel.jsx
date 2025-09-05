@@ -21,6 +21,8 @@ function FloatingActionPanel({
                                  onSave,
                                  hasErrors,
                                  isSaving = false,
+                                 disableForward = false,
+                                 disableSave = false,
                              }) {
     const insets = useSafeAreaInsets();
     const slideAnim = useRef(new Animated.Value(0)).current;
@@ -230,6 +232,7 @@ function FloatingActionPanel({
                             {!isFirstStep && (
                                 <ControlButton
                                     onPress={handlePrevious}
+
                                     type="secondary"
                                     size="medium"
                                 >
@@ -242,7 +245,7 @@ function FloatingActionPanel({
                         <View style={styles.controlSlot}>
                             <ControlButton
                                 onPress={handleSave}
-                                disabled={isSaving}
+                                disabled={isSaving || disableSave}
                                 type="save"
                                 size="small"
                             >
@@ -276,6 +279,7 @@ function FloatingActionPanel({
                         <View style={styles.controlSlot}>
                             <ControlButton
                                 onPress={isLastStep ? handleSubmit : handleNext}
+                                // disabled={disableForward}
                                 type="primary"
                                 size="large"
                             >

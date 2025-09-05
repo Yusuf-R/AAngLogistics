@@ -50,7 +50,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
             case 'Pending':
                 return allOrderData.filter(order => order.status === 'pending' || order.status === 'broadcast');
             case 'Ongoing':
-                const ongoingStatuses = ['confirmed', 'assigned', 'en_route_pickup', 'arrived_pickup', 'picked_up', 'in_transit', 'arrived_dropoff'];
+                const ongoingStatuses = ['submitted', 'confirmed', 'assigned', 'en_route_pickup', 'arrived_pickup', 'picked_up', 'in_transit', 'arrived_dropoff'];
                 return allOrderData.filter(order => ongoingStatuses.includes(order.status));
             case 'Completed':
                 return allOrderData.filter(order => ['delivered', 'cancelled', 'failed', 'returned'].includes(order.status));

@@ -589,6 +589,42 @@ class ClientUtils {
         }
     }
 
+    static async InitializePayment(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/order/init-pay',
+                data: obj,
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async CheckPaymentStatus(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/order/payment-status',
+                params: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
     static async GetAllClientOrders() {
         try {
             const response = await axiosPrivate({

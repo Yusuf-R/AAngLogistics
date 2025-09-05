@@ -32,7 +32,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
     const orderData = useOrderStore((state) => state.orderData);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
-    const [showCategorySelection, setShowCategorySelection] = useState(false);
+    const [showCategorySelection, setShowCategorySelection] = useState(true);
     const {images, video} = useMediaStore();
 
     const {control, handleSubmit, watch, setValue, formState: {errors}} = useForm({

@@ -63,6 +63,9 @@ export default function Login() {
         setModalStatus('loading');
         setModalMessage('Logging in..');
         setModalVisible(true);
+        console.log({
+            data
+        })
 
         mutation.mutate(data, {
             onSuccess: async (respData) => {
@@ -97,6 +100,9 @@ export default function Login() {
                 } else if (error.message === 'Network error') {
                     errorMessage = 'No internet connection 🔌';
                 }
+                console.log({
+                    error
+                })
 
                 setModalStatus('error');
                 setModalMessage(errorMessage);
