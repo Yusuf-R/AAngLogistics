@@ -52,14 +52,10 @@ export default ({config}) => ({
         intentFilters: [
             {
                 action: "VIEW",
+                autoVerify: true,
                 data: [
                     {
-                        scheme: "aang-logistics",
-                        host: "payment-success"
-                    },
-                    {
-                        scheme: "aang-logistics",
-                        host: "payment-failed"
+                        scheme: "aang-logistics"
                     }
                 ],
                 category: ["BROWSABLE", "DEFAULT"]

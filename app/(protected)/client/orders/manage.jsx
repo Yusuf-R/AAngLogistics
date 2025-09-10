@@ -6,11 +6,9 @@ function ManageOrdersScreen() {
     const allOrderData = useSessionStore((state) => state.allOrderData);
 
     return (
-        <SafeAreaView style={{flex: 1}}>
             <ManageOrder
                 allOrderData={allOrderData}
             />
-        </SafeAreaView>
     );
 }
 

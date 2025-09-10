@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Alert, SafeAreaView, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { useOrderStore } from "../../../../store/useOrderStore";
 import ViewOrder from "../../../../components/Client/Orders/ViewOrder";
 import { router } from "expo-router";
@@ -23,13 +23,11 @@ function ViewOrderScreen() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
             <ViewOrder
                 selectedOrder={selectedOrder}
                 updateOrderStatus={updateOrderStatus}
                 removeOrder={removeOrder}
             />
-        </SafeAreaView>
     );
 }
 

@@ -41,6 +41,20 @@ export default function OrdersLayout() {
                         headerShown: false
                     }}
                 />
+
+                <Stack.Screen
+                    name="payment-status"
+                    options={{
+                        headerShown: false
+                    }}
+                />
+
+                <Stack.Screen
+                    name="payment-success"
+                    options={{
+                        headerShown: false
+                    }}
+                />
             </Stack>
         </>
     );

@@ -16,15 +16,17 @@ import {router} from "expo-router";
 import { useSessionStore } from "../../../../store/useSessionStore";
 import SessionManager from "../../../../lib/SessionManager";
 import {ROUTES} from "../../../../utils/Constant";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
 
 
 function ClientProfileScreen() {
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
     const userData = useSessionStore((state) => state.user);
+    const  insets = useSafeAreaInsets();
 
     if (!userData) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={{flex:1, backgroundColor: '#FFF', paddingTop: insets.top}}>
                 <ActivityIndicator size="large" color="#60a5fa"/>
             </SafeAreaView>
         );
@@ -106,7 +108,7 @@ function ClientProfileScreen() {
 
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={{flex:1, backgroundColor: '#FFF', paddingTop: insets.top}}>
             <StatusBar barStyle="dark-content"/>
 
             {/* Header */}
@@ -281,15 +283,6 @@ function ClientProfileScreen() {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-        paddingTop: StatusBar.currentHeight,
-        // borderBottomLeftRadius: 20,
-        // borderBottomRightRadius: 20,
-        overflow: 'hidden',
-        // marginBottom: 5,
-    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',

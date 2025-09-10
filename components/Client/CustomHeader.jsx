@@ -1,14 +1,12 @@
 import React from 'react';
 import {View, Text, Pressable, StyleSheet} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const CustomHeader = ({title, onBackPress}) => {
-    const insets = useSafeAreaInsets();
 
     return (
         <>
-            <View style={[styles.headerContainer, {paddingTop: insets.top}]}>
+            <View style={[styles.headerContainer]}>
                 {/* Status bar area - this creates space for the camera/dynamic island */}
                 <View style={styles.statusBarSpacer}/>
 

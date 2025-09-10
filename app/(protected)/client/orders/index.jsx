@@ -14,9 +14,12 @@ import { useSessionStore } from "../../../../store/useSessionStore";
 import { useQuery } from "@tanstack/react-query";
 import ClientUtils from "../../../../utils/ClientUtilities";
 import SessionManager from "../../../../lib/SessionManager";
+import {useSafeAreaInsets} from "react-native-safe-area-context";
+
 
 function OrdersScreen() {
     const userData = useSessionStore((state) => state.user);
+    const insets = useSafeAreaInsets()
 
     const allOrderData = useSessionStore((state) => state.allOrderData);
     const orderStatistics = useSessionStore((state) => state.orderStatistics);
@@ -82,7 +85,7 @@ function OrdersScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={{flex:1, backgroundColor: '#FFF', paddingTop: insets.top}}>
             <StatusBar barStyle="dark-content" />
             <OrdersHub
                 userData={userData}
@@ -98,7 +101,7 @@ function OrdersScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: '#fff',
     },
     centeredContainer: {
         flex: 1,

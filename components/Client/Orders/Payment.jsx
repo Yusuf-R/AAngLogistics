@@ -1,42 +1,25 @@
-// Enhanced Payment.js component with robust state handling
-import React, {useState, forwardRef, useImperativeHandle, useMemo, useEffect} from 'react';
+// Simplified Payment.js - Only handles payment initiation
+import React, {useState, forwardRef, useImperativeHandle} from 'react';
 import {
     View,
     Text,
     Pressable,
     StyleSheet,
     ScrollView,
-    Dimensions,
-    Alert,
     ActivityIndicator
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useOrderStore} from "../../../store/useOrderStore";
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
-
-const PAYMENT_STATUS = {
-    IDLE: 'idle',
-    INITIATING: 'initiating',
-    PROCESSING: 'processing',
-    VERIFYING: 'verifying',
-    SUCCESS: 'success',
-    FAILED: 'failed',
-    CANCELLED: 'cancelled'
-};
-
-const Payment = forwardRef(({defaultValues, onSubmit, paymentState, isProcessing}, ref) => {
+const Payment = forwardRef(({defaultValues, onSubmit, isProcessing = false}, ref) => {
     const orderData = useOrderStore((state) => state.orderData);
-
-    // Local state for payment method selection (for future expansion)
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('PayStack');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Expose validation function to parent
     useImperativeHandle(ref, () => ({
         submit: async () => {
-            // Validate payment readiness
             if (!orderData?.pricing?.totalAmount || orderData.pricing.totalAmount <= 0) {
                 return {
                     valid: false,
@@ -82,72 +65,7 @@ const Payment = forwardRef(({defaultValues, onSubmit, paymentState, isProcessing
         }
     };
 
-    // Get appropriate button text based on payment state
-    const getButtonText = () => {
-        switch (paymentState?.status) {
-            case PAYMENT_STATUS.INITIATING:
-                return 'Initializing Payment...';
-            case PAYMENT_STATUS.PROCESSING:
-                return 'Payment in Progress...';
-            case PAYMENT_STATUS.VERIFYING: // NEW: Special state for verification
-                return 'Verifying Payment...';
-            case PAYMENT_STATUS.SUCCESS:
-                return 'Payment Successful ✓';
-            case PAYMENT_STATUS.FAILED:
-                return 'Payment Failed - Try Again';
-            case PAYMENT_STATUS.CANCELLED:
-                return 'Payment Cancelled - Try Again';
-            default:
-                return `Pay ${formatCurrency(orderData?.pricing?.totalAmount)}`;
-        }
-    };
-
-    // Get button colors based on payment state
-    const getButtonColors = () => {
-        switch (paymentState?.status) {
-            case PAYMENT_STATUS.SUCCESS:
-                return ['#10B981', '#34D399']; // Green
-            case PAYMENT_STATUS.FAILED:
-                return ['#EF4444', '#F87171']; // Red
-            case PAYMENT_STATUS.CANCELLED:
-                return ['#F59E0B', '#FBBF24']; // Amber
-            default:
-                return ['#3B82F6', '#60A5FA']; // Blue
-        }
-    };
-
-    // Check if button should be disabled
-    const isButtonDisabled = () => {
-        return isProcessing ||
-            isSubmitting ||
-            paymentState?.status === PAYMENT_STATUS.INITIATING ||
-            paymentState?.status === PAYMENT_STATUS.PROCESSING ||
-            paymentState?.status === PAYMENT_STATUS.VERIFYING ||
-            paymentState?.status === PAYMENT_STATUS.SUCCESS;
-    };
-
-    // Get appropriate icon based on payment state
-    const getButtonIcon = () => {
-        switch (paymentState?.status) {
-            case PAYMENT_STATUS.INITIATING:
-            case PAYMENT_STATUS.PROCESSING:
-            case PAYMENT_STATUS.VERIFYING:
-                return null; // Will show spinner instead
-            case PAYMENT_STATUS.SUCCESS:
-                return 'checkmark-circle';
-            case PAYMENT_STATUS.FAILED:
-            case PAYMENT_STATUS.CANCELLED:
-                return 'reload';
-            default:
-                return 'card';
-        }
-    };
-
-    const showSpinner = [
-        PAYMENT_STATUS.INITIATING,
-        PAYMENT_STATUS.PROCESSING,
-        PAYMENT_STATUS.VERIFYING
-    ].includes(paymentState?.status);
+    const isButtonDisabled = isProcessing || isSubmitting;
 
     return (
         <ScrollView
@@ -171,7 +89,6 @@ const Payment = forwardRef(({defaultValues, onSubmit, paymentState, isProcessing
                         <Text style={styles.summaryLabel}>Service Type</Text>
                         <Text style={styles.summaryValue}>Delivery Service</Text>
                     </View>
-
 
                     <View style={styles.totalDivider} />
 
@@ -212,11 +129,7 @@ const Payment = forwardRef(({defaultValues, onSubmit, paymentState, isProcessing
                                 </Text>
                             </View>
                         </View>
-                        <Ionicons
-                            name="card"
-                            size={24}
-                            color="#3B82F6"
-                        />
+                        <Ionicons name="card" size={24} color="#3B82F6" />
                     </Pressable>
                 </View>
 
@@ -229,97 +142,24 @@ const Payment = forwardRef(({defaultValues, onSubmit, paymentState, isProcessing
                 </View>
             </View>
 
-            {/* Payment Status Display */}
-            {paymentState?.status && paymentState.status !== PAYMENT_STATUS.IDLE && (
-                <View style={styles.statusSection}>
-                    <View style={[
-                        styles.statusCard,
-                        paymentState.status === PAYMENT_STATUS.SUCCESS && styles.statusSuccess,
-                        paymentState.status === PAYMENT_STATUS.FAILED && styles.statusError,
-                        paymentState.status === PAYMENT_STATUS.CANCELLED && styles.statusWarning,
-                    ]}>
-                        <View style={styles.statusHeader}>
-                            {showSpinner ? (
-                                <ActivityIndicator size="small" color="#3B82F6" />
-                            ) : (
-                                <Ionicons
-                                    name={
-                                        paymentState.status === PAYMENT_STATUS.SUCCESS ? 'checkmark-circle' :
-                                            paymentState.status === PAYMENT_STATUS.FAILED ? 'close-circle' :
-                                                paymentState.status === PAYMENT_STATUS.CANCELLED ? 'warning' :
-                                                    'information-circle'
-                                    }
-                                    size={20}
-                                    color={
-                                        paymentState.status === PAYMENT_STATUS.SUCCESS ? '#10B981' :
-                                            paymentState.status === PAYMENT_STATUS.FAILED ? '#EF4444' :
-                                                paymentState.status === PAYMENT_STATUS.CANCELLED ? '#F59E0B' :
-                                                    '#3B82F6'
-                                    }
-                                />
-                            )}
-                            <Text style={[
-                                styles.statusTitle,
-                                paymentState.status === PAYMENT_STATUS.SUCCESS && styles.statusTitleSuccess,
-                                paymentState.status === PAYMENT_STATUS.FAILED && styles.statusTitleError,
-                                paymentState.status === PAYMENT_STATUS.CANCELLED && styles.statusTitleWarning,
-                            ]}>
-                                {paymentState.status === PAYMENT_STATUS.INITIATING && 'Initializing Payment'}
-                                {paymentState.status === PAYMENT_STATUS.PROCESSING && 'Payment in Progress'}
-                                {paymentState.status === PAYMENT_STATUS.VERIFYING && 'Verifying Payment'}
-                                {paymentState.status === PAYMENT_STATUS.SUCCESS && 'Payment Successful'}
-                                {paymentState.status === PAYMENT_STATUS.FAILED && 'Payment Failed'}
-                                {paymentState.status === PAYMENT_STATUS.CANCELLED && 'Payment Cancelled'}
-                            </Text>
-                        </View>
-
-                        {paymentState.error && (
-                            <Text style={styles.statusMessage}>
-                                {paymentState.error}
-                            </Text>
-                        )}
-
-                        {paymentState.reference && (
-                            <Text style={styles.statusReference}>
-                                Reference: {paymentState.reference}
-                            </Text>
-                        )}
-                    </View>
-                </View>
-            )}
-
             {/* Action Button */}
             <View style={styles.actionButtonContainer}>
                 <LinearGradient
-                    colors={getButtonColors()}
-                    style={[
-                        styles.actionButton,
-                        isButtonDisabled() && styles.actionButtonDisabled
-                    ]}
+                    colors={isProcessing ? ['#9CA3AF', '#D1D5DB'] : ['#3B82F6', '#60A5FA']}
+                    style={[styles.actionButton, isButtonDisabled && styles.actionButtonDisabled]}
                 >
                     <Pressable
                         style={styles.actionButtonContent}
                         onPress={handlePaymentSubmit}
-                        disabled={isButtonDisabled()}
+                        disabled={isButtonDisabled}
                     >
                         <View style={styles.buttonTextContainer}>
-                            {showSpinner ? (
-                                <ActivityIndicator
-                                    size="small"
-                                    color="#ffffff"
-                                    style={styles.buttonSpinner}
-                                />
-                            ) : (
-                                getButtonIcon() && (
-                                    <Ionicons
-                                        name={getButtonIcon()}
-                                        size={20}
-                                        color="#ffffff"
-                                    />
-                                )
+                            {isProcessing && (
+                                <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
                             )}
+                            {!isProcessing && <Ionicons name="card" size={20} color="#ffffff" />}
                             <Text style={styles.actionButtonText}>
-                                {getButtonText()}
+                                {isProcessing ? 'Initializing Payment...' : `Pay ${formatCurrency(orderData?.pricing?.totalAmount)}`}
                             </Text>
                         </View>
                     </Pressable>
@@ -346,7 +186,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         padding: 16,
-        paddingBottom: 100, // Extra space for floating action panel
+        paddingBottom: 100,
     },
     summarySection: {
         marginBottom: 24,
@@ -362,10 +202,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 16,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 2,
@@ -418,10 +255,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         padding: 4,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 2,
@@ -489,68 +323,6 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         marginLeft: 6,
     },
-    statusSection: {
-        marginBottom: 24,
-    },
-    statusCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 16,
-        borderLeftWidth: 4,
-        borderLeftColor: '#3B82F6',
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 2,
-    },
-    statusSuccess: {
-        borderLeftColor: '#10B981',
-        backgroundColor: '#F0FDF4',
-    },
-    statusError: {
-        borderLeftColor: '#EF4444',
-        backgroundColor: '#FEF2F2',
-    },
-    statusWarning: {
-        borderLeftColor: '#F59E0B',
-        backgroundColor: '#FFFBEB',
-    },
-    statusHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    statusTitle: {
-        fontSize: 14,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#111827',
-        marginLeft: 8,
-    },
-    statusTitleSuccess: {
-        color: '#065F46',
-    },
-    statusTitleError: {
-        color: '#991B1B',
-
-    },
-    statusTitleWarning: {
-        color: '#92400E',
-    },
-    statusMessage: {
-        fontSize: 13,
-        fontFamily: 'PoppinsMedium',
-        color: '#6B7280',
-        marginBottom: 4,
-    },
-    statusReference: {
-        fontSize: 12,
-        color: '#9CA3AF',
-        fontFamily: 'PoppinsMedium',
-    },
     actionButtonContainer: {
         marginBottom: 16,
     },
@@ -558,10 +330,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3,
