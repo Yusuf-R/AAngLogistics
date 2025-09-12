@@ -31,9 +31,6 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 
 function hasMin(loc) {
-    console.log({
-        loc
-    })
     if (!loc) return false;
     const hasAddr = !!(loc.address && String(loc.address).trim());
     const coords = loc.coordinates?.coordinates;
@@ -133,9 +130,6 @@ const Step2 = forwardRef(({defaultValues}, ref) => {
         // Persist (debounced)
         const persist = debounce(() => {
             const data = getValues();
-            console.log({
-                data
-            })
             // updateOrderData({ ...orderData, ...data });
             // saveDraft().catch(()=>{});
         }, 500);
@@ -162,10 +156,6 @@ const Step2 = forwardRef(({defaultValues}, ref) => {
                                     }
                                 });
                             }
-                            console.log({
-                                data
-                            })
-
                             resolve({valid: true, data: data});
                         },
                         (errs) => {

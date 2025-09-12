@@ -167,11 +167,6 @@ export default function PickUpPanel({
         );
     };
 
-    console.log({
-        dt: 'pickOff',
-        errors,
-    })
-
     return (
         <>
             <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

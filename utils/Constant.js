@@ -98,8 +98,7 @@ export const TAB_BAR_HIDDEN_EXCEPTIONS = [
     '/client/orders/create',
     '/client/orders/manage',
     '/client/orders/view',
-
-
+    '/client/orders/payment-status',
 ];
 
 //

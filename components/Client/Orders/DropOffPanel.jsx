@@ -159,10 +159,6 @@ export default function DropOffPanel({
         );
     };
 
-    console.log({
-        dt: 'pickOff',
-        errors,
-    })
     return (
         <>
             <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

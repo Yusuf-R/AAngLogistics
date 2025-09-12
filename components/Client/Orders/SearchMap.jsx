@@ -47,8 +47,8 @@ function SearchMap() {
     } = useOrderLocationStore();
 
     const [currentRegion, setCurrentRegion] = useState({
-        latitude: 6.5158, // Lagos, Nigeria
-        longitude: 3.3898, // Lagos, Nigeria
+        latitude: 6.5158,
+        longitude: 3.3898,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
     });
