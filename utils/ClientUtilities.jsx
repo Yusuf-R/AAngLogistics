@@ -596,14 +596,46 @@ class ClientUtils {
                 url: '/order/init-pay',
                 data: obj,
             });
+
+            console.log({ response });
+
             if (response.status === 201) {
                 return response.data;
             } else {
                 throw new Error(response.error);
             }
         } catch (error) {
-            console.log({error});
-            throw new Error(error);
+            console.log(error);
+            console.log({ dt: error.response?.data });
+
+            // Handle specific error codes
+            if (error.response?.status === 409) {
+                // Payment already in progress - extract cooldown info
+                const errorData = error.response.data;
+                const customError = new Error(errorData.details || "Payment already in progress");
+                customError.code = 409;
+                customError.timeToWait = errorData.timeToWait || 30;
+                customError.retryAfter = errorData.retryAfter;
+                customError.reference = errorData.reference;
+                customError.authorizationUrl = errorData.authorizationUrl;
+                throw customError;
+            }
+
+            // Handle other status codes
+            if (error.response?.status === 500) {
+                const customError = new Error("Server error occurred");
+                customError.code = 500;
+                throw customError;
+            }
+
+            if (error.response?.status === 503) {
+                const customError = new Error("Service temporarily unavailable");
+                customError.code = 503;
+                throw customError;
+            }
+
+            // Default error handling
+            throw new Error(error.response?.data?.error || error.message || "Payment initialization failed");
         }
     }
 

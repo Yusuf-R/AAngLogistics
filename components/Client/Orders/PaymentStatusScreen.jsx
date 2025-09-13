@@ -1,4 +1,4 @@
-// PaymentStatusScreen.js - BULLETPROOF APPROACH
+// PaymentStatusScreen.js - Enhanced with state reset and duplicate payment protection
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
@@ -23,9 +23,12 @@ import ClientUtils from '../../../utils/ClientUtilities';
 import CustomHeader from '../CustomHeader';
 
 const STATES = {
+    CHECKING_EXISTING: 'checking_existing',  // New state for duplicate check
+    ALREADY_PAID: 'already_paid',           // New state for already paid
     INITIALIZING: 'initializing',
     BROWSER_OPEN: 'browser_open',
     VERIFYING: 'verifying',
+    COOLDOWN_WAITING: 'cooldown_waiting',  // New state
     SUCCESS: 'success',
     FAILED: 'failed'
 };
@@ -37,14 +40,56 @@ const PaymentStatusScreen = () => {
     const { resetMedia } = useMediaStore();
     const userData = useSessionStore((state) => state.user);
 
-    // SIMPLE STATE
-    const [currentState, setCurrentState] = useState(STATES.INITIALIZING);
+    // RESET ALL STATE TO DEFAULTS
+    const resetAllState = useCallback(() => {
+        setCurrentState(STATES.CHECKING_EXISTING);
+        setPaymentReference(null);
+        setErrorMessage(null);
+        setSuccessCountdown(3);
+        setShowManualCheck(false);
+
+        // Reset refs
+        verificationTriggeredRef.current = false;
+
+        // Clear all timers
+        if (verificationTimeoutRef.current) {
+            clearTimeout(verificationTimeoutRef.current);
+            verificationTimeoutRef.current = null;
+        }
+        if (manualCheckTimeoutRef.current) {
+            clearTimeout(manualCheckTimeoutRef.current);
+            manualCheckTimeoutRef.current = null;
+        }
+        if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+        }
+    }, []);
+
+    // STATE MANAGEMENT
+    const [currentState, setCurrentState] = useState(STATES.CHECKING_EXISTING);
     const [paymentReference, setPaymentReference] = useState(null);
     const [errorMessage, setErrorMessage] = useState(null);
+    const [successCountdown, setSuccessCountdown] = useState(3);
+    const [showManualCheck, setShowManualCheck] = useState(false);
 
     const appStateRef = useRef(AppState.currentState);
     const verificationTriggeredRef = useRef(false);
     const verificationTimeoutRef = useRef(null);
+    const countdownIntervalRef = useRef(null);
+    const manualCheckTimeoutRef = useRef(null);
+
+    // Add new state for cooldown
+    const [cooldownTime, setCooldownTime] = useState(0);
+    const [isOnCooldown, setIsOnCooldown] = useState(false);
+    const cooldownIntervalRef = useRef(null);
+
+    // Check existing payment status
+    const existingPaymentMutation = useMutation({
+        mutationKey: ['CheckExistingPayment'],
+        mutationFn: ClientUtils.CheckPaymentStatus, // Reuse the same function
+        retry: 1,
+    });
 
     // Payment initialization
     const paymentMutation = useMutation({
@@ -61,7 +106,42 @@ const PaymentStatusScreen = () => {
         retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 10000),
     });
 
-    // CENTRALIZED VERIFICATION TRIGGER - Only ONE way to trigger verification
+    // STEP 0: Check if payment already exists
+    const checkExistingPayment = useCallback(async () => {
+        if (!orderData?._id) {
+            setCurrentState(STATES.INITIALIZING);
+            return;
+        }
+
+        try {
+            console.log('🔍 Checking existing payment for order:', orderData.orderRef);
+            setCurrentState(STATES.CHECKING_EXISTING);
+
+            const result = await existingPaymentMutation.mutateAsync({
+                orderId: orderData._id,
+                reference: orderData.orderRef
+            });
+
+            if (result.status === 'paid') {
+                console.log('✅ Payment already exists for this order');
+                setCurrentState(STATES.ALREADY_PAID);
+                return;
+            }
+
+            // No existing payment found, proceed to initialize
+            console.log('💳 No existing payment found, proceeding to initialize');
+            setCurrentState(STATES.INITIALIZING);
+            setTimeout(() => startPayment(), 500);
+
+        } catch (error) {
+            console.log('🔍 No existing payment found or error checking:', error.message);
+            // If checking fails, assume no payment exists and proceed
+            setCurrentState(STATES.INITIALIZING);
+            setTimeout(() => startPayment(), 500);
+        }
+    }, [orderData]);
+
+    // CENTRALIZED VERIFICATION TRIGGER
     const triggerVerification = useCallback(() => {
         if (verificationTriggeredRef.current || !paymentReference) {
             console.log('⚠️ Verification already triggered or no reference');
@@ -72,16 +152,13 @@ const PaymentStatusScreen = () => {
         verificationTriggeredRef.current = true;
         setCurrentState(STATES.VERIFYING);
 
-        // Clear any existing timeout
         if (verificationTimeoutRef.current) {
             clearTimeout(verificationTimeoutRef.current);
         }
 
-        // Start verification after small delay
         verificationTimeoutRef.current = setTimeout(() => {
             verifyPayment();
         }, 1000);
-
     }, [paymentReference]);
 
     // STEP 1: Initialize payment and open browser
@@ -105,6 +182,10 @@ const PaymentStatusScreen = () => {
             };
 
             const response = await paymentMutation.mutateAsync(payload);
+            console.log({
+                response,
+                at: 'after payment mutation'
+            })
 
             if (!response?.authorizationUrl || !response?.reference) {
                 throw new Error('Invalid payment response');
@@ -112,14 +193,14 @@ const PaymentStatusScreen = () => {
 
             console.log('💳 Payment initialized, reference:', response.reference);
             setPaymentReference(response.reference);
-
-            // Set to browser open
             setCurrentState(STATES.BROWSER_OPEN);
 
-            // Small delay to ensure state is set
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            manualCheckTimeoutRef.current = setTimeout(() => {
+                setShowManualCheck(true);
+            }, 30000);
 
-            // Open browser
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
             console.log('🌐 Opening browser...');
             const result = await WebBrowser.openBrowserAsync(response.authorizationUrl, {
                 presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
@@ -132,6 +213,12 @@ const PaymentStatusScreen = () => {
 
         } catch (error) {
             console.log('❌ Payment initialization failed:', error);
+            if (error.code === 409) {
+                console.log('⏰ Payment on cooldown, waiting:', error.timeToWait, 'seconds');
+                startCooldownTimer(error.timeToWait || 30);
+                return;
+            }
+
             setCurrentState(STATES.FAILED);
             setErrorMessage(error.message || 'Payment initialization failed');
         }
@@ -158,36 +245,130 @@ const PaymentStatusScreen = () => {
 
             if (result.status === 'paid') {
                 setCurrentState(STATES.SUCCESS);
-                setTimeout(() => {
-                    clearDraft();
-                    resetMedia();
-                    router.replace('/(protected)/client/orders');
-                }, 3000);
+                startSuccessCountdown();
             } else {
                 setCurrentState(STATES.FAILED);
                 setErrorMessage(result.message || 'Payment not successful');
-                setTimeout(() => router.back(), 4000);
             }
 
         } catch (error) {
             console.log('❌ Verification failed:', error);
             setCurrentState(STATES.FAILED);
             setErrorMessage('Unable to verify payment status');
-            setTimeout(() => router.back(), 4000);
         }
-    }, [paymentReference, orderData._id, clearDraft, resetMedia, router]);
+    }, [paymentReference, orderData._id]);
 
-    // SINGLE RETURN HANDLER - Handles both deep link and app state change
+    // SUCCESS COUNTDOWN - Only for success state
+    const startSuccessCountdown = useCallback(() => {
+        setSuccessCountdown(3);
+        countdownIntervalRef.current = setInterval(() => {
+            setSuccessCountdown((prev) => {
+                if (prev <= 1) {
+                    clearInterval(countdownIntervalRef.current);
+                    setTimeout(() => {
+                        clearDraft();
+                        resetMedia();
+                        router.replace('/(protected)/client/orders');
+                    }, 0);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    }, [clearDraft, resetMedia, router]);
+
+    // Stop countdown
+    const stopCountdown = useCallback(() => {
+        if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
+            countdownIntervalRef.current = null;
+        }
+    }, []);
+
+    // Start cooldown timer
+    const startCooldownTimer = useCallback((seconds) => {
+        setCooldownTime(seconds);
+        setIsOnCooldown(true);
+        setCurrentState(STATES.COOLDOWN_WAITING);
+
+        cooldownIntervalRef.current = setInterval(() => {
+            setCooldownTime((prev) => {
+                if (prev <= 1) {
+                    clearInterval(cooldownIntervalRef.current);
+                    cooldownIntervalRef.current = null;
+                    setIsOnCooldown(false);
+                    setCurrentState(STATES.INITIALIZING);
+                    // Auto retry after cooldown
+                    setTimeout(() => startPayment(), 500);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    }, []);
+
+    // Safe navigation function
+    const safeGoBack = useCallback(() => {
+        try {
+            if (router.canGoBack?.() !== false) {
+                router.back();
+            } else {
+                // Fallback navigation if we can't go back
+                router.replace('/(protected)/client/create');
+            }
+        } catch (error) {
+            console.log('Navigation error:', error);
+            // Ultimate fallback
+            router.replace('/(protected)/client/create');
+        }
+    }, [router]);
+
+    // Handle return from browser
     const handleReturnFromBrowser = useCallback(() => {
         console.log('📱 App returned from browser, current state:', currentState);
 
         if (currentState === STATES.BROWSER_OPEN && paymentReference && !verificationTriggeredRef.current) {
             console.log('🔄 App returned, triggering verification...');
+            if (manualCheckTimeoutRef.current) {
+                clearTimeout(manualCheckTimeoutRef.current);
+                setShowManualCheck(false);
+            }
             triggerVerification();
         }
     }, [currentState, paymentReference, triggerVerification]);
 
-    // Handle deep links - Just trigger the return handler
+    // Retry payment - COMPLETE RESET
+    const retryPayment = useCallback(() => {
+        console.log('🔄 Retrying payment - full reset');
+        stopCountdown();
+        resetAllState();
+
+        // Start fresh after short delay
+        setTimeout(() => {
+            checkExistingPayment();
+        }, 500);
+    }, [stopCountdown, resetAllState, checkExistingPayment]);
+
+    // Manual verify
+    const manualVerify = useCallback(() => {
+        if (currentState === STATES.BROWSER_OPEN && paymentReference && !verificationTriggeredRef.current) {
+            console.log('🔄 Manual verification triggered');
+            if (manualCheckTimeoutRef.current) {
+                clearTimeout(manualCheckTimeoutRef.current);
+                setShowManualCheck(false);
+            }
+            triggerVerification();
+        }
+    }, [currentState, paymentReference, triggerVerification]);
+
+    // Go to orders (for already paid scenario)
+    const goToOrders = useCallback(() => {
+        clearDraft();
+        resetMedia();
+        router.replace('/(protected)/client/orders');
+    }, [clearDraft, resetMedia, router]);
+
+    // Handle deep links
     useEffect(() => {
         const handleDeepLink = (event) => {
             const url = event?.url || event;
@@ -195,7 +376,6 @@ const PaymentStatusScreen = () => {
 
             if (url && url.includes('payment-status')) {
                 console.log('🔄 Deep link: triggering return handler');
-                // Use setTimeout to ensure this runs after state updates
                 setTimeout(() => handleReturnFromBrowser(), 100);
             }
         };
@@ -204,12 +384,11 @@ const PaymentStatusScreen = () => {
         return () => listener?.remove();
     }, [handleReturnFromBrowser]);
 
-    // Handle app state changes - Just trigger the return handler
+    // Handle app state changes
     useEffect(() => {
         const handleAppStateChange = (nextAppState) => {
             if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
                 console.log('📱 App came to foreground');
-                // Use setTimeout to ensure this runs after state updates
                 setTimeout(() => handleReturnFromBrowser(), 100);
             }
             appStateRef.current = nextAppState;
@@ -219,34 +398,14 @@ const PaymentStatusScreen = () => {
         return () => subscription?.remove();
     }, [handleReturnFromBrowser]);
 
-    // Retry payment
-    const retryPayment = useCallback(() => {
-        setCurrentState(STATES.INITIALIZING);
-        setPaymentReference(null);
-        setErrorMessage(null);
-        verificationTriggeredRef.current = false;
-        if (verificationTimeoutRef.current) {
-            clearTimeout(verificationTimeoutRef.current);
-        }
-        setTimeout(() => startPayment(), 500);
-    }, [startPayment]);
-
-    // Manual verify
-    const manualVerify = useCallback(() => {
-        if (currentState === STATES.BROWSER_OPEN && paymentReference && !verificationTriggeredRef.current) {
-            console.log('🔄 Manual verification triggered');
-            triggerVerification();
-        }
-    }, [currentState, paymentReference, triggerVerification]);
-
-    // Setup effects
+    // Initial setup - Start with existing payment check
     useEffect(() => {
-        startPayment();
-    }, []);
+        checkExistingPayment();
+    }, [checkExistingPayment]);
 
     useEffect(() => {
         const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-            return [STATES.INITIALIZING, STATES.BROWSER_OPEN, STATES.VERIFYING].includes(currentState);
+            return [STATES.CHECKING_EXISTING, STATES.INITIALIZING, STATES.BROWSER_OPEN, STATES.VERIFYING].includes(currentState);
         });
         return () => backHandler.remove();
     }, [currentState]);
@@ -257,12 +416,47 @@ const PaymentStatusScreen = () => {
             if (verificationTimeoutRef.current) {
                 clearTimeout(verificationTimeoutRef.current);
             }
+            if (manualCheckTimeoutRef.current) {
+                clearTimeout(manualCheckTimeoutRef.current);
+            }
+            if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+            }
         };
     }, []);
 
     // RENDER STATES
     const renderContent = () => {
         switch (currentState) {
+            case STATES.CHECKING_EXISTING:
+                return (
+                    <View style={styles.container}>
+                        <ActivityIndicator size="large" color="#3B82F6" />
+                        <Text style={styles.title}>Checking Payment Status</Text>
+                        <Text style={styles.subtitle}>Verifying if payment already exists...</Text>
+                    </View>
+                );
+
+            case STATES.ALREADY_PAID:
+                return (
+                    <View style={styles.container}>
+                        <Ionicons name="checkmark-circle" size={80} color="#10B981" />
+                        <Text style={styles.successTitle}>Payment Already Completed!</Text>
+                        <Text style={styles.subtitle}>
+                            This order (#{orderData?.orderRef}) has already been paid for.
+                        </Text>
+                        <Text style={styles.helpText}>
+                            Amount: ₦{orderData?.pricing?.totalAmount?.toLocaleString('en-NG')}
+                        </Text>
+
+                        <Pressable style={styles.retryButton} onPress={goToOrders}>
+                            <LinearGradient colors={['#10B981', '#34D399']} style={styles.gradient}>
+                                <Text style={styles.retryText}>View Orders</Text>
+                            </LinearGradient>
+                        </Pressable>
+                    </View>
+                );
+
             case STATES.INITIALIZING:
                 return (
                     <View style={styles.container}>
@@ -272,17 +466,48 @@ const PaymentStatusScreen = () => {
                     </View>
                 );
 
+            case STATES.COOLDOWN_WAITING:
+                return (
+                    <View style={styles.container}>
+                        <Ionicons name="time-outline" size={80} color="#F59E0B" />
+                        <Text style={styles.title}>Please Wait</Text>
+                        <Text style={styles.subtitle}>
+                            Payment cannot be initialized at this time.
+                        </Text>
+                        <Text style={styles.cooldownText}>
+                            Retry in {cooldownTime} second{cooldownTime !== 1 ? 's' : ''}
+                        </Text>
+                        <Text style={styles.helpText}>
+                            We're ensuring payment security. Please wait for the timer to complete.
+                        </Text>
+
+                        {/* Disabled retry button during cooldown */}
+                        <View style={[styles.retryButton, styles.disabledButton]}>
+                            <View style={[styles.gradient, styles.disabledGradient]}>
+                                <Text style={[styles.retryText, styles.disabledText]}>
+                                    Retry ({cooldownTime}s)
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                );
+
             case STATES.BROWSER_OPEN:
                 return (
                     <View style={styles.container}>
-                        <ActivityIndicator size="large" color="#3B82F6" />
-                        <Text style={styles.title}>Opening Payment Gateway</Text>
-                        <Text style={styles.subtitle}>
-                            Return to this app when done - we'll automatically verify your payment.
+                        <Ionicons name="card-outline" size={80} color="#3B82F6" />
+                        <Text style={styles.title}>Payment Gateway Opened</Text>
+                        <Text style={styles.helpText}>
+                            We'll automatically verify your payment when you return.
                         </Text>
-                        <Pressable style={styles.verifyButton} onPress={manualVerify}>
-                            <Text style={styles.verifyButtonText}>Check Payment Status</Text>
-                        </Pressable>
+
+                        {showManualCheck && (
+                            <Pressable style={styles.verifyButton} onPress={manualVerify}>
+                                <Text style={styles.verifyButtonText}>
+                                    ✓ I've completed payment
+                                </Text>
+                            </Pressable>
+                        )}
                     </View>
                 );
 
@@ -300,7 +525,9 @@ const PaymentStatusScreen = () => {
                     <View style={styles.container}>
                         <Ionicons name="checkmark-circle" size={80} color="#10B981" />
                         <Text style={styles.successTitle}>Payment Successful!</Text>
-                        <Text style={styles.subtitle}>Redirecting to your orders...</Text>
+                        <Text style={styles.subtitle}>
+                            Redirecting to your orders in {successCountdown} second{successCountdown !== 1 ? 's' : ''}...
+                        </Text>
                     </View>
                 );
 
@@ -317,7 +544,7 @@ const PaymentStatusScreen = () => {
                             </LinearGradient>
                         </Pressable>
 
-                        <Pressable style={styles.backButton} onPress={() => router.back()}>
+                        <Pressable style={styles.backButton} onPress={safeGoBack}>
                             <Text style={styles.backText}>Back to Payment</Text>
                         </Pressable>
                     </View>
@@ -332,8 +559,11 @@ const PaymentStatusScreen = () => {
         <View style={styles.screen}>
             <CustomHeader
                 title="Payment Status"
-                showBack={currentState === STATES.SUCCESS || currentState === STATES.FAILED}
-                onBackPress={() => router.back()}
+                showBack={[STATES.SUCCESS, STATES.FAILED, STATES.ALREADY_PAID].includes(currentState)}
+                onBackPress={() => {
+                    stopCountdown();
+                    safeGoBack();
+                }}
             />
             <View style={[styles.content, { paddingTop: insets.top }]}>
                 {renderContent()}
@@ -350,91 +580,116 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         justifyContent: 'center',
-        paddingHorizontal: 24,
+        alignItems: 'center',
+        padding: 20,
     },
     container: {
         alignItems: 'center',
-        paddingVertical: 40,
+        justifyContent: 'center',
+        flex: 1,
+        paddingHorizontal: 20,
     },
     title: {
-        fontSize: 24,
+        fontSize: 18,
         fontFamily: 'PoppinsSemiBold',
         color: '#111827',
         textAlign: 'center',
-        marginTop: 24,
-        marginBottom: 12,
+        marginTop: 20,
+        marginBottom: 8,
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: 'PoppinsMedium',
         color: '#6B7280',
         textAlign: 'center',
-        lineHeight: 24,
+        marginBottom: 20,
+    },
+    helpText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsMedium',
+        color: '#6B7280',
+        textAlign: 'center',
+        marginBottom: 20,
+        paddingHorizontal: 20,
     },
     successTitle: {
-        fontSize: 28,
-        fontFamily: 'PoppinsBold',
+        fontSize: 20,
+        fontFamily: 'PoppinsSemiBold',
         color: '#10B981',
         textAlign: 'center',
-        marginTop: 16,
-        marginBottom: 12,
+        marginTop: 20,
+        marginBottom: 8,
     },
     errorTitle: {
-        fontSize: 24,
+        fontSize: 20,
         fontFamily: 'PoppinsSemiBold',
         color: '#EF4444',
         textAlign: 'center',
-        marginTop: 16,
-        marginBottom: 12,
+        marginTop: 20,
+        marginBottom: 8,
     },
     errorMessage: {
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: 'PoppinsMedium',
         color: '#6B7280',
         textAlign: 'center',
-        marginBottom: 32,
-        lineHeight: 24,
+        marginBottom: 30,
+        paddingHorizontal: 20,
     },
     verifyButton: {
-        marginTop: 24,
-        paddingHorizontal: 24,
+        backgroundColor: '#3B82F6',
         paddingVertical: 12,
+        paddingHorizontal: 24,
         borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#3B82F6',
+        marginTop: 20,
     },
     verifyButtonText: {
-        color: '#3B82F6',
-        fontSize: 16,
+        color: '#ffffff',
+        fontSize: 14,
         fontFamily: 'PoppinsSemiBold',
-        textAlign: 'center',
     },
     retryButton: {
-        marginTop: 24,
-        marginBottom: 16,
         borderRadius: 12,
         overflow: 'hidden',
-        width: '100%',
+        marginVertical: 20,
+        width: 200,
     },
     gradient: {
-        paddingVertical: 16,
+        paddingVertical: 14,
         paddingHorizontal: 24,
         alignItems: 'center',
     },
     retryText: {
+        color: '#ffffff',
         fontSize: 16,
         fontFamily: 'PoppinsSemiBold',
-        color: 'white',
     },
     backButton: {
         paddingVertical: 12,
         paddingHorizontal: 24,
+        marginBottom: 20,
     },
     backText: {
-        fontSize: 16,
-        fontFamily: 'PoppinsMedium',
         color: '#6B7280',
+        fontSize: 14,
+        fontFamily: 'PoppinsMedium',
         textAlign: 'center',
+    },
+    cooldownText: {
+        fontSize: 18,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#F59E0B',
+        textAlign: 'center',
+        marginBottom: 10,
+    },
+    disabledButton: {
+        opacity: 0.6,
+    },
+    disabledGradient: {
+        backgroundColor: '#9CA3AF',
+    },
+    disabledText: {
+        color: '#D1D5DB',
     },
 });
 

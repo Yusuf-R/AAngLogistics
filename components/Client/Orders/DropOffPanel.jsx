@@ -168,8 +168,8 @@ export default function DropOffPanel({
                         <Text style={styles.headerIconText}>📍</Text>
                     </View>
                     <View style={styles.headerContent}>
-                        <Text style={styles.headerTitle}>Pick-up Location</Text>
-                        <Text style={styles.headerSubtitle}>Where should we collect your package?</Text>
+                        <Text style={styles.headerTitle}>Drop-off Location</Text>
+                        <Text style={styles.headerSubtitle}>Where should we deliver your package?</Text>
                     </View>
                 </View>
 
@@ -549,7 +549,8 @@ const styles = StyleSheet.create({
     },
     headerSubtitle: {
         fontSize: 14,
-        tFamily: 'PoppinsRegular',
+        fontFamily: 'PoppinsRegular',
+        color: '#64748b',
     },
     progressSteps: {
         flexDirection: 'row',
