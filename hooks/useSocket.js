@@ -7,6 +7,7 @@ import SecureStorage from "../lib/SecureStorage";
 import ClientUtils from "../utils/ClientUtilities";
 import { useNotificationStore } from '../store/useNotificationStore';
 import { queryClient } from '../lib/queryClient';
+import {useOrderStore} from "../store/useOrderStore";
 
 const localIP = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
 
@@ -94,6 +95,37 @@ export default function useSocket(userId) {
 
                     console.log('🗑️ All Notification deleted:', notificationId);
                 });
+
+                // Handle order notifications
+                // when an order is completed + payment is successful
+                socketRef.current.on('order:completed', (order) => {
+                    console.log('🛒 Order completed:', order);
+                });
+                // Add these order tracking event handlers
+                socketRef.current.on('order:status:updated', (orderUpdate) => {
+                    useOrderStore.getState().updateOrderTracking(orderUpdate);
+                    queryClient.invalidateQueries({
+                        queryKey: ['GetOrder', orderUpdate.orderId]
+                    });
+                    queryClient.invalidateQueries({
+                        queryKey: ['GetActiveOrders']
+                    });
+                    console.log('📦 Order status updated:', orderUpdate.status);
+                });
+
+                socketRef.current.on('order:location:updated', (locationUpdate) => {
+                    useOrderStore.getState().updateDriverLocation(locationUpdate);
+                    console.log('📍 Driver location updated for order:', locationUpdate.orderId);
+                });
+
+                socketRef.current.on('order:driver:assigned', (driverData) => {
+                    useOrderStore.getState().updateDriverAssignment(driverData);
+                    queryClient.invalidateQueries({
+                        queryKey: ['GetOrder', driverData.orderId]
+                    });
+                    console.log('🚗 Driver assigned:', driverData.driverName);
+                });
+
 
                 socketRef.current.on('connect_error', (err) => {
                     console.log('Socket connection error:', err.message);

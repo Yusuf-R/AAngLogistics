@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useCallback } from 'react';
+import React, {memo, useMemo, useCallback} from 'react';
 import {
     View,
     Text,
@@ -18,36 +18,62 @@ import {
     Shield,
     Settings
 } from 'lucide-react-native';
+import { useSessionStore } from "../../../store/useSessionStore";
+import { router, useSegments } from "expo-router";
+
+import {useOrderStore} from "../../../store/useOrderStore";
+import CustomHeader from "../CustomHeader";
 
 const PRIORITY_CONFIG = {
-    CRITICAL: { color: '#DC2626', bg: '#FEE2E2', icon: AlertTriangle, label: 'Critical' },
-    URGENT: { color: '#EA580C', bg: '#FED7AA', icon: Zap, label: 'Urgent' },
-    HIGH: { color: '#2563EB', bg: '#DBEAFE', icon: Bell, label: 'High' },
-    NORMAL: { color: '#059669', bg: '#D1FAE5', icon: Bell, label: 'Normal' },
-    LOW: { color: '#6B7280', bg: '#F3F4F6', icon: Bell, label: 'Low' }
+    CRITICAL: {color: '#DC2626', bg: '#FEE2E2', icon: AlertTriangle, label: 'Critical'},
+    URGENT: {color: '#EA580C', bg: '#FED7AA', icon: Zap, label: 'Urgent'},
+    HIGH: {color: '#2563EB', bg: '#DBEAFE', icon: Bell, label: 'High'},
+    NORMAL: {color: '#059669', bg: '#D1FAE5', icon: Bell, label: 'Normal'},
+    LOW: {color: '#6B7280', bg: '#F3F4F6', icon: Bell, label: 'Low'}
 };
 
 const CATEGORY_CONFIG = {
-    ORDER: { icon: Package, color: '#2563EB', label: 'Orders' },
-    DELIVERY: { icon: Package, color: '#059669', label: 'Delivery' },
-    SECURITY: { icon: Shield, color: '#DC2626', label: 'Security' },
-    SYSTEM: { icon: Settings, color: '#7C3AED', label: 'System' },
-    PAYMENT: { icon: Bell, color: '#EA580C', label: 'Payment' },
-    SOCIAL: { icon: Bell, color: '#DB2777', label: 'Social' },
-    PROMOTION: { icon: Bell, color: '#059669', label: 'Promotions' }
+    ORDER: {icon: Package, color: '#2563EB', label: 'Orders'},
+    DELIVERY: {icon: Package, color: '#059669', label: 'Delivery'},
+    SECURITY: {icon: Shield, color: '#DC2626', label: 'Security'},
+    SYSTEM: {icon: Settings, color: '#7C3AED', label: 'System'},
+    PAYMENT: {icon: Bell, color: '#EA580C', label: 'Payment'},
+    SOCIAL: {icon: Bell, color: '#DB2777', label: 'Social'},
+    PROMOTION: {icon: Bell, color: '#059669', label: 'Promotions'}
 };
 
 // Action Buttons Section
-const ActionButtons = memo(({ actionButtons }) => {
+const ActionButtons = memo(({notification, actionButtons}) => {
+    const allOrderData = useSessionStore((state) => state.allOrderData);
+    const segments = useSegments();
+    const {
+        setTrackingOrder,
+        setSelectedOrder,
+    } = useOrderStore();
+
     const handleActionPress = useCallback((action) => {
-        console.log('Action:', action);
-    }, []);
+        const {orderRef} = notification.content;
+        const data = allOrderData.find(order => order.orderRef === orderRef);
+        setTrackingOrder(data);
+        setSelectedOrder(data);
+
+        if (action === 'track' && orderRef && data) {
+            router.replace({
+                pathname: '/client/orders/track',
+            });
+        }
+        if (action === 'view') {
+            router.replace({
+                pathname: '/client/orders/view',
+            });
+        }
+    }, [allOrderData, notification.content, setTrackingOrder, setSelectedOrder]);
 
     if (!actionButtons?.length) return null;
 
     return (
         <View style={styles.detailActionsContainer}>
-            <Text style={styles.detailActionsTitle}>Available Actions</Text>
+            <Text style={styles.detailActionsTitle}>Actions</Text>
             <View style={styles.detailActionButtons}>
                 {actionButtons.map((button, index) => (
                     <TouchableOpacity
@@ -64,12 +90,12 @@ const ActionButtons = memo(({ actionButtons }) => {
 });
 
 // Metadata Section
-const MetadataSection = memo(({ notification, formatDetailedTime }) => (
+const MetadataSection = memo(({notification, formatDetailedTime}) => (
     <View style={styles.metadataContainer}>
         <Text style={styles.metadataTitle}>Details</Text>
 
         <View style={styles.metadataRow}>
-            <Clock size={16} color="#6B7280" />
+            <Clock size={16} color="#6B7280"/>
             <View style={styles.metadataContent}>
                 <Text style={styles.metadataLabel}>Received</Text>
                 <Text style={styles.metadataValue}>
@@ -79,7 +105,7 @@ const MetadataSection = memo(({ notification, formatDetailedTime }) => (
         </View>
 
         <View style={styles.metadataRow}>
-            <User size={16} color="#6B7280" />
+            <User size={16} color="#6B7280"/>
             <View style={styles.metadataContent}>
                 <Text style={styles.metadataLabel}>Source</Text>
                 <Text style={styles.metadataValue}>
@@ -89,7 +115,7 @@ const MetadataSection = memo(({ notification, formatDetailedTime }) => (
         </View>
 
         <View style={styles.metadataRow}>
-            <AlertTriangle size={16} color="#6B7280" />
+            <AlertTriangle size={16} color="#6B7280"/>
             <View style={styles.metadataContent}>
                 <Text style={styles.metadataLabel}>Type</Text>
                 <Text style={styles.metadataValue}>
@@ -101,7 +127,7 @@ const MetadataSection = memo(({ notification, formatDetailedTime }) => (
 ));
 
 // Main Component
-function NotificationDetails({ notification }) {
+function NotificationDetails({notification}) {
     const formatDetailedTime = useCallback((dateString) => {
         const date = new Date(dateString);
         return date.toLocaleString('en-US', {
@@ -113,6 +139,10 @@ function NotificationDetails({ notification }) {
             minute: '2-digit'
         });
     }, []);
+
+    const handleBackPress = () => {
+        router.back();
+    };
 
     const computed = useMemo(() => {
         if (!notification) return null;
@@ -128,48 +158,57 @@ function NotificationDetails({ notification }) {
 
     if (!notification || !computed) return null;
 
-    const { priorityConfig, categoryConfig, CategoryIcon, PriorityIcon } = computed;
+    const {priorityConfig, categoryConfig, CategoryIcon, PriorityIcon} = computed;
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-            <ScrollView
-                style={styles.content}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-            >
-                <View style={styles.detailCard}>
-                    <View style={styles.detailHeader}>
-                        <View style={[styles.detailIconContainer, { backgroundColor: priorityConfig.bg }]}>
-                            <CategoryIcon size={24} color={priorityConfig.color} />
-                        </View>
-                        <View style={styles.detailHeaderText}>
-                            <Text style={styles.detailTitle}>{notification.content.title}</Text>
-                            <View style={styles.detailMeta}>
-                                <View style={[styles.priorityBadge, { backgroundColor: priorityConfig.bg }]}>
-                                    <PriorityIcon size={12} color={priorityConfig.color} />
-                                    <Text style={[styles.priorityText, { color: priorityConfig.color }]}>
-                                        {priorityConfig.label}
+        <>
+            <CustomHeader
+                title="Details"
+                onBackPress={handleBackPress}
+            />
+            <View style={styles.container}>
+                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF"/>
+
+                <ScrollView
+                    style={styles.content}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <View style={styles.detailCard}>
+                        <View style={styles.detailHeader}>
+                            <View style={[styles.detailIconContainer, {backgroundColor: priorityConfig.bg}]}>
+                                <CategoryIcon size={24} color={priorityConfig.color}/>
+                            </View>
+                            <View style={styles.detailHeaderText}>
+                                <Text style={styles.detailTitle}>{notification.content.title}</Text>
+                                <View style={styles.detailMeta}>
+                                    <View style={[styles.priorityBadge, {backgroundColor: priorityConfig.bg}]}>
+                                        <PriorityIcon size={12} color={priorityConfig.color}/>
+                                        <Text style={[styles.priorityText, {color: priorityConfig.color}]}>
+                                            {priorityConfig.label}
+                                        </Text>
+                                    </View>
+                                    <Text style={styles.categoryText}>
+                                        {categoryConfig?.label || notification.category}
                                     </Text>
                                 </View>
-                                <Text style={styles.categoryText}>
-                                    {categoryConfig?.label || notification.category}
-                                </Text>
                             </View>
                         </View>
+
+                        <Text style={styles.detailBody}>{notification.content.body}</Text>
+
+                        <ActionButtons
+                            notification={notification}
+                            actionButtons={notification.content.richContent?.actionButtons}/>
+
+                        <MetadataSection
+                            notification={notification}
+                            formatDetailedTime={formatDetailedTime}
+                        />
                     </View>
-
-                    <Text style={styles.detailBody}>{notification.content.body}</Text>
-
-                    <ActionButtons actionButtons={notification.content.richContent?.actionButtons} />
-
-                    <MetadataSection
-                        notification={notification}
-                        formatDetailedTime={formatDetailedTime}
-                    />
-                </View>
-            </ScrollView>
-        </View>
+                </ScrollView>
+            </View>
+        </>
     );
 }
 
@@ -189,7 +228,7 @@ const styles = StyleSheet.create({
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
+                shadowOffset: {width: 0, height: 1},
                 shadowOpacity: 0.05,
                 shadowRadius: 2,
             },

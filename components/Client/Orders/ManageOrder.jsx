@@ -38,6 +38,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
     const {
         setSelectedOrder,
         canResumeOrder,
+        setTrackingOrder,
     } = useOrderStore();
 
     // ✅ Enhanced filtering logic
@@ -275,7 +276,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
 
     // Additional action handlers
     const handleTrackOrder = (order) => {
-        setSelectedOrder(order);
+        setTrackingOrder(order);
         router.push('/(protected)/client/orders/track');
     };
     const handleRateOrder = (order) => {
@@ -321,7 +322,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                     <View style={styles.locationRow}>
                         <Ionicons name="radio-button-on" size={16} color="#10B981" />
                         <Text style={styles.locationText} numberOfLines={1}>
-                            {order.pickup?.landmark || order.pickup?.address || 'Pickup location TBD'}
+                            {order.location?.pickUp?.address || 'Pickup location TBD'}
                         </Text>
                     </View>
 
@@ -330,7 +331,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                     <View style={styles.locationRow}>
                         <Ionicons name="location" size={16} color="#EF4444" />
                         <Text style={styles.locationText} numberOfLines={1}>
-                            {order.dropoff?.landmark || order.dropoff?.address || 'Destination TBD'}
+                            {order.location?.dropOff?.address || 'Destination TBD'}
                         </Text>
                     </View>
 
@@ -365,12 +366,12 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                                 <View
                                     style={[
                                         styles.progressFill,
-                                        { width: `${(order.metadata.draftProgress.step / 7) * 100}%` }
+                                        { width: `${(order.metadata.draftProgress.step / 5) * 100}%` }
                                     ]}
                                 />
                             </View>
                             <Text style={styles.progressText}>
-                                Step {order.metadata.draftProgress.step} of 7
+                                Step {order.metadata.draftProgress.step} of 5
                             </Text>
                         </View>
                     )}

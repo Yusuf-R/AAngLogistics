@@ -99,6 +99,11 @@ export const TAB_BAR_HIDDEN_EXCEPTIONS = [
     '/client/orders/manage',
     '/client/orders/view',
     '/client/orders/payment-status',
+    '/client/orders/track',
+
+    // notifications
+    '/client/notifications/details',
+
 ];
 
 //

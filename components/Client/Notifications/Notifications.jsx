@@ -296,6 +296,30 @@ export default function NotificationScreen({ userData }) {
         />
     ), [notifications, handleMarkAsRead, handleDeleteNotification, handleViewDetails]);
 
+    const DeliveryScreen = useCallback(() => (
+        <CategoryNotificationsScreen
+            notifications={notifications}
+            category="DELIVERY"
+            onMarkAsRead={handleMarkAsRead}
+            onDeleteNotification={handleDeleteNotification}
+            onViewDetails={handleViewDetails}
+            onViewSilently={handleViewSilently}
+        />
+    ), [notifications, handleMarkAsRead, handleDeleteNotification, handleViewDetails]);
+
+    const PaymentScreen = useCallback(() => (
+        <CategoryNotificationsScreen
+            notifications={notifications}
+            category="PAYMENT"
+            onMarkAsRead={handleMarkAsRead}
+            onDeleteNotification={handleDeleteNotification}
+            onViewDetails={handleViewDetails}
+            onViewSilently={handleViewSilently}
+        />
+    ), [notifications, handleMarkAsRead, handleDeleteNotification, handleViewDetails]);
+
+
+
     const SystemScreen = useCallback(() => (
         <CategoryNotificationsScreen
             notifications={notifications}
@@ -330,43 +354,37 @@ export default function NotificationScreen({ userData }) {
                 <Tab.Navigator
                     screenOptions={({ route }) => ({
                         tabBarLabel: ({ focused }) => (
-                            <View style={{ alignItems: 'center' }}>
+                            <View style={styles.tabLabelContainer}>
                                 <Text
-                                    style={{
-                                        fontSize: 14,
-                                        fontFamily: 'PoppinsBold',
-                                        color: focused ? '#3B82F6' : '#6B7280',
-                                    }}
+                                    style={[
+                                        styles.tabLabelText,
+                                        focused ? styles.tabLabelTextFocused : styles.tabLabelTextUnfocused
+                                    ]}
+                                    numberOfLines={1}
+                                    adjustsFontSizeToFit
                                 >
                                     {route.name}
                                 </Text>
                                 {focused && (
-                                    <View
-                                        style={{
-                                            width: 6,
-                                            height: 6,
-                                            borderRadius: 3,
-                                            backgroundColor: '#3B82F6',
-                                            marginTop: 1,
-                                        }}
-                                    />
+                                    <View style={styles.activeIndicator} />
                                 )}
                             </View>
                         ),
-                        tabBarStyle: {
-                            backgroundColor: '#FFFFFF',
-                            elevation: 0,
-                        },
+                        tabBarStyle: styles.tabBar,
                         tabBarIndicatorStyle: {
                             height: 0,
                         },
                         tabBarPressColor: 'transparent',
+                        tabBarItemStyle: styles.tabItem,
+                        tabBarScrollEnabled: true,
                     })}
                 >
                     <Tab.Screen name="All" component={AllScreen} />
                     <Tab.Screen name="Orders" component={OrdersScreen} />
-                    <Tab.Screen name="System" component={SystemScreen} />
+                    <Tab.Screen name="Delivery" component={DeliveryScreen} />
+                    <Tab.Screen name="Payment" component={PaymentScreen} />
                     <Tab.Screen name="Security" component={SecurityScreen} />
+                    <Tab.Screen name="System" component={SystemScreen} />
 
                 </Tab.Navigator>
 
@@ -615,5 +633,46 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '500',
         marginLeft: 8,
+    },
+    // tab bar
+    tabBar: {
+        backgroundColor: '#FFFFFF',
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+        height: 60,
+    },
+    tabItem: {
+        width: 'auto',
+        minHeight: 60,
+        paddingHorizontal: 16,
+    },
+    tabLabelContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 8,
+    },
+    tabLabelText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsSemiBold',
+        marginBottom: 4,
+    },
+    tabLabelTextFocused: {
+        color: '#3B82F6',
+    },
+    tabLabelTextUnfocused: {
+        color: '#6B7280',
+    },
+    activeIndicator: {
+        width: 24,
+        height: 3,
+        borderRadius: 3,
+        backgroundColor: '#3B82F6',
+        position: 'absolute',
+        bottom: 0,
     },
 });

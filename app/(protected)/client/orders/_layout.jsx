@@ -48,6 +48,12 @@ export default function OrdersLayout() {
                         headerShown: false
                     }}
                 />
+                <Stack.Screen
+                    name="track"
+                    options={{
+                        headerShown: false
+                    }}
+                />
             </Stack>
         </>
     );

@@ -20,9 +20,6 @@ const {width} = Dimensions.get('window');
 
 function ViewOrder({selectedOrder, updateOrderStatus}) {
 
-    console.log({
-        selectedOrder
-    })
     // ✅ Action handlers
     const handleCallDriver = () => {
         if (selectedOrder.driver?.phone) {
@@ -42,7 +39,7 @@ function ViewOrder({selectedOrder, updateOrderStatus}) {
 
     const handleShareOrder = async () => {
         try {
-            const shareContent = `Order Details\n\nRef: ${selectedOrder.orderRef}\nStatus: ${formatStatus(selectedOrder.status)}\nFrom: ${selectedOrder.pickup?.address}\nTo: ${selectedOrder.dropoff?.address}\nAmount: ₦${selectedOrder.pricing?.totalAmount?.toLocaleString()}`;
+            const shareContent = `Order Details\n\nRef: ${selectedOrder.orderRef}\nStatus: ${formatStatus(selectedOrder.status)}\nFrom: ${selectedOrder.location?.pickUp?.address}\nTo: ${selectedOrder.location.dropOff?.address}\nAmount: ₦${selectedOrder.pricing?.totalAmount?.toLocaleString()}`;
 
             await Share.share({
                 message: shareContent,
@@ -141,9 +138,12 @@ function ViewOrder({selectedOrder, updateOrderStatus}) {
             'document': 'document-text-outline',
             'parcel': 'cube-outline',
             'food': 'restaurant-outline',
+            'mobilePhone': 'phone-portrait',
+            'laptop': 'laptop',
             'fragile': 'alert-circle-outline',
             'electronics': 'phone-portrait-outline',
             'clothing': 'shirt-outline',
+            'cake': 'pie-chart',
             'medicine': 'medical-outline',
             'furniture': 'home-outline',
             'jewelry': 'diamond-outline',
@@ -312,87 +312,6 @@ function ViewOrder({selectedOrder, updateOrderStatus}) {
                     </View>
                 </View>
 
-                {/* Route Information */}
-                <View style={styles.routeCard}>
-                    <Text style={styles.sectionTitle}>Route Information</Text>
-
-                    <View style={styles.routeContainer}>
-                        {/* Pickup Location */}
-                        <View style={styles.locationContainer}>
-                            <View style={styles.locationIcon}>
-                                <Ionicons name="radio-button-on" size={20} color="#10B981"/>
-                            </View>
-                            <View style={styles.locationDetails}>
-                                <Text style={styles.locationLabel}>Pickup Location</Text>
-                                <Text style={styles.locationAddress}>
-                                    {selectedOrder.pickup?.address || 'Address not specified'}
-                                </Text>
-                                {selectedOrder.pickup?.landmark && (
-                                    <Text style={styles.locationLandmark}>
-                                        Near: {selectedOrder.pickup.landmark}
-                                    </Text>
-                                )}
-                                {selectedOrder.pickup?.instructions && (
-                                    <Text style={styles.locationInstructions}>
-                                        Instructions: {selectedOrder.pickup.instructions}
-                                    </Text>
-                                )}
-                            </View>
-                        </View>
-
-                        {/* Route Line */}
-                        <View style={styles.routeLine}>
-                            <View style={styles.routeDots}>
-                                <View style={styles.routeDot}/>
-                                <View style={styles.routeDot}/>
-                                <View style={styles.routeDot}/>
-                            </View>
-                        </View>
-
-                        {/* Dropoff Location */}
-                        <View style={styles.locationContainer}>
-                            <View style={styles.locationIcon}>
-                                <Ionicons name="location" size={20} color="#EF4444"/>
-                            </View>
-                            <View style={styles.locationDetails}>
-                                <Text style={styles.locationLabel}>Destination</Text>
-                                <Text style={styles.locationAddress}>
-                                    {selectedOrder.dropoff?.address || 'Address not specified'}
-                                </Text>
-                                {selectedOrder.dropoff?.landmark && (
-                                    <Text style={styles.locationLandmark}>
-                                        Near: {selectedOrder.dropoff.landmark}
-                                    </Text>
-                                )}
-                                {selectedOrder.dropoff?.instructions && (
-                                    <Text style={styles.locationInstructions}>
-                                        Instructions: {selectedOrder.dropoff.instructions}
-                                    </Text>
-                                )}
-                            </View>
-                        </View>
-                    </View>
-
-                    {selectedOrder.route?.distance && (
-                        <View style={styles.routeStats}>
-                            <View style={styles.routeStat}>
-                                <Ionicons name="navigate-outline" size={16} color="#6B7280"/>
-                                <Text style={styles.routeStatText}>
-                                    {selectedOrder.route.distance}km
-                                </Text>
-                            </View>
-                            {selectedOrder.route?.duration && (
-                                <View style={styles.routeStat}>
-                                    <Ionicons name="time-outline" size={16} color="#6B7280"/>
-                                    <Text style={styles.routeStatText}>
-                                        {selectedOrder.route.duration} mins
-                                    </Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-                </View>
-
                 {/* Package Information */}
                 <View style={styles.packageCard}>
                     <Text style={styles.sectionTitle}>Package Details</Text>
@@ -411,7 +330,7 @@ function ViewOrder({selectedOrder, updateOrderStatus}) {
 
                         {selectedOrder.package?.description && (
                             <Text style={styles.packageDescription}>
-                                {selectedOrder.package.description}
+                                Description: {selectedOrder.package.description}
                             </Text>
                         )}
 
@@ -425,14 +344,14 @@ function ViewOrder({selectedOrder, updateOrderStatus}) {
                                 </View>
                             )}
 
-                            {selectedOrder.package?.dimensions && (
-                                <View style={styles.packageMetaItem}>
-                                    <Text style={styles.packageMetaLabel}>Size:</Text>
-                                    <Text style={styles.packageMetaValue}>
-                                        {selectedOrder.package.dimensions?.unit}
-                                    </Text>
-                                </View>
-                            )}
+                            {/*{selectedOrder.package?.dimensions && (*/}
+                            {/*    <View style={styles.packageMetaItem}>*/}
+                            {/*        <Text style={styles.packageMetaLabel}>Size:</Text>*/}
+                            {/*        <Text style={styles.packageMetaValue}>*/}
+                            {/*            {selectedOrder.package.dimensions?.unit}*/}
+                            {/*        </Text>*/}
+                            {/*    </View>*/}
+                            {/*)}*/}
 
                             {selectedOrder.package?.value && (
                                 <View style={styles.packageMetaItem}>
@@ -466,6 +385,87 @@ function ViewOrder({selectedOrder, updateOrderStatus}) {
                             )}
                         </View>
                     </View>
+                </View>
+
+                {/* Route Information */}
+                <View style={styles.routeCard}>
+                    <Text style={styles.sectionTitle}>Route Information</Text>
+
+                    <View style={styles.routeContainer}>
+                        {/* Pickup Location */}
+                        <View style={styles.locationContainer}>
+                            <View style={styles.locationIcon}>
+                                <Ionicons name="radio-button-on" size={20} color="#10B981"/>
+                            </View>
+                            <View style={styles.locationDetails}>
+                                <Text style={styles.locationLabel}>Pickup Location</Text>
+                                <Text style={styles.locationAddress}>
+                                    {selectedOrder.location?.pickUp?.address || 'Address not specified'}
+                                </Text>
+                                {selectedOrder.location?.pickUp?.landmark && (
+                                    <Text style={styles.locationLandmark}>
+                                        Near: {selectedOrder.location?.dropOff.landmark}
+                                    </Text>
+                                )}
+                                {selectedOrder.location?.pickUp?.instructions && (
+                                    <Text style={styles.locationInstructions}>
+                                        Instructions: {selectedOrder.location?.pickUp.instructions}
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+
+                        {/* Route Line */}
+                        <View style={styles.routeLine}>
+                            <View style={styles.routeDots}>
+                                <View style={styles.routeDot}/>
+                                <View style={styles.routeDot}/>
+                                <View style={styles.routeDot}/>
+                            </View>
+                        </View>
+
+                        {/* Dropoff Location */}
+                        <View style={styles.locationContainer}>
+                            <View style={styles.locationIcon}>
+                                <Ionicons name="location" size={20} color="#EF4444"/>
+                            </View>
+                            <View style={styles.locationDetails}>
+                                <Text style={styles.locationLabel}>Destination</Text>
+                                <Text style={styles.locationAddress}>
+                                    {selectedOrder.location?.dropOff?.address || 'Address not specified'}
+                                </Text>
+                                {selectedOrder.location?.dropOff?.landmark && (
+                                    <Text style={styles.locationLandmark}>
+                                        Near: {selectedOrder.location?.dropOff.landmark}
+                                    </Text>
+                                )}
+                                {selectedOrder.location?.dropOff?.instructions && (
+                                    <Text style={styles.locationInstructions}>
+                                        Instructions: {selectedOrder.location?.dropOff.instructions}
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                    </View>
+
+                    {selectedOrder.route?.distance && (
+                        <View style={styles.routeStats}>
+                            <View style={styles.routeStat}>
+                                <Ionicons name="navigate-outline" size={16} color="#6B7280"/>
+                                <Text style={styles.routeStatText}>
+                                    {selectedOrder.route.distance}km
+                                </Text>
+                            </View>
+                            {selectedOrder.route?.duration && (
+                                <View style={styles.routeStat}>
+                                    <Ionicons name="time-outline" size={16} color="#6B7280"/>
+                                    <Text style={styles.routeStatText}>
+                                        {selectedOrder.route.duration} mins
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+                    )}
                 </View>
 
                 {/* Driver Information */}
@@ -565,55 +565,28 @@ function ViewOrder({selectedOrder, updateOrderStatus}) {
                 {/* Pricing Breakdown */}
                 {selectedOrder.pricing && (
                     <View style={styles.pricingCard}>
-                        <Text style={styles.sectionTitle}>Pricing Breakdown</Text>
+                        <Text style={styles.sectionTitle}>Pricing</Text>
 
                         <View style={styles.pricingDetails}>
-                            {selectedOrder.pricing.baseAmount && (
-                                <View style={styles.pricingRow}>
-                                    <Text style={styles.pricingLabel}>Base Fare</Text>
-                                    <Text style={styles.pricingValue}>
-                                        ₦{selectedOrder.pricing.baseAmount.toLocaleString()}
-                                    </Text>
-                                </View>
-                            )}
+                            {/*{selectedOrder.insurance.declaredValue && (*/}
+                            {/*    <View style={styles.pricingRow}>*/}
+                            {/*        <Text style={styles.pricingLabel}>Item Declared Value</Text>*/}
+                            {/*        <Text style={styles.pricingValue}>*/}
+                            {/*            ₦{selectedOrder.insurance.declaredValue.toLocaleString()}*/}
+                            {/*        </Text>*/}
+                            {/*    </View>*/}
+                            {/*)}*/}
 
-                            {selectedOrder.pricing.distanceAmount && (
-                                <View style={styles.pricingRow}>
-                                    <Text style={styles.pricingLabel}>Distance Charge</Text>
-                                    <Text style={styles.pricingValue}>
-                                        ₦{selectedOrder.pricing.distanceAmount.toLocaleString()}
-                                    </Text>
-                                </View>
-                            )}
-
-                            {selectedOrder.pricing.urgencyAmount && (
-                                <View style={styles.pricingRow}>
-                                    <Text style={styles.pricingLabel}>Urgency Fee</Text>
-                                    <Text style={styles.pricingValue}>
-                                        ₦{selectedOrder.pricing.urgencyAmount.toLocaleString()}
-                                    </Text>
-                                </View>
-                            )}
-
-                            {selectedOrder.pricing.insuranceAmount && (
-                                <View style={styles.pricingRow}>
-                                    <Text style={styles.pricingLabel}>Insurance</Text>
-                                    <Text style={styles.pricingValue}>
-                                        ₦{selectedOrder.pricing.insuranceAmount.toLocaleString()}
-                                    </Text>
-                                </View>
-                            )}
-
-                            {selectedOrder.pricing.discount && (
-                                <View style={styles.pricingRow}>
-                                    <Text style={[styles.pricingLabel, styles.discountLabel]}>
-                                        Discount
-                                    </Text>
-                                    <Text style={[styles.pricingValue, styles.discountValue]}>
-                                        -₦{selectedOrder.pricing.discount.toLocaleString()}
-                                    </Text>
-                                </View>
-                            )}
+                            {/*{selectedOrder.pricing.discount && (*/}
+                            {/*    <View style={styles.pricingRow}>*/}
+                            {/*        <Text style={[styles.pricingLabel, styles.discountLabel]}>*/}
+                            {/*            Discount*/}
+                            {/*        </Text>*/}
+                            {/*        <Text style={[styles.pricingValue, styles.discountValue]}>*/}
+                            {/*            -₦{selectedOrder.pricing.discount.toLocaleString()}*/}
+                            {/*        </Text>*/}
+                            {/*    </View>*/}
+                            {/*)}*/}
 
                             <View style={styles.pricingDivider}/>
 
@@ -778,6 +751,7 @@ const styles = StyleSheet.create({
     },
     locationDetails: {
         flex: 1,
+        marginTop: 4,
     },
     locationLabel: {
         fontSize: 12,

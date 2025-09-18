@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     },
     name: {
         fontSize: 18,
-        fontFamily: 'PoppinsRegular',
+        fontFamily: 'PoppinsSemiBold',
         color: '#111827',
         marginRight: 5
     },

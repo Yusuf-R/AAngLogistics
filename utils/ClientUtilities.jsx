@@ -597,17 +597,12 @@ class ClientUtils {
                 data: obj,
             });
 
-            console.log({ response });
-
             if (response.status === 201) {
                 return response.data;
             } else {
                 throw new Error(response.error);
             }
         } catch (error) {
-            console.log(error);
-            console.log({ dt: error.response?.data });
-
             // Handle specific error codes
             if (error.response?.status === 409) {
                 // Payment already in progress - extract cooldown info

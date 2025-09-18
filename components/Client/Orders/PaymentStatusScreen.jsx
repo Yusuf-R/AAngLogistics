@@ -21,14 +21,18 @@ import { useSessionStore } from '../../../store/useSessionStore';
 import useMediaStore from '../../../store/useMediaStore';
 import ClientUtils from '../../../utils/ClientUtilities';
 import CustomHeader from '../CustomHeader';
+import SessionManager from "../../../lib/SessionManager";
+
+import ClientUtilities from "../../../utils/ClientUtilities";
+import {queryClient} from "../../../lib/queryClient";
 
 const STATES = {
-    CHECKING_EXISTING: 'checking_existing',  // New state for duplicate check
-    ALREADY_PAID: 'already_paid',           // New state for already paid
+    CHECKING_EXISTING: 'checking_existing',
+    ALREADY_PAID: 'already_paid',
     INITIALIZING: 'initializing',
     BROWSER_OPEN: 'browser_open',
     VERIFYING: 'verifying',
-    COOLDOWN_WAITING: 'cooldown_waiting',  // New state
+    COOLDOWN_WAITING: 'cooldown_waiting',
     SUCCESS: 'success',
     FAILED: 'failed'
 };
@@ -87,7 +91,7 @@ const PaymentStatusScreen = () => {
     // Check existing payment status
     const existingPaymentMutation = useMutation({
         mutationKey: ['CheckExistingPayment'],
-        mutationFn: ClientUtils.CheckPaymentStatus, // Reuse the same function
+        mutationFn: ClientUtils.CheckPaymentStatus,
         retry: 1,
     });
 
@@ -182,10 +186,6 @@ const PaymentStatusScreen = () => {
             };
 
             const response = await paymentMutation.mutateAsync(payload);
-            console.log({
-                response,
-                at: 'after payment mutation'
-            })
 
             if (!response?.authorizationUrl || !response?.reference) {
                 throw new Error('Invalid payment response');
@@ -244,6 +244,7 @@ const PaymentStatusScreen = () => {
             console.log('✅ Verification result:', result.status);
 
             if (result.status === 'paid') {
+                await queryClient.invalidateQueries({ queryKey: ["GetAllClientOrder"] })
                 setCurrentState(STATES.SUCCESS);
                 startSuccessCountdown();
             } else {

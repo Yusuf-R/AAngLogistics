@@ -10,6 +10,10 @@ export const useOrderStore = create((set, get) => ({
     orderData: {},
     currentStep: 0,
     selectedOrder: null,
+    orderRef: null,
+    trackingOrder: null,
+    liveTrackingData: new Map(), // orderId -> real-time data
+    driverLocations: new Map(),
 
     // --- Actions ---
 
@@ -27,6 +31,10 @@ export const useOrderStore = create((set, get) => ({
 
     setSelectedOrder: (order) =>
         set({ selectedOrder: order }),
+    setTrackingOrder: (order) =>
+        set({ trackingOrder: order }),
+    setOrderRef: (ref) =>
+        set({ orderRef: ref }),
 
     // Determine if an order is resumable
     canResumeOrder: (order) =>
@@ -83,6 +91,99 @@ export const useOrderStore = create((set, get) => ({
         const prev = get().currentStep - 1;
         if (prev >= 0) {
             set({ currentStep: prev });
+        }
+    },
+
+    // tracking utils
+    updateOrderTracking: (orderUpdate) => {
+        const state = get();
+        const { orderId, trackingHistory, status, currentEntry } = orderUpdate;
+
+        // Update the specific order being tracked
+        if (state.trackingOrder?._id === orderId) {
+            set({
+                trackingOrder: {
+                    ...state.trackingOrder,
+                    status,
+                    orderTrackingHistory: trackingHistory
+                }
+            });
+        }
+
+        // Update orders in the general list
+        const updatedOrders = state.orders.map(order =>
+            order._id === orderId
+                ? { ...order, status, orderTrackingHistory: trackingHistory }
+                : order
+        );
+
+        set({ orders: updatedOrders });
+
+        // Store live tracking metadata
+        const liveData = new Map(state.liveTrackingData);
+        liveData.set(orderId, {
+            status,
+            currentEntry,
+            updatedAt: new Date()
+        });
+        set({ liveTrackingData: liveData });
+    },
+
+    updateDriverLocation: (locationUpdate) => {
+        const state = get();
+        const { orderId, location, eta, distance, timestamp } = locationUpdate;
+
+        // Update tracking order if it matches
+        if (state.trackingOrder?._id === orderId) {
+            set({
+                trackingOrder: {
+                    ...state.trackingOrder,
+                    driverAssignment: {
+                        ...state.trackingOrder.driverAssignment,
+                        currentLocation: {
+                            ...location,
+                            timestamp: timestamp || new Date()
+                        },
+                        estimatedArrival: eta ? {
+                            pickup: new Date(Date.now() + eta * 60000)
+                        } : state.trackingOrder.driverAssignment?.estimatedArrival,
+                        distance: distance ? {
+                            remaining: distance,
+                            unit: 'km'
+                        } : state.trackingOrder.driverAssignment?.distance
+                    }
+                }
+            });
+        }
+
+        // Update driver locations map for quick access
+        const driverLocations = new Map(state.driverLocations);
+        driverLocations.set(orderId, {
+            location,
+            eta,
+            distance,
+            timestamp: timestamp || new Date()
+        });
+        set({ driverLocations });
+    },
+
+    updateDriverAssignment: (driverData) => {
+        const state = get();
+        const { orderId, driverId, driverInfo } = driverData;
+
+        if (state.trackingOrder?._id === orderId) {
+            set({
+                trackingOrder: {
+                    ...state.trackingOrder,
+                    driverAssignment: {
+                        ...state.trackingOrder.driverAssignment,
+                        driverId,
+                        driverInfo,
+                        status: 'assigned',
+                        assignedAt: new Date()
+                    }
+                }
+            });
         }
     },
 

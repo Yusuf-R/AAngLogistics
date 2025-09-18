@@ -10,7 +10,7 @@ import {
     StatusBar,
     RefreshControl,
     Image,
-    TextInput
+    TextInput, ActivityIndicator,
 } from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {BlurView} from 'expo-blur';
@@ -39,8 +39,9 @@ import {
     Navigation,
     ChevronRight
 } from 'lucide-react-native';
-import {useNavigation} from "@react-navigation/native";
 import {router} from "expo-router";
+import CustomAlert from "./CustomAlert";
+import {useOrderStore} from "../../../store/useOrderStore";
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -49,17 +50,17 @@ const recentOrders = [
     {
         id: '1',
         orderType: 'instant',
-        package: { category: 'document', description: 'Legal documents' },
-        pickup: { address: 'Home' },
-        dropoff: { address: 'Law Office' },
+        package: {category: 'document', description: 'Legal documents'},
+        pickup: {address: 'Home'},
+        dropoff: {address: 'Law Office'},
         createdAt: new Date(Date.now() - 86400000)
     },
     {
         id: '2',
         orderType: 'scheduled',
-        package: { category: 'parcel', description: 'Birthday gift' },
-        pickup: { address: 'Shopping Mall' },
-        dropoff: { address: 'Friend\'s House' },
+        package: {category: 'parcel', description: 'Birthday gift'},
+        pickup: {address: 'Shopping Mall'},
+        dropoff: {address: 'Friend\'s House'},
         createdAt: new Date(Date.now() - 172800000)
     }
 ];
@@ -79,6 +80,17 @@ const OrdersHub = ({
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(50)).current;
     const firstName = userData?.fullName?.split(' ')[0] || 'User';
+    const [alert, showAlert] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({
+        type: 'error',
+        title: '',
+        message: '',
+    });
+
+    const {
+        setTrackingOrder,
+    } = useOrderStore();
 
     // render today's data as Day, Month, Year
     const today = new Date();
@@ -141,6 +153,8 @@ const OrdersHub = ({
         }
     ];
 
+    // we use the top most recent orders and show their current tracking history status
+    // if no recent orders, we show a friendly empty state
     const mockTrackingHistory = recentOrders.length > 0 ? recentOrders : [
         {
             id: '1',
@@ -162,6 +176,8 @@ const OrdersHub = ({
         }
     ];
 
+    // we show top 3 draft package where the user can quickly resume from  -- no deletion here
+    // if we have no draft, we show a friendly empty state
     const mockCurrentShipments = [
         {
             id: '1',
@@ -183,11 +199,61 @@ const OrdersHub = ({
         }, 150);
     };
 
-    const handleTrackSearch = async () => {
-        if (trackingNumber.trim()) {
-            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-           console.log('Coming Soon');
+    const validateAndFindOrder = (trackingNumber, allOrderData) => {
+        const clean = trackingNumber?.trim();
+
+        if (!clean) {
+            return {
+                isValid: false,
+                error: {type: 'error', title: 'Input required', message: 'Order-Reference number required.'}
+            };
         }
+
+        if (clean.length < 17 || !/^ORD-/.test(clean)) {
+            return {
+                isValid: false,
+                error: {type: 'error', title: 'Invalid Input', message: 'Please enter a valid tracking number.'}
+            };
+        }
+
+        const matchedOrder = allOrderData.find(order => order.orderRef === clean);
+
+        if (!matchedOrder) {
+            return {
+                isValid: false,
+                error: {type: 'error', title: 'Not Found', message: 'No order found with that tracking number.'}
+            };
+        }
+
+        return {
+            isValid: true,
+            matchedOrder
+        };
+    };
+
+    const handleTrackSearch = async () => {
+        const result = validateAndFindOrder(trackingNumber, allOrderData);
+
+        if (!result.isValid) {
+            setAlertConfig(result.error);
+            showAlert(true);
+            return;
+        }
+
+        // ✅ Show full-screen loading overlay
+        setIsLoading(true);
+
+        // Optional haptic feedback
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+        // Set order in Zustand
+        setTrackingOrder(result.matchedOrder);
+
+        // Navigate after short delay for UX smoothness
+        setTimeout(() => {
+            setIsLoading(false);
+            router.push('/client/orders/track'); // No params needed — Zustand has the data
+        }, 500);
     };
 
     const onRefresh = async () => {
@@ -211,6 +277,7 @@ const OrdersHub = ({
 
     return (
         <>
+
             <View style={styles.container}>
                 {/*Header*/}
                 <Animated.View>
@@ -335,20 +402,21 @@ const OrdersHub = ({
                     <View style={styles.section}>
                         <View style={styles.trackingCard}>
                             <LinearGradient
+
                                 colors={['#3B82F6', '#1D4ED8']}
                                 style={styles.trackingGradient}
                                 start={{x: 0, y: 0}}
                                 end={{x: 1, y: 1}}
                             >
                                 <Text style={styles.trackingTitle}>Track your package</Text>
-                                <Text style={styles.trackingSubtitle}>Please enter your tracking number</Text>
+                                <Text style={styles.trackingSubtitle}>Please enter your order reference number</Text>
 
                                 <View style={styles.searchContainer}>
                                     <View style={styles.searchInputContainer}>
-                                        <Search size={20} color="#9CA3AF" style={styles.searchIcon}/>
+                                        <Package size={28} color="#FFF" style={styles.packageIcon}/>
                                         <TextInput
                                             style={styles.searchInput}
-                                            placeholder="Tracking number"
+                                            placeholder="Order refernce number"
                                             placeholderTextColor="#9CA3AF"
                                             value={trackingNumber}
                                             onChangeText={setTrackingNumber}
@@ -364,7 +432,7 @@ const OrdersHub = ({
                                             colors={['#F59E0B', '#D97706']}
                                             style={styles.searchButtonGradient}
                                         >
-                                            <Package size={20} color="#ffffff"/>
+                                            <Search size={20} color="#FFF" style={styles.searchIcon}/>
                                         </LinearGradient>
                                     </Pressable>
                                 </View>
@@ -497,6 +565,29 @@ const OrdersHub = ({
                     </Pressable>
                 </View>
             </View>
+
+            {alert && (
+                <CustomAlert
+                    type={alertConfig.type}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    onClose={() => showAlert(false)}
+                />
+            )}
+
+            {isLoading && (
+                <BlurView
+                    intensity={90}
+                    tint="light"
+                    style={StyleSheet.absoluteFillObject}
+                >
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#3B82F6"/>
+                        <Text style={styles.loadingText}>Loading your order details...</Text>
+                    </View>
+                </BlurView>
+            )}
+
         </>
     );
 };
@@ -703,7 +794,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         marginBottom: 25,
     },
-    // Tracking Card Styles
     trackingCard: {
         borderRadius: 20,
         overflow: 'hidden',
@@ -721,7 +811,7 @@ const styles = StyleSheet.create({
     },
     trackingTitle: {
         fontSize: 22,
-        color: '#ffffff',
+        color: '#FFFFFF',
         marginBottom: 8,
         fontFamily: 'PoppinsSemiBold',
     },
@@ -747,7 +837,12 @@ const styles = StyleSheet.create({
         height: 50,
     },
     searchIcon: {
-        marginRight: 12,
+        marginRight: 1,
+    },
+    packageIcon:{
+        marginRight: 5,
+        backgroundColor: '#1D4ED8',
+        borderRadius: 25,
     },
     searchInput: {
         flex: 1,
@@ -775,7 +870,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-    // Quick Actions Styles
     quickActionsGrid: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -814,7 +908,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontFamily: 'PoppinsMedium',
     },
-    // Section Headers
     sectionTitle: {
         fontSize: 20,
         color: '#1f2937',
@@ -832,7 +925,6 @@ const styles = StyleSheet.create({
         color: '#3b82f6',
         fontWeight: '600',
     },
-    // History Styles
     historyContainer: {
         gap: 12,
     },
@@ -876,7 +968,6 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: '#6B7280',
     },
-    // Current Shipment Styles
     currentShipmentContainer: {
         gap: 16,
     },
@@ -969,7 +1060,6 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         flex: 1,
     },
-    // FAB Styles
     fabContainer: {
         position: 'absolute',
         right: 20,
@@ -996,7 +1086,20 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     bottomSpacing: {
-        height: 100,
+        height: 20,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        fontFamily: 'PoppinsMedium',
+        color: '#374151',
+        textAlign: 'center',
     },
 });
 

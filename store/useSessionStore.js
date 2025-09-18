@@ -52,6 +52,9 @@ export const useSessionStore = create((set) => ({
     setAllOrderData: (allOrderData) => set({ allOrderData }),
     setOrderStatistics: (orderStatistics) => set({ orderStatistics }),
 
+    // clear orderData
+    clearOrderData: () => set({ allOrderData: null, orderStatistics: null }),
+
     // Logout
     clearSession: () => set({ user: null, token: null, allOrderData: null, orderStatistics: null }),
 }));

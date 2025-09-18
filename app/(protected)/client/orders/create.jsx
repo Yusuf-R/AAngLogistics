@@ -1,8 +1,6 @@
 import { useEffect } from "react";
 import {ActivityIndicator, SafeAreaView, Text, StyleSheet, Pressable} from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import {queryClient} from "../../../../lib/queryClient"
-import { useSessionStore } from "../../../../store/useSessionStore";
 import ClientUtils from "../../../../utils/ClientUtilities";
 import SessionManager from "../../../../lib/SessionManager";
 import OrderCreationFlow from "../../../../components/Client/Orders/OrderCreation";

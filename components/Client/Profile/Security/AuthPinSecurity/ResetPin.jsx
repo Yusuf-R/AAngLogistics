@@ -7,6 +7,7 @@ import ClientUtils from "../../../../../utils/ClientUtilities";
 import SessionManager from "../../../../../lib/SessionManager";
 import {router} from "expo-router";
 import StatusModal from "../../../../StatusModal/StatusModal";
+import {queryClient} from "../../../../../lib/queryClient";
 
 function ResetPinScreen({userData}) {
     const [step, setStep] = useState(1); // 1: Token, 2: New PIN, 3: Confirm PIN
@@ -190,6 +191,13 @@ function ResetPinScreen({userData}) {
 
                     setModalStatus('success');
                     setModalMessage('PIN reset Successful 🚀');
+
+                    await queryClient.invalidateQueries({
+                        queryKey: ['GetUnreadCount'],
+                    });
+                    await queryClient.invalidateQueries({
+                        queryKey: ['GetNotifications'],
+                    });
 
                     setTimeout(() => {
                         setModalStatus('loading');

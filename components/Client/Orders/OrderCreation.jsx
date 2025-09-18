@@ -12,13 +12,10 @@ import {
     View,
     AppState
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import {LinearGradient} from 'expo-linear-gradient';
 import {BlurView} from 'expo-blur';
-import * as Haptics from 'expo-haptics';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useRouter} from "expo-router";
-import {useMutation, useQuery} from "@tanstack/react-query";
 
 // Import utilities
 import {ORDER_STEPS} from '../../../utils/Constant'

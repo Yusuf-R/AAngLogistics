@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     Text,
     StyleSheet,
@@ -10,8 +10,8 @@ import {
     Pressable
 } from "react-native";
 import OrdersHub from "../../../../components/Client/Orders/OrdersHub";
-import { useSessionStore } from "../../../../store/useSessionStore";
-import { useQuery } from "@tanstack/react-query";
+import {useSessionStore} from "../../../../store/useSessionStore";
+import {useQuery} from "@tanstack/react-query";
 import ClientUtils from "../../../../utils/ClientUtilities";
 import SessionManager from "../../../../lib/SessionManager";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
@@ -32,7 +32,7 @@ function OrdersScreen() {
     } = useQuery({
         queryKey: ["GetAllClientOrder"],
         queryFn: ClientUtils.GetAllClientOrders,
-        enabled: !allOrderData,
+        // enabled: !allOrderData,
         staleTime: Infinity,
         cacheTime: Infinity,
         refetchOnMount: false,
@@ -61,10 +61,10 @@ function OrdersScreen() {
     };
 
 
-    if (isLoading || !userData ||  !allOrderData) {
+    if (isLoading || !userData || !allOrderData) {
         return (
             <SafeAreaView style={styles.centeredContainer}>
-                <ActivityIndicator size="large" color="#3B82F6" />
+                <ActivityIndicator size="large" color="#3B82F6"/>
                 <Text style={styles.loadingText}>Loading your orders...</Text>
             </SafeAreaView>
         );
@@ -85,8 +85,8 @@ function OrdersScreen() {
     }
 
     return (
-        <SafeAreaView style={{flex:1, backgroundColor: '#FFF', paddingTop: insets.top}}>
-            <StatusBar barStyle="dark-content" />
+        <>
+            <StatusBar barStyle="dark-content"/>
             <OrdersHub
                 userData={userData}
                 allOrderData={allOrderData}
@@ -94,7 +94,7 @@ function OrdersScreen() {
                 onRefresh={handleManualRefresh}
                 isRefreshing={isLoading && !!allOrderData}
             />
-        </SafeAreaView>
+        </>
     );
 }
 

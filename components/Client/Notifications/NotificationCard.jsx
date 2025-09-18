@@ -53,12 +53,10 @@ const NotificationCard = memo(({notification, onDelete, onViewDetails, onViewSil
     const CategoryIcon = categoryConfig?.icon || Bell;
 
     const handleCardPress = () => {
-        console.log(`📱 Card pressed: ${notification._id}, isUnread: ${isUnread}`);
         onViewDetails(notification);
     };
 
     const handleDeletePress = () => {
-        console.log(`🗑️ Delete pressed: ${notification._id}`);
         onDelete(notification._id);
     };
 
@@ -71,11 +69,8 @@ const NotificationCard = memo(({notification, onDelete, onViewDetails, onViewSil
 
     // Handle silent view (mark as read without navigation)
     const handleSilentView = () => {
-        console.log(`🔍 Silent view: ${notification._id}`);
         onViewSilently(notification);
     };
-
-
 
     return (
         <>
