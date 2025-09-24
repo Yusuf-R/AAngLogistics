@@ -7,7 +7,7 @@ import {upsertOrder} from "../lib/upsert";
 
 export const useOrderStore = create((set, get) => ({
     // --- State ---
-    orderData: {},
+    orderData: {}, // this was used during the create order operation -> it a single data object
     currentStep: 0,
     selectedOrder: null,
     orderRef: null,

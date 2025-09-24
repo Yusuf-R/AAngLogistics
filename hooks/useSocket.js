@@ -52,6 +52,7 @@ export default function useSocket(userId) {
                     console.log('❌ Socket disconnected');
                 });
 
+                // NOTIFICATION
                 // ✅ Handle incoming notifications globally
                 socketRef.current.on('notification', (notification) => {
                     queryClient.invalidateQueries({
@@ -96,12 +97,8 @@ export default function useSocket(userId) {
                     console.log('🗑️ All Notification deleted:', notificationId);
                 });
 
-                // Handle order notifications
+                // Tracking notifications
                 // when an order is completed + payment is successful
-                socketRef.current.on('order:completed', (order) => {
-                    console.log('🛒 Order completed:', order);
-                });
-                // Add these order tracking event handlers
                 socketRef.current.on('order:status:updated', (orderUpdate) => {
                     useOrderStore.getState().updateOrderTracking(orderUpdate);
                     queryClient.invalidateQueries({

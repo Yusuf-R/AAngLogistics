@@ -252,6 +252,7 @@ const TimelineItem = ({ item, isLast, isActive }) => {
 
 // Main TrackOrder Component
 function TrackOrder({ trackingOrder }) {
+    const [showCode, setShowCode] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('connected');
     const { updateOrderTracking, updateDriverLocation, liveTrackingData } = useOrderStore();
@@ -345,7 +346,7 @@ function TrackOrder({ trackingOrder }) {
         <View style={styles.container}>
             {/* Header */}
             <CustomHeader
-                title="Track Order"
+                title="ORDER TRACKING"
                 onBackPress={handleBackPress}
                 rightComponent={
                     <View style={styles.connectionStatus}>
@@ -359,15 +360,51 @@ function TrackOrder({ trackingOrder }) {
 
             {/* Order Header Info */}
             <View style={styles.orderHeader}>
-                <Text style={styles.orderTitle}>ORDER TRACKING</Text>
-                <Text style={styles.orderRef}>Order #: {trackingOrder.orderRef}</Text>
+                <Text style={styles.orderRef}>Order: {trackingOrder.orderRef}</Text>
                 <Text style={styles.orderStatus}>
                     Status: {currentStatus?.title || 'Processing'} • Live Updating
                 </Text>
+
+                {/* Enhanced Delivery Secret Section */}
                 {trackingOrder.deliveryToken && (
-                    <Text style={styles.deliveryToken}>
-                        Delivery Secret: {trackingOrder.deliveryToken}
-                    </Text>
+                    <View style={styles.deliverySecretContainer}>
+                        <View style={styles.deliverySecretHeader}>
+                            <View style={styles.secretIconContainer}>
+                                <Text style={styles.secretIcon}>🔒</Text>
+                            </View>
+                            <Text style={styles.deliverySecretTitle}>Delivery Verification Code</Text>
+
+                            {/* Show/Hide Toggle */}
+                            <TouchableOpacity
+                                style={styles.toggleButton}
+                                onPress={() => setShowCode(!showCode)}
+                            >
+                                <Text style={styles.toggleIcon}>
+                                    {showCode ? '👁️' : '👁️‍🗨️'}
+                                </Text>
+                                <Text style={styles.toggleText}>
+                                    {showCode ? 'Hide' : 'Show'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.codeContainer}>
+                            {trackingOrder.deliveryToken.split('').map((digit, index) => (
+                                <View key={index} style={styles.codeDigit}>
+                                    <Text style={styles.codeText}>
+                                        {showCode ? digit : '•'}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+
+                        <Text style={styles.deliveryInstructions}>
+                            {showCode
+                                ? "Share this code with your rider at delivery"
+                                : "Tap 'Show' to reveal verification code"
+                            }
+                        </Text>
+                    </View>
                 )}
             </View>
 
@@ -453,35 +490,32 @@ const styles = StyleSheet.create({
     },
     orderHeader: {
         backgroundColor: '#FFFFFF',
-        paddingHorizontal: 16,
-        paddingVertical: 20,
         alignItems: 'center',
-        borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
     },
     orderTitle: {
         fontSize: 18,
-        fontWeight: '700',
+        fontFamily: 'PoppinsBold',
         color: '#111827',
         marginBottom: 8,
         letterSpacing: 0.5,
     },
     orderRef: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 20,
+        fontFamily: 'PoppinsSemiBold',
         color: '#111827',
         marginBottom: 4,
     },
     orderStatus: {
         fontSize: 14,
         color: '#3B82F6',
-        fontWeight: '500',
+        fontFamily: 'PoppinsRegular',
         marginBottom: 8,
     },
     deliveryToken: {
-        fontSize: 12,
+        fontSize: 16,
         color: '#6B7280',
-        fontFamily: 'monospace',
+        fontFamily: 'PoppinsBold',
         backgroundColor: '#F3F4F6',
         paddingHorizontal: 8,
         paddingVertical: 4,
@@ -496,9 +530,9 @@ const styles = StyleSheet.create({
     },
     progressionTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'PoppinsSemiBold',
         color: '#111827',
-        textAlign: 'center',
+        textAlign: 'left',
         marginBottom: 24,
         letterSpacing: 0.5,
     },
@@ -561,7 +595,7 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'PoppinsSemiBold',
         color: '#111827',
         flex: 1,
         marginRight: 8,
@@ -599,7 +633,7 @@ const styles = StyleSheet.create({
     timeText: {
         fontSize: 14,
         color: '#4B5563',
-        fontWeight: '500',
+        fontFamily: 'PoppinsSemiBold',
     },
     dateText: {
         fontSize: 12,
@@ -608,6 +642,7 @@ const styles = StyleSheet.create({
     },
     description: {
         fontSize: 14,
+        fontFamily: 'PoppinsSemiBold',
         color: '#6B7280',
         lineHeight: 20,
         marginBottom: 8,
@@ -617,6 +652,7 @@ const styles = StyleSheet.create({
     },
     metadataText: {
         fontSize: 12,
+        fontFamily: 'PoppinsSemiBold',
         color: '#6B7280',
         marginBottom: 2,
     },
@@ -637,7 +673,7 @@ const styles = StyleSheet.create({
     actionButtonText: {
         color: '#FFFFFF',
         fontSize: 12,
-        fontWeight: '500',
+        fontFamily: 'PoppinsSemiBold',
     },
     secondaryActionButtonText: {
         color: '#FFFFFF',
@@ -665,7 +701,7 @@ const styles = StyleSheet.create({
     },
     noHistoryText: {
         fontSize: 16,
-        fontWeight: '500',
+        fontFamily: 'PoppinsSemiBold',
         color: '#6B7280',
         marginBottom: 4,
     },
@@ -676,6 +712,97 @@ const styles = StyleSheet.create({
     },
     bottomPadding: {
         height: 20,
+    },
+    deliverySecretContainer: {
+        backgroundColor: '#F8FAFC',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 12,
+        width: '100%',
+        alignItems: 'center',
+    },
+    deliverySecretHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        width: '100%',
+    },
+    secretIconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#3B82F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+    },
+    secretIcon: {
+        fontSize: 16,
+    },
+    deliverySecretTitle: {
+        fontSize: 14,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#1E293B',
+        flex: 1,
+    },
+    infoButton: {
+        padding: 4,
+    },
+    infoIcon: {
+        fontSize: 16,
+        opacity: 0.6,
+    },
+    codeContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 8,
+        marginBottom: 8,
+    },
+    codeDigit: {
+        width: 44,
+        height: 44,
+        borderRadius: 8,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 2,
+        borderColor: '#3B82F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    codeText: {
+        fontSize: 18,
+        fontFamily: 'PoppinsBold',
+        color: '#3B82F6',
+    },
+    deliveryInstructions: {
+        fontSize: 12,
+        color: '#64748B',
+        textAlign: 'center',
+        fontFamily: 'PoppinsRegular',
+    },
+    toggleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F1F5F9',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+        marginRight: 8,
+    },
+    toggleIcon: {
+        fontSize: 14,
+        marginRight: 4,
+    },
+    toggleText: {
+        fontSize: 12,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#475569',
     },
 });
 
