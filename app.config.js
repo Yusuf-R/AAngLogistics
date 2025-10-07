@@ -70,14 +70,7 @@ export default ({config}) => ({
     },
     plugins: [
         "expo-router",
-        [
-            "expo-notifications",
-            {
-                "icon": "./assets/notification-icon.png",
-                "color": "#ffffff",
-                "defaultChannel": "order-alerts"
-            }
-        ],
+        "expo-notifications",
         [
             "expo-splash-screen",
             {
