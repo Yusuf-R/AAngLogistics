@@ -34,6 +34,7 @@ export default ({config}) => ({
         ...config.android,
         permissions: ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
         package: "com.AAngLogistics",
+        googleServicesFile: "./google-services.json",
         adaptiveIcon: {
             foregroundImage: "./assets/icons/android/adaptive-icon.png",
             backgroundColor: "#000000"
@@ -69,6 +70,14 @@ export default ({config}) => ({
     },
     plugins: [
         "expo-router",
+        [
+            "expo-notifications",
+            {
+                "icon": "./assets/notification-icon.png",
+                "color": "#ffffff",
+                "defaultChannel": "order-alerts"
+            }
+        ],
         [
             "expo-splash-screen",
             {

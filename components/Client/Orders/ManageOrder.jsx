@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, {useState, useMemo, useEffect} from "react";
 import {
     SafeAreaView,
     ScrollView,
@@ -11,16 +11,17 @@ import {
     Alert,
     Dimensions
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import {Ionicons} from "@expo/vector-icons";
+import {router} from "expo-router";
 import CustomHeader from "../CustomHeader";
-import { useOrderStore } from "../../../store/useOrderStore"
+import {useOrderStore} from "../../../store/useOrderStore"
 import ConfirmationModal from "../../ConfrimationModal/ConfirmationModal";
 import ClientUtilities from "../../../utils/ClientUtilities";
 import SessionManager from "../../../lib/SessionManager";
-const { width } = Dimensions.get('window');
 
-function ManageOrder({ allOrderData, onRefreshData }) {
+const {width} = Dimensions.get('window');
+
+function ManageOrder({allOrderData, onRefreshData}) {
     const [activeTab, setActiveTab] = useState('Draft');
     const [refreshing, setRefreshing] = useState(false);
     const [modalVisible, setModalVisible] = useState(false);
@@ -28,7 +29,8 @@ function ManageOrder({ allOrderData, onRefreshData }) {
         status: 'confirm',
         title: '',
         message: '',
-        onConfirm: () => {},
+        onConfirm: () => {
+        },
         onCancel: () => setModalVisible(false),
         onRetry: null
     });
@@ -49,9 +51,9 @@ function ManageOrder({ allOrderData, onRefreshData }) {
             case 'Draft':
                 return allOrderData.filter(order => order.status === 'draft');
             case 'Pending':
-                return allOrderData.filter(order => order.status === 'pending' || order.status === 'broadcast');
+                return allOrderData.filter(order => order.status === 'pending');
             case 'Ongoing':
-                const ongoingStatuses = ['submitted', 'confirmed', 'assigned', 'en_route_pickup', 'arrived_pickup', 'picked_up', 'in_transit', 'arrived_dropoff'];
+                const ongoingStatuses = ['submitted', 'confirmed', 'admin_review', 'broadcast', 'assigned', 'en_route_pickup', 'arrived_pickup', 'picked_up', 'in_transit', 'arrived_dropoff'];
                 return allOrderData.filter(order => ongoingStatuses.includes(order.status));
             case 'Completed':
                 return allOrderData.filter(order => ['delivered', 'cancelled', 'failed', 'returned'].includes(order.status));
@@ -102,7 +104,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
         }));
 
         try {
-            const { order } = await ClientUtilities.DeleteOrder({ orderId });
+            const {order} = await ClientUtilities.DeleteOrder({orderId});
 
             // update the SessionManager with the deleted order
             await SessionManager.updateAllOrderData(order.orders);
@@ -187,7 +189,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
         setSelectedOrder(order);
         router.push({
             pathname: '/(protected)/client/orders/create',
-            params: { reorderFrom: order._id }
+            params: {reorderFrom: order._id}
         });
     };
 
@@ -224,7 +226,6 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                 break;
 
             case 'pending':
-            case 'broadcast':
                 actions.push({
                     icon: 'close-circle-outline',
                     color: '#F59E0B',
@@ -234,6 +235,8 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                 break;
 
             case 'confirmed':
+            case 'broadcast':
+            case 'admin_review':
             case 'assigned':
             case 'picked_up':
             case 'in_transit':
@@ -299,7 +302,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                 {/* Priority indicators */}
                 {isUrgent && (
                     <View style={styles.urgentBadge}>
-                        <Ionicons name="flash" size={12} color="#FFF" />
+                        <Ionicons name="flash" size={12} color="#FFF"/>
                         <Text style={styles.urgentText}>URGENT</Text>
                     </View>
                 )}
@@ -308,7 +311,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                     <View style={styles.orderTitleRow}>
                         <Text style={styles.orderRef}>{order.orderRef}</Text>
                         {isHighValue && (
-                            <Ionicons name="diamond" size={16} color="#F59E0B" style={styles.highValueIcon} />
+                            <Ionicons name="diamond" size={16} color="#F59E0B" style={styles.highValueIcon}/>
                         )}
                     </View>
                     <View style={[styles.statusBadge, getStatusBadgeStyle(order.status)]}>
@@ -320,16 +323,16 @@ function ManageOrder({ allOrderData, onRefreshData }) {
 
                 <View style={styles.orderDetails}>
                     <View style={styles.locationRow}>
-                        <Ionicons name="radio-button-on" size={16} color="#10B981" />
+                        <Ionicons name="radio-button-on" size={16} color="#10B981"/>
                         <Text style={styles.locationText} numberOfLines={1}>
                             {order.location?.pickUp?.address || 'Pickup location TBD'}
                         </Text>
                     </View>
 
-                    <View style={styles.routeLine} />
+                    <View style={styles.routeLine}/>
 
                     <View style={styles.locationRow}>
-                        <Ionicons name="location" size={16} color="#EF4444" />
+                        <Ionicons name="location" size={16} color="#EF4444"/>
                         <Text style={styles.locationText} numberOfLines={1}>
                             {order.location?.dropOff?.address || 'Destination TBD'}
                         </Text>
@@ -350,7 +353,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                         <View style={styles.packageMeta}>
                             {order.package?.isFragile && (
                                 <View style={styles.fragileTag}>
-                                    <Ionicons name="warning" size={12} color="#F59E0B" />
+                                    <Ionicons name="warning" size={12} color="#F59E0B"/>
                                 </View>
                             )}
                             <Text style={styles.orderDate}>
@@ -366,7 +369,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                                 <View
                                     style={[
                                         styles.progressFill,
-                                        { width: `${(order.metadata.draftProgress.step / 5) * 100}%` }
+                                        {width: `${(order.metadata.draftProgress.step / 5) * 100}%`}
                                     ]}
                                 />
                             </View>
@@ -386,7 +389,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                         {actions.map((action, index) => (
                             <TouchableOpacity
                                 key={index}
-                                style={[styles.actionButton, { backgroundColor: `${action.color}15` }]}
+                                style={[styles.actionButton, {backgroundColor: `${action.color}15`}]}
                                 onPress={action.onPress}
                                 activeOpacity={0.7}
                             >
@@ -450,54 +453,54 @@ function ManageOrder({ allOrderData, onRefreshData }) {
         if (diffHours < 1) return 'Just now';
         if (diffHours < 24) return `${diffHours}h ago`;
         if (diffHours < 48) return 'Yesterday';
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
     };
 
     // ✅ Status styling
     const getStatusBadgeStyle = (status) => {
         const styleMap = {
-            'draft': { backgroundColor: '#FEF3C7' },
-            'pending': { backgroundColor: '#DBEAFE' },
-            'broadcast': { backgroundColor: '#E0F2FE' },
-            'assigned': { backgroundColor: '#D1FAE5' },
-            'confirmed': { backgroundColor: '#D1FAE5' },
-            'en_route_pickup': { backgroundColor: '#DDD6FE' },
-            'arrived_pickup': { backgroundColor: '#DDD6FE' },
-            'picked_up': { backgroundColor: '#A7F3D0' },
-            'in_transit': { backgroundColor: '#A7F3D0' },
-            'arrived_dropoff': { backgroundColor: '#BFDBFE' },
-            'delivered': { backgroundColor: '#E0E7FF' },
-            'cancelled': { backgroundColor: '#FED7D7' },
-            'failed': { backgroundColor: '#FED7D7' },
-            'returned': { backgroundColor: '#FECACA' }
+            'draft': {backgroundColor: '#FEF3C7'},
+            'pending': {backgroundColor: '#DBEAFE'},
+            'broadcast': {backgroundColor: '#E0F2FE'},
+            'assigned': {backgroundColor: '#D1FAE5'},
+            'confirmed': {backgroundColor: '#D1FAE5'},
+            'en_route_pickup': {backgroundColor: '#DDD6FE'},
+            'arrived_pickup': {backgroundColor: '#DDD6FE'},
+            'picked_up': {backgroundColor: '#A7F3D0'},
+            'in_transit': {backgroundColor: '#A7F3D0'},
+            'arrived_dropoff': {backgroundColor: '#BFDBFE'},
+            'delivered': {backgroundColor: '#E0E7FF'},
+            'cancelled': {backgroundColor: '#FED7D7'},
+            'failed': {backgroundColor: '#FED7D7'},
+            'returned': {backgroundColor: '#FECACA'}
         };
-        return styleMap[status] || { backgroundColor: '#F3F4F6' };
+        return styleMap[status] || {backgroundColor: '#F3F4F6'};
     };
 
     const getStatusTextStyle = (status) => {
         const styleMap = {
-            'draft': { color: '#D97706' },
-            'pending': { color: '#2563EB' },
-            'broadcast': { color: '#0891B2' },
-            'assigned': { color: '#059669' },
-            'confirmed': { color: '#059669' },
-            'en_route_pickup': { color: '#7C3AED' },
-            'arrived_pickup': { color: '#7C3AED' },
-            'picked_up': { color: '#047857' },
-            'in_transit': { color: '#047857' },
-            'arrived_dropoff': { color: '#1D4ED8' },
-            'delivered': { color: '#7C3AED' },
-            'cancelled': { color: '#DC2626' },
-            'failed': { color: '#DC2626' },
-            'returned': { color: '#B91C1C' }
+            'draft': {color: '#D97706'},
+            'pending': {color: '#2563EB'},
+            'broadcast': {color: '#0891B2'},
+            'assigned': {color: '#059669'},
+            'confirmed': {color: '#059669'},
+            'en_route_pickup': {color: '#7C3AED'},
+            'arrived_pickup': {color: '#7C3AED'},
+            'picked_up': {color: '#047857'},
+            'in_transit': {color: '#047857'},
+            'arrived_dropoff': {color: '#1D4ED8'},
+            'delivered': {color: '#7C3AED'},
+            'cancelled': {color: '#DC2626'},
+            'failed': {color: '#DC2626'},
+            'returned': {color: '#B91C1C'}
         };
-        return styleMap[status] || { color: '#6B7280' };
+        return styleMap[status] || {color: '#6B7280'};
     };
 
     return (
         <>
             <SafeAreaView style={styles.container}>
-                <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+                <StatusBar barStyle="dark-content" backgroundColor="#fff"/>
 
                 {/* Header */}
                 <CustomHeader
@@ -522,7 +525,7 @@ function ManageOrder({ allOrderData, onRefreshData }) {
                             ]}>
                                 {tab}
                             </Text>
-                            {activeTab === tab && <View style={styles.tabIndicator} />}
+                            {activeTab === tab && <View style={styles.tabIndicator}/>}
                         </TouchableOpacity>
                     ))}
                 </View>

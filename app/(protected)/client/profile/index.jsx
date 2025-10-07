@@ -23,6 +23,9 @@ function ClientProfileScreen() {
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
     const userData = useSessionStore((state) => state.user);
     const  insets = useSafeAreaInsets();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+
 
     if (!userData) {
         return (
@@ -33,10 +36,21 @@ function ClientProfileScreen() {
     }
 
     const handleLogout = async () => {
-        // Close the modal
-        setLogoutModalVisible(false);
-        // Perform secure cleanup and route to login
-        await SessionManager.logout();
+        try {
+            setIsLoggingOut(true);
+            setLogoutModalVisible(false);
+
+            // Give user visual feedback
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Perform secure cleanup
+            await SessionManager.logout();
+        } catch (error) {
+            console.error('[Logout Error]:', error);
+            setIsLoggingOut(false);
+            // Fallback: force navigation even if error occurs
+            router.replace("/(authentication)/login");
+        }
     };
 
     const goToSecurity = () => {
@@ -278,6 +292,15 @@ function ClientProfileScreen() {
                     </View>
                 </View>
             </Modal>
+            {/* Logout Progress Overlay */}
+            {isLoggingOut && (
+                <View style={styles.logoutOverlay}>
+                    <View style={styles.logoutCard}>
+                        <ActivityIndicator size="large" color="#60a5fa" />
+                        <Text style={styles.logoutText}>Logging you out...</Text>
+                    </View>
+                </View>
+            )}
         </SafeAreaView>
     );
 };
@@ -477,6 +500,30 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'flex-start',
         marginBottom: 1,
+    },
+    logoutOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 9999,
+    },
+    logoutCard: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 30,
+        alignItems: 'center',
+        minWidth: 200,
+    },
+    logoutText: {
+        marginTop: 15,
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
     },
 });
 

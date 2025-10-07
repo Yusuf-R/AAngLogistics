@@ -20,6 +20,10 @@ export const axiosPrivate = axios.create({
 
 // ✅ Attach token to every request
 axiosPrivate.interceptors.request.use(async (config) => {
+    if (SessionManager.isLoggingOut) {
+        return Promise.reject(new Error('Session ending'));
+    }
+
     const { token } = await SessionManager.getCurrentSession(); // auto-refresh if expired
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -32,6 +36,10 @@ axiosPrivate.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
+        if (SessionManager.isLoggingOut) {
+            return Promise.reject(new Error('Session ending'));
+        }
 
         const shouldRetry = (
             error.response?.status === 401 &&

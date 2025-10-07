@@ -14,6 +14,7 @@ import {
 import {Ionicons} from '@expo/vector-icons';
 import MapView, {Marker, PROVIDER_GOOGLE} from 'react-native-maps';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
+
 import * as Location from 'expo-location';
 import {useSavedLocationStore} from '../../../../store/useSavedLocationStore';
 import {useRouter} from 'expo-router';
@@ -37,6 +38,7 @@ const COLORS = {
 };
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+navigator.geolocation = require('react-native-geolocation-service');
 
 function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
     const router = useRouter();
@@ -57,8 +59,13 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
     const [markerPosition, setMarkerPosition] = useState(null);
     const [selectedAddress, setSelectedAddress] = useState('');
     const [isLocationConfirmed, setIsLocationConfirmed] = useState(false);
-    const [mapReady, setMapReady] = React.useState(false);
+    const [mapReady, setMapReady] = useState(false);
+    const [isMapFullyLoaded, setIsMapFullyLoaded] = useState(false);
 
+    // Store pending animation to execute after map is ready
+    const pendingAnimationRef = useRef(null);
+
+    // Initialize location data from edit mode
     useEffect(() => {
         if (mode === 'edit' && currentEditLocation && currentEditLocation.coordinates) {
             const {coordinates, address} = currentEditLocation;
@@ -67,29 +74,41 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                     latitude: coordinates.lat,
                     longitude: coordinates.lng
                 };
-                setMarkerPosition(location);
-                setCurrentRegion({
+
+                const newRegion = {
                     ...location,
                     latitudeDelta: 0.01,
                     longitudeDelta: 0.01,
-                });
-                if (mapRef.current) {
-                    // Animate after a tiny delay to ensure the map is ready
-                    setTimeout(() => {
-                        mapRef.current.animateToRegion({
-                            ...location,
-                            latitudeDelta: 0.01,
-                            longitudeDelta: 0.01,
-                        }, 800);
-                    }, 300);
-                }
+                };
+
+                setMarkerPosition(location);
+                setCurrentRegion(newRegion);
                 setSelectedAddress(address);
                 setIsLocationConfirmed(true);
+
+                // Store the animation to run once map is ready
+                pendingAnimationRef.current = newRegion;
             }
         } else {
             getCurrentLocation();
         }
     }, [mode, currentEditLocation]);
+
+    // Execute pending animation when map becomes ready
+    useEffect(() => {
+        if (isMapFullyLoaded && pendingAnimationRef.current && mapRef.current) {
+            const animationTimeout = setTimeout(() => {
+                try {
+                    mapRef.current?.animateToRegion(pendingAnimationRef.current, 1000);
+                    pendingAnimationRef.current = null;
+                } catch (error) {
+                    console.log('Error animating to region:', error);
+                }
+            }, 100);
+
+            return () => clearTimeout(animationTimeout);
+        }
+    }, [isMapFullyLoaded]);
 
     const getCurrentLocation = async () => {
         try {
@@ -115,7 +134,8 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                 longitude: location.coords.longitude,
             };
             setMarkerPosition(initialMarker);
-            if (mapRef.current) {
+
+            if (mapRef.current && isMapFullyLoaded) {
                 mapRef.current.animateToRegion(newRegion, 1000);
             }
         } catch (error) {
@@ -131,7 +151,6 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                 longitude: geometry.location.lng
             };
 
-
             setMarkerPosition(location);
             setSelectedAddress(formatted_address);
             setIsLocationConfirmed(true);
@@ -143,7 +162,7 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
             };
             setCurrentRegion(newRegion);
 
-            if (mapRef.current) {
+            if (mapRef.current && isMapFullyLoaded) {
                 mapRef.current.animateToRegion(newRegion, 1000);
             }
         } else {
@@ -160,6 +179,32 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
             const addressResult = await Location.reverseGeocodeAsync({
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude,
+            });
+
+            if (addressResult.length > 0) {
+                const address = addressResult[0];
+                const formattedAddress = `${address.name || ''} ${address.street || ''}, ${address.city || ''}, ${address.region || ''}, ${address.country || ''}`.trim();
+                setSelectedAddress(formattedAddress);
+                setIsLocationConfirmed(true);
+            }
+        } catch (error) {
+            console.log('Error reverse geocoding:', error);
+        }
+    };
+
+    const handleMarkerDragEnd = async (e) => {
+        const newCoordinate = e.nativeEvent.coordinate;
+        setMarkerPosition(newCoordinate);
+        setCurrentRegion({
+            ...currentRegion,
+            latitude: newCoordinate.latitude,
+            longitude: newCoordinate.longitude
+        });
+
+        try {
+            const addressResult = await Location.reverseGeocodeAsync({
+                latitude: newCoordinate.latitude,
+                longitude: newCoordinate.longitude,
             });
 
             if (addressResult.length > 0) {
@@ -207,6 +252,11 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
         router.back();
     };
 
+    const handleMapReady = () => {
+        console.log('Map is ready');
+        setIsMapFullyLoaded(true);
+    };
+
     useEffect(() => {
         const t = setTimeout(() => setMapReady(true), 100);
         return () => {
@@ -251,6 +301,7 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                         query={{
                             key: GOOGLE_MAPS_API_KEY,
                             language: 'en',
+                            components: 'country:ng',
                         }}
                         styles={{
                             container: styles.autocompleteContainer,
@@ -263,7 +314,7 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
                         minLength={1}
                         timeout={1000}
                         autoFillOnNotFound={false}
-                        currentLocation={true}
+                        currentLocation={false}
                         currentLocationLabel="Current location"
                         disableScroll={false}
                         enableHighAccuracyLocation={true}
@@ -292,70 +343,40 @@ function GoogleMapsLocationPicker({mode = 'create', onLocationSelected}) {
 
                 {/* Map View */}
                 {mapReady && (
-                    <>
-                        <MapView
-                            ref={mapRef}
-                            style={styles.map}
-                            initialRegion={currentRegion}
-                            onPress={handleMapPress}
-                            provider={PROVIDER_GOOGLE}
-                            showsMyLocationButton={false}
-                            showsUserLocation={false}
-                            zoomControlEnabled={true}
-                            showsCompass={true}
-                            showsScale={true}
-                            loadingEnabled={false}
-                            mapType="standard"
-                            removeClippedSubviews={false}
-                            onMapReady={() => {
-                                console.log('Map is ready');
-                            }}
-                            onRegionChangeComplete={(region) => {
-                                console.log('A');
-                            }}
-                        >
-                            {markerPosition && (
-                                <Marker
-                                    coordinate={markerPosition}
-                                    title="Selected Location"
-                                    pinColor={COLORS.success}
-                                    identifier="selectedLocation"
-                                    description={selectedAddress || "Selected location"}
-                                    draggable={true}
-                                    onDragStart={() => {
-                                        console.log('Marker drag started');
-                                    }}
-                                    onDragEnd={(e) => {
-                                        const newCoordinate = e.nativeEvent.coordinate;
-                                        setMarkerPosition(newCoordinate);
-                                        setCurrentRegion({
-                                            ...currentRegion,
-                                            latitude: newCoordinate.latitude,
-                                            longitude: newCoordinate.longitude
-                                        });
-                                        // Reverse geocode to get address from new coordinates
-                                        Location.reverseGeocodeAsync({
-                                            latitude: newCoordinate.latitude,
-                                            longitude: newCoordinate.longitude,
-                                        }).then((addressResult) => {
-                                            if (addressResult.length > 0) {
-                                                const address = addressResult[0];
-                                                const formattedAddress = `${address.name || ''} ${address.street || ''}, ${address.city || ''}, ${address.region || ''}, ${address.country || ''}`.trim();
-                                                setSelectedAddress(formattedAddress);
-                                                setIsLocationConfirmed(true);
-                                            }
-                                        }).catch((error) => {
-                                            console.log('Error reverse geocoding:', error);
-                                        });
-                                    }}
-
-                                >
-                                </Marker>
-
-                            )}
-                        </MapView>
-
-                    </>
+                    <MapView
+                        ref={mapRef}
+                        style={styles.map}
+                        initialRegion={currentRegion}
+                        onPress={handleMapPress}
+                        provider={PROVIDER_GOOGLE}
+                        showsMyLocationButton={false}
+                        showsUserLocation={false}
+                        zoomControlEnabled={true}
+                        showsCompass={true}
+                        showsScale={true}
+                        loadingEnabled={false}
+                        mapType="standard"
+                        removeClippedSubviews={false}
+                        onMapReady={handleMapReady}
+                        onRegionChangeComplete={(region) => {
+                            console.log('Region changed');
+                        }}
+                    >
+                        {markerPosition && (
+                            <Marker
+                                coordinate={markerPosition}
+                                title="Selected Location"
+                                pinColor={COLORS.success}
+                                identifier="selectedLocation"
+                                description={selectedAddress || "Selected location"}
+                                draggable={true}
+                                onDragStart={() => {
+                                    console.log('Marker drag started');
+                                }}
+                                onDragEnd={handleMarkerDragEnd}
+                            />
+                        )}
+                    </MapView>
                 )}
 
                 {/* Selected Address Display */}
@@ -405,23 +426,20 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 10,
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
         paddingVertical: 12,
         backgroundColor: COLORS.card,
         borderBottomWidth: 1,
         borderBottomColor: COLORS.border,
-        paddingTop: Platform.OS === 'ios' ? 50 : 12,
     },
     backButton: {
         padding: 8,
-        marginRight: 8,
     },
     headerTitle: {
-        flex: 1,
         fontSize: 18,
+        fontFamily: 'PoppinsRegular',
         color: COLORS.text,
-        textAlign: 'center',
-        fontFamily: 'PoppinsSemiBold',
     },
     headerSpacer: {
         width: 40,
@@ -429,65 +447,50 @@ const styles = StyleSheet.create({
     searchContainer: {
         padding: 16,
         backgroundColor: COLORS.card,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        zIndex: 1,
     },
     autocompleteContainer: {
         flex: 0,
-        width: '100%',
     },
     searchInput: {
-        borderWidth: 1,
-        borderColor: COLORS.border,
+        height: 48,
         borderRadius: 8,
         paddingHorizontal: 16,
-        fontSize: 14,
-        color: COLORS.text,
-        fontFamily: 'PoppinsRegular',
-        height: 48,
+        backgroundColor: COLORS.light,
+        fontSize: 16,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     suggestionsList: {
         backgroundColor: COLORS.card,
         borderRadius: 8,
         marginTop: 4,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     suggestionRow: {
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        padding: 12,
     },
     suggestionText: {
         fontSize: 14,
         color: COLORS.text,
-        fontFamily: 'PoppinsRegular',
     },
     map: {
         flex: 1,
-        width: '100%',
-        height: '100%',
-    },
-    debugContainer: {
-        backgroundColor: '#ffeb3b',
-        padding: 8,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.border,
-    },
-    debugText: {
-        fontSize: 12,
-        color: '#000',
-        textAlign: 'center',
     },
     addressContainer: {
+        position: 'absolute',
+        bottom: 100,
+        left: 16,
+        right: 16,
         backgroundColor: COLORS.card,
+        borderRadius: 12,
         padding: 16,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.border,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5,
     },
     addressInfo: {
         flexDirection: 'row',
@@ -495,50 +498,48 @@ const styles = StyleSheet.create({
     },
     addressText: {
         flex: 1,
+        marginLeft: 12,
         fontSize: 14,
         color: COLORS.text,
-        marginLeft: 8,
-        fontFamily: 'PoppinsRegular',
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 16,
+        padding: 16,
+        backgroundColor: COLORS.card,
         borderTopWidth: 1,
         borderTopColor: COLORS.border,
-        backgroundColor: COLORS.card,
-        paddingBottom: Platform.OS === 'ios' ? 34 : 16,
     },
     cancelButton: {
-        flex: 0.45,
-        paddingVertical: 12,
-        borderRadius: 40,
+        flex: 1,
+        height: 48,
+        marginRight: 8,
+        borderRadius: 8,
         borderWidth: 1,
         borderColor: COLORS.border,
-        justifyContent: 'center',
         alignItems: 'center',
+        justifyContent: 'center',
     },
     cancelButtonText: {
         fontSize: 16,
-        fontFamily: 'PoppinsRegular',
-        color: COLORS.dark,
+        fontWeight: '600',
+        color: COLORS.text,
     },
     confirmButton: {
-        flex: 0.45,
-        paddingVertical: 12,
-        borderRadius: 40,
+        flex: 1,
+        height: 48,
+        marginLeft: 8,
+        borderRadius: 8,
         backgroundColor: COLORS.primary,
-        justifyContent: 'center',
         alignItems: 'center',
+        justifyContent: 'center',
     },
     confirmButtonDisabled: {
         backgroundColor: COLORS.muted,
     },
     confirmButtonText: {
         fontSize: 16,
-        fontFamily: 'PoppinsSemiBold',
-        color: 'white',
+        fontWeight: '600',
+        color: COLORS.card,
     },
 });
 

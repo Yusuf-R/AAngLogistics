@@ -8,6 +8,7 @@ import ClientUtils from "../utils/ClientUtilities";
 import { useNotificationStore } from '../store/useNotificationStore';
 import { queryClient } from '../lib/queryClient';
 import {useOrderStore} from "../store/useOrderStore";
+import SessionManager from "../lib/SessionManager";
 
 const localIP = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
 
@@ -29,6 +30,7 @@ export default function useSocket(userId) {
     useEffect(() => {
         const setupSocket = async () => {
             try {
+                if (SessionManager.isLoggingOut) return;
                 // Force refresh if needed
                 await ClientUtils.Dashboard(); // instead we will upgrade it to a ping
 

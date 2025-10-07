@@ -46,7 +46,7 @@ function WalletCard({ userData }) {
     return (
         <View style={styles.walletCard}>
             <View style={styles.cardHeader}>
-                <Text style={styles.cardName}>{userData.fullName}</Text>
+                <Text style={styles.cardName}>{userData?.fullName || 'X'}</Text>
                 <View style={styles.cardLogos}>
                     <Text style={styles.visaLogo}>VISA</Text>
                     <View style={styles.mastercardLogo}>
