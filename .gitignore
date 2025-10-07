@@ -40,3 +40,4 @@ app-example
 /android/
 /ios/
 /.idea/
+/google-services.json
