@@ -21,14 +21,20 @@ export const axiosPrivate = axios.create({
 // ✅ Attach token to every request
 axiosPrivate.interceptors.request.use(async (config) => {
     if (SessionManager.isLoggingOut) {
-        return Promise.reject(new Error('Session ending'));
+        console.log('[Axios] Blocking request during logout');
+        return Promise.reject(new axios.Cancel('Session ending'));
     }
 
-    const { token } = await SessionManager.getCurrentSession(); // auto-refresh if expired
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    try {
+        const { token } = await SessionManager.getCurrentSession();
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    } catch (error) {
+        console.error('[Axios Request Error]', error);
+        return Promise.reject(error);
     }
-    return config;
 }, (error) => Promise.reject(error));
 
 // 🔁 Retry once on 401 Unauthorized

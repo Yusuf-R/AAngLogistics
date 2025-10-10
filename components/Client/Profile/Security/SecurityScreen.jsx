@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -9,19 +8,29 @@ import {
     StatusBar,
     Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {Ionicons} from '@expo/vector-icons';
 import {router} from "expo-router"; // or react-native-vector-icons
 import {ROUTES} from "../../../../utils/Constant";
-import { useRouter } from 'expo-router';
-import { useNavigation } from '@react-navigation/native';
-import { useLayoutEffect } from 'react';
+import {useRouter} from 'expo-router';
+import {useNavigation} from '@react-navigation/native';
+import {useLayoutEffect} from 'react';
+import {useEffect, useState} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {axiosPrivate} from "../../../../utils/AxiosInstance";
+import * as Linking from 'expo-linking';
+import {checkNotificationPermission, registerForPushNotificationsAsync} from '../../../../utils/Notification';
+
+// Add to state
+
 
 const SecurityScreen = () => {
     const router = useRouter();
     const navigation = useNavigation();
+    const [pushNotifications, setPushNotifications] = useState(false);
     const [rememberMe, setRememberMe] = useState(true);
     const [faceID, setFaceID] = useState(true);
     const [biometricID, setBiometricID] = useState(true);
+    const [permissionStatus, setPermissionStatus] = useState({granted: false, denied: false});
 
     const handleToggle = (setter, currentValue, title) => {
         setter(!currentValue);
@@ -52,35 +61,128 @@ const SecurityScreen = () => {
         router.push(ROUTES["PRIVACY-POLICY"]);
     };
 
+    const handlePushNotificationToggle = async (enabled) => {
+        try {
+            if (permissionStatus.denied) {
+                // Show elegant instruction modal
+                Alert.alert(
+                    "Enable in Phone Settings",
+                    "To receive notifications, you'll need to enable them in your phone's settings:\n\n1. Go to Settings\n2. Find AAngLogistics\n3. Tap Notifications\n4. Enable Allow Notifications",
+                    [
+                        {text: "Cancel", style: "cancel"},
+                        {text: "Open Settings", onPress: () => Linking.openSettings()}
+                    ]
+                );
+                return;
+            }
+
+            if (!permissionStatus.granted && enabled) {
+                // First time asking - trigger system dialog
+                const expoPushToken = await registerForPushNotificationsAsync();
+
+                if (expoPushToken) {
+                    await AsyncStorage.setItem('@expo_push_token', expoPushToken);
+                    await AsyncStorage.setItem('@user_notification_setting', 'true');
+                    await axiosPrivate.patch('/auth/update-push-token', {
+                        expoPushToken,
+                        enabled: true
+                    });
+                    setPushNotifications(true);
+                    setPermissionStatus({granted: true, denied: false});
+                } else {
+                    // User denied
+                    setPermissionStatus({granted: false, denied: true});
+                }
+                return;
+            }
+
+            // Permission already granted - just toggle on/off
+            setPushNotifications(enabled);
+            const expoPushToken = await AsyncStorage.getItem('@expo_push_token');
+
+            if (enabled && expoPushToken) {
+                await axiosPrivate.patch('/auth/update-push-token', {
+                    expoPushToken,
+                    enabled: true
+                });
+                await AsyncStorage.setItem('@user_notification_setting', 'true');
+            } else {
+                await axiosPrivate.patch('/auth/update-push-token', {
+                    enabled: false
+                });
+                await AsyncStorage.setItem('@user_notification_setting', 'false');
+            }
+        } catch (error) {
+            console.log('Push notification toggle error:', error);
+            setPushNotifications(!enabled);
+        }
+    };
 
     useLayoutEffect(() => {
         navigation.setOptions({
             headerLeft: () => (
                 <TouchableOpacity onPress={() => router.push('/client/profile')}>
-                    <Ionicons name="arrow-back" size={24} color="black" />
+                    <Ionicons name="arrow-back" size={24} color="black"/>
                 </TouchableOpacity>
             ),
         });
     }, []);
 
+    useEffect(() => {
+        const loadNotificationStatus = async () => {
+            try {
+                const status = await checkNotificationPermission();
+                setPermissionStatus(status);
+
+                if (status.granted) {
+                    const setting = await AsyncStorage.getItem('@user_notification_setting');
+                    setPushNotifications(setting !== 'false');
+                } else {
+                    setPushNotifications(false);
+                }
+            } catch (error) {
+                console.log('Error loading notification status:', error);
+            }
+        };
+
+        loadNotificationStatus();
+
+        // Re-check when screen comes into focus (user returns from settings)
+        const unsubscribe = navigation.addListener('focus', () => {
+            loadNotificationStatus();
+        });
+
+        return unsubscribe;
+    }, []);
 
     return (
         <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
-
+            <StatusBar barStyle="dark-content" backgroundColor="#ffffff"/>
             {/* Security Options */}
             <View style={styles.content}>
-                {/* Remember Me Toggle */}
+                {/*Push Notifications */}
                 <View style={styles.optionRow}>
-                    <Text style={styles.optionText}>Remember me</Text>
+                    <View style={styles.subText}>
+                        <Text style={styles.optionText}>Enable Push Notifications</Text>
+                        {permissionStatus.denied && (
+                            <Text style={styles.helperText}>
+                                Enable in phone settings to use this feature
+                            </Text>
+                        )}
+                    </View>
+
                     <Switch
-                        value={rememberMe}
-                        onValueChange={(value) => handleToggle(setRememberMe, rememberMe, 'Remember me')}
-                        trackColor={{ false: '#E5E5E7', true: '#60a5fa' }}
+                        value={pushNotifications}
+                        onValueChange={handlePushNotificationToggle}
+                        disabled={permissionStatus.denied} // Disable if user denied permission
+                        trackColor={{false: '#E5E5E7', true: permissionStatus.denied ? '#cccccc' : '#60a5fa'}}
                         thumbColor="#ffffff"
                         ios_backgroundColor="#E5E5E7"
                     />
+
+
                 </View>
+
 
                 {/* Face ID Toggle */}
                 <View style={styles.optionRow}>
@@ -88,7 +190,7 @@ const SecurityScreen = () => {
                     <Switch
                         value={faceID}
                         onValueChange={(value) => handleToggle(setFaceID, faceID, 'Face ID')}
-                        trackColor={{ false: '#E5E5E7', true: '#60a5fa' }}
+                        trackColor={{false: '#E5E5E7', true: '#60a5fa'}}
                         thumbColor="#ffffff"
                         ios_backgroundColor="#E5E5E7"
                     />
@@ -100,7 +202,7 @@ const SecurityScreen = () => {
                     <Switch
                         value={biometricID}
                         onValueChange={(value) => handleToggle(setBiometricID, biometricID, 'Biometric ID')}
-                        trackColor={{ false: '#E5E5E7', true: '#60a5fa' }}
+                        trackColor={{false: '#E5E5E7', true: '#60a5fa'}}
                         thumbColor="#ffffff"
                         ios_backgroundColor="#E5E5E7"
                     />
@@ -112,7 +214,7 @@ const SecurityScreen = () => {
                     onPress={handlePrivacyPolicy}
                 >
                     <Text style={styles.optionText}>Privacy Policy</Text>
-                    <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                    <Ionicons name="chevron-forward" size={20} color="#C7C7CC"/>
                 </TouchableOpacity>
 
                 {/* Action Buttons */}
@@ -205,6 +307,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#FFF',
+    },
+    helperText: {
+        fontSize: 12,
+        color: '#999',
+        marginTop: 4,
+        fontStyle: 'italic',
+    },
+    subText: {
+        flex: 1,
+        flexDirection: 'column',
+        alignItems: "flex-start"
     },
 });
 

@@ -3,7 +3,7 @@ import {Stack} from "expo-router";
 import "@/app/global.css";
 import {QueryClientProvider, QueryClient} from "@tanstack/react-query";
 import {AuthProvider} from "../context/auth";
-import ToastManager, {Toast} from 'toastify-react-native'
+import {Toaster} from 'sonner-native';
 import {useEffect, useRef, useState} from "react";
 import {useFonts} from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -20,6 +20,7 @@ import Animated, {
 import {queryClient} from "../lib/queryClient";
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import 'react-native-get-random-values';
+import ErrorBoundary from "../components/ErrorBoundary";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -151,34 +152,32 @@ export default function RootLayout() {
 
     return (
         <>
-            <GestureHandlerRootView style={{flex: 1}}>
-                <AuthProvider>
-                    <QueryClientProvider client={queryClient}>
-                        <ToastManager
-                            position="top"
-                            duration={2000}
-                            animationDuration={300}
-                            animationType="slide"
-                            showCloseIcon={false}
-                            width="75%"
-                            minHeight='55'
-                        />
-                        {ready ? (
-                            <>
-                                <Stack
-                                    screenOptions={{
-                                        headerShown: false,
-                                        animation: "fade",
-                                    }}
-                                />
+            <ErrorBoundary>
+                <GestureHandlerRootView style={{flex: 1}}>
+                    <AuthProvider>
+                        <QueryClientProvider client={queryClient}>
+                            {ready ? (
+                                <>
+                                    <Stack
+                                        screenOptions={{
+                                            headerShown: false,
+                                            animation: "fade",
+                                        }}
+                                    />
 
-                            </>
-                        ) : (
-                            <CustomSplashScreen onFinish={handleSplashFinish}/>
-                        )}
-                    </QueryClientProvider>
-                </AuthProvider>
-            </GestureHandlerRootView>
+                                </>
+                            ) : (
+                                <CustomSplashScreen onFinish={handleSplashFinish}/>
+                            )}
+                        </QueryClientProvider>
+                        <Toaster
+                            toastOptions={{
+                                style: { backgroundColor: '#CECECE' }
+                            }}
+                        />
+                    </AuthProvider>
+                </GestureHandlerRootView>
+            </ErrorBoundary>
         </>
     );
 }

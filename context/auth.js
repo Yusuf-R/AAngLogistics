@@ -5,7 +5,6 @@ import {makeRedirectUri, useAuthRequest, exchangeCodeAsync} from "expo-auth-sess
 import * as WebBrowser from "expo-web-browser";
 import {useRouter} from "expo-router";
 import ClientUtils from "../utils/ClientUtilities";
-import {Toast} from "toastify-react-native";
 import SessionManager from "../lib/SessionManager";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -61,7 +60,7 @@ export const AuthProvider = ({children}) => {
                     discovery
                 );
 
-                const storedRole = await SecureStorage.getRole(); // set during role selection
+                const storedRole = await SecureStorage.getRole();
 
                 const respData = await ClientUtils.GoogleSocialSignUp({
                     tokenResponse,
@@ -72,38 +71,38 @@ export const AuthProvider = ({children}) => {
                 const {accessToken, refreshToken, user, expiresIn} = respData;
 
                 await SessionManager.updateToken(accessToken, expiresIn);
-                await SecureStorage.saveRefreshToken(refreshToken); // 🔐 refresh token remains in SecureStorage only
+                await SessionManager.updateRefreshToken(refreshToken); // ✅ Use SessionManager
                 await SessionManager.updateUser(user);
                 await SessionManager.updateRole(user.role);
                 await SessionManager.updateOnboardingStatus(true);
 
                 router.replace(`/(protected)/${user.role}/dashboard`);
-                return;
-                // router.replace(`/`);
 
             } catch (err) {
                 console.error("Error finalizing Google sign-in:", err);
-                Toast.error('Error : Unable to sign in. Please try again.');
-                router.replace("/");
+                router.replace("/(authentication)/login"); // ✅ Go to login, not root
             }
         } else if (response?.type === "cancel") {
-            console.log("response cancelled");
-            Toast.info('Cancelled : Sign in process was cancelled.');
+            console.log("Google sign-in cancelled");
 
         } else if (response?.type === "error") {
-            console.log("response error");
-            Toast.error('Error : An error occurred during the sign-in process.');
+            console.error("Google sign-in error:", response.error);
         }
     }
 
     const signOut = async () => {
-        await SessionManager.logout();
-        Toast.success("✅ Logged out");
-        router.replace("/(authentication)/login");
+        try {
+            await SessionManager.logout(); // ✅ SessionManager handles navigation
+        } catch (error) {
+            console.error('[AuthProvider] Sign out error:', error);
+        }
+        // ❌ Remove duplicate navigation - SessionManager.logout() already does this
     };
 
     useEffect(() => {
-        finalizeGoogleSignIn();
+        if (response) {
+            finalizeGoogleSignIn();
+        }
     }, [response]);
 
     return (
@@ -115,7 +114,6 @@ export const AuthProvider = ({children}) => {
         </AuthContext.Provider>
     );
 }
-
 
 export const useAuth = () => {
     const context = useContext(AuthContext);

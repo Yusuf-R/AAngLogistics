@@ -8,9 +8,6 @@ import {
     Image,
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
-import {Toast} from "toastify-react-native";
-import ClientUtils from '../../../../../utils/ClientUtilities';
-import {useMutation} from "@tanstack/react-query";
 import {useGetToken} from "../../../../../hooks/useGetToken";
 import StatusModal from "../../../../StatusModal/StatusModal"
 import {router} from "expo-router";
@@ -32,11 +29,6 @@ const EmailMethodSelection = ({ userData }) => {
     const handleMethodSelect = (method) => {
         // Prevent selection if email is already verified
         if (method === 'email' && isEmailVerified) {
-            Toast.show({
-                type: 'info',
-                text1: 'Email Already Verified',
-                visibilityTime: 2000,
-            });
             return;
         }
         setSelectedMethod(method);
@@ -47,11 +39,6 @@ const EmailMethodSelection = ({ userData }) => {
 
         // Check again before proceeding
         if (selectedMethod === 'email' && isEmailVerified) {
-            Toast.show({
-                type: 'info',
-                text1: 'Email Already Verified',
-                visibilityTime: 2000,
-            });
             return;
         }
 

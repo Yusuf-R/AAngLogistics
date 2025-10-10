@@ -2,6 +2,8 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -11,6 +13,29 @@ Notifications.setNotificationHandler({
         shouldSetBadge: true,
     }),
 });
+
+function handleRegistrationError(errorMessage) {
+    alert(errorMessage);
+    throw new Error(errorMessage);
+}
+
+export async function checkNotificationPermission() {
+    const { status } = await Notifications.getPermissionsAsync();
+    return {
+        granted: status === 'granted',
+        denied: status === 'denied',
+        undetermined: status === 'undetermined'
+    };
+}
+
+export async function hasAskedForPermission() {
+    const asked = await AsyncStorage.getItem('@notification_permission_asked');
+    return asked === 'true';
+}
+
+export async function markPermissionAsked() {
+    await AsyncStorage.setItem('@notification_permission_asked', 'true');
+}
 
 export async function registerForPushNotificationsAsync() {
     let token;
@@ -28,11 +53,15 @@ export async function registerForPushNotificationsAsync() {
             console.log('Failed to get push token for push notification!');
             return null;
         }
+        const projectId =
+            Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+        if (!projectId) {
+            handleRegistrationError('Project ID not found');
+        }
 
         try {
-            // Get the Expo push token
             token = (await Notifications.getExpoPushTokenAsync({
-                projectId: "fc46b4cb-5fc5-4c6c-929b-392d484af562"
+                projectId
             })).data;
 
             console.log('Expo push token:', token);

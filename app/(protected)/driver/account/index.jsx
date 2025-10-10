@@ -15,25 +15,33 @@ import {
 import { Ionicons, Feather, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import {router} from "expo-router";
-import SecureStorage from "../../../lib/SecureStorage";
+import SecureStorage from "../../../../lib/SecureStorage";
+import SessionManager from "../../../../lib/SessionManager";
+import { toast } from 'sonner-native';
 
 function DriverProfileScreen () {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
     const [userData, setUserData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const navigation = useNavigation();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const toggleSwitch = () => {
         setIsDarkMode(previousState => !previousState);
     };
 
     const handleLogout = async () => {
-        // Close the modal
-        setLogoutModalVisible(false);
-        // 👇 Perform secure cleanup and route to login
-        await SecureStorage.clearSessionOnly();
-        router.replace('/(authentication)/login');
+        try {
+            setIsLoggingOut(true);
+            setLogoutModalVisible(false);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await SessionManager.logout();
+        } catch (error) {
+            console.log('[Logout Error]:', error);
+            setIsLoggingOut(false);
+            toast.error('Logout failed. Please try again.');
+            setLogoutModalVisible(true);
+        }
     };
 
     const renderMenuItem = ({ icon, iconType, title, value, hasChevron, color, isSwitch, onPress }) => {
@@ -118,10 +126,10 @@ function DriverProfileScreen () {
             <View style={styles.header}>
                 <View style={styles.headerContent}>
                     <Image
-                        source={require('../../../assets/images/AAngLogo.png')}
+                        source={require('../../../../assets/images/AAngLogo.png')}
                         style={styles.logoText}
                     />
-                    <Text style={styles.headerTitle}>Profile</Text>
+                    <Text style={styles.headerTitle}>Account</Text>
                 </View>
                 <TouchableOpacity style={styles.moreButton}>
                     <Feather name="more-horizontal" size={24} color="#333" />
@@ -139,7 +147,7 @@ function DriverProfileScreen () {
                             />
                         ) : (
                             <Image
-                                source={require('../../../assets/images/avatar-1.jpg')}
+                                source={require('../../../../assets/images/avatar-1.jpg')}
                                 style={styles.profileImage}
                             />
                         )}
@@ -218,6 +226,15 @@ function DriverProfileScreen () {
                 </View>
             </ScrollView>
 
+            {isLoggingOut && (
+                <View style={styles.logoutOverlay}>
+                    <View style={styles.logoutCard}>
+                        <ActivityIndicator size="large" color="#60a5fa" />
+                        <Text style={styles.logoutText}>Logging you out...</Text>
+                    </View>
+                </View>
+            )}
+
             {/* Logout Modal */}
             <Modal
                 animationType="slide"
@@ -261,7 +278,6 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#fff',
-        paddingTop: StatusBar.currentHeight,
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
         overflow: 'hidden',
@@ -279,8 +295,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logo: {
-        width: 40,
-        height: 40,
+        width: 30,
+        height: 30,
         borderRadius: 20,
         backgroundColor: '#60a5fa',
         alignItems: 'center',
@@ -294,13 +310,13 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
+        fontSize: 20,
         color: '#333',
+        fontFamily: 'PoppinsBold'
     },
     moreButton: {
-        width: 40,
-        height: 40,
+        width: 35,
+        height: 35,
         borderRadius: 20,
         borderWidth: 1,
         borderColor: '#eee',
@@ -312,11 +328,11 @@ const styles = StyleSheet.create({
     },
     profileSection: {
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: 5,
     },
     profileImageContainer: {
         position: 'relative',
-        marginBottom: 10,
+        marginBottom: 5,
     },
     profileImage: {
         width: 120,
@@ -325,8 +341,8 @@ const styles = StyleSheet.create({
     },
     editImageButton: {
         position: 'absolute',
-        bottom: -5,
-        right: -5,
+        bottom: -3,
+        right: -3,
         backgroundColor: '#60a5fa',
         width: 36,
         height: 36,
@@ -454,6 +470,30 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    logoutOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 9999,
+    },
+    logoutCard: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 30,
+        alignItems: 'center',
+        minWidth: 200,
+    },
+    logoutText: {
+        marginTop: 15,
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
     },
 });
 

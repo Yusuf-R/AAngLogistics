@@ -17,15 +17,60 @@ import { useSessionStore } from "../../../../store/useSessionStore";
 import SessionManager from "../../../../lib/SessionManager";
 import {ROUTES} from "../../../../utils/Constant";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
-
+import { registerForPushNotificationsAsync, checkNotificationPermission, hasAskedForPermission, markPermissionAsked } from '../../../../utils/Notification';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { axiosPrivate } from "../../../../utils/AxiosInstance";
+import PushNotificationModal from "/components/PushNotificatonModal";
+import { toast } from "sonner-native";
 
 function ClientProfileScreen() {
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
     const userData = useSessionStore((state) => state.user);
-    const  insets = useSafeAreaInsets();
+    const insets = useSafeAreaInsets();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+    const [showNotificationModal, setShowNotificationModal] = useState(false);
+    const [isFirstProfileVisit, setIsFirstProfileVisit] = useState(false);
 
+    useEffect(() => {
+        const handleNotificationFlow = async () => {
+            if (!userData) return; // ✅ Guard inside effect
 
+            try {
+                const hasVisited = await AsyncStorage.getItem('@profile_visited');
+                const hasAsked = await hasAskedForPermission();
+
+                if (!hasVisited && !hasAsked) {
+                    setIsFirstProfileVisit(true);
+                    setShowNotificationModal(true);
+                    await AsyncStorage.setItem('@profile_visited', 'true');
+                    return;
+                }
+
+                const permissionStatus = await checkNotificationPermission();
+
+                if (permissionStatus.granted) {
+                    const token = await AsyncStorage.getItem('@expo_push_token');
+                    if (!token) {
+                        const expoPushToken = await registerForPushNotificationsAsync();
+                        if (expoPushToken) {
+                            await AsyncStorage.setItem('@expo_push_token', expoPushToken);
+                            await axiosPrivate.patch('/auth/update-push-token', {
+                                expoPushToken,
+                                enabled: true
+                            });
+                        }
+                    }
+                    const setting = await AsyncStorage.getItem('@user_notification_setting');
+                    setNotificationsEnabled(setting !== 'false');
+                }
+            } catch (error) {
+                console.log('Notification flow error:', error);
+            }
+        };
+
+        handleNotificationFlow();
+    }, [userData]); // ✅ Add dependency
 
     if (!userData) {
         return (
@@ -39,17 +84,12 @@ function ClientProfileScreen() {
         try {
             setIsLoggingOut(true);
             setLogoutModalVisible(false);
-
-            // Give user visual feedback
             await new Promise(resolve => setTimeout(resolve, 300));
-
-            // Perform secure cleanup
             await SessionManager.logout();
         } catch (error) {
             console.error('[Logout Error]:', error);
+            toast.error('Logout Error')
             setIsLoggingOut(false);
-            // Fallback: force navigation even if error occurs
-            router.replace("/(authentication)/login");
         }
     };
 
@@ -86,7 +126,6 @@ function ClientProfileScreen() {
 
     }
 
-
     const renderMenuItem = ({icon, iconType, title, value, hasChevron, color, isSwitch, onPress}) => {
         const renderIcon = () => {
             switch (iconType) {
@@ -120,6 +159,38 @@ function ClientProfileScreen() {
     };
 
 
+    // Add handler for "Enable Notifications" button
+    const handleEnableNotifications = async () => {
+        try {
+            setShowNotificationModal(false);
+            await markPermissionAsked();
+
+            // Now show system dialog
+            const expoPushToken = await registerForPushNotificationsAsync();
+
+            if (expoPushToken) {
+                await AsyncStorage.setItem('@expo_push_token', expoPushToken);
+                await AsyncStorage.setItem('@user_notification_setting', 'true');
+                await axiosPrivate.patch('/auth/update-push-token', {
+                    expoPushToken,
+                    enabled: true
+                });
+                setNotificationsEnabled(true);
+            } else {
+                // User denied system dialog
+                await AsyncStorage.setItem('@user_notification_setting', 'false');
+            }
+        } catch (error) {
+            console.log('Enable notifications error:', error);
+        }
+    };
+
+    // Add handler for "Maybe Later"
+    const handleMaybeLater = async () => {
+        setShowNotificationModal(false);
+        await markPermissionAsked();
+        await AsyncStorage.setItem('@user_notification_setting', 'false');
+    };
 
     return (
         <SafeAreaView style={{flex:1, backgroundColor: '#FFF', paddingTop: insets.top}}>
@@ -301,6 +372,11 @@ function ClientProfileScreen() {
                     </View>
                 </View>
             )}
+            <PushNotificationModal
+                visible={showNotificationModal}
+                onEnable={handleEnableNotifications}
+                onMaybeLater={handleMaybeLater}
+            />
         </SafeAreaView>
     );
 };
@@ -318,8 +394,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     logo: {
-        width: 40,
-        height: 40,
+        width: 30,
+        height: 30,
         borderRadius: 20,
         backgroundColor: '#60a5fa',
         alignItems: 'center',
@@ -333,7 +409,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     headerTitle: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: 'bold',
         color: '#333',
     },
