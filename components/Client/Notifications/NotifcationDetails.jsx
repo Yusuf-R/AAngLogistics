@@ -22,7 +22,7 @@ import { useSessionStore } from "../../../store/useSessionStore";
 import { router, useSegments } from "expo-router";
 
 import {useOrderStore} from "../../../store/useOrderStore";
-import CustomHeader from "../CustomHeader";
+import CustomHeader from "../../CustomHeader";
 
 const PRIORITY_CONFIG = {
     CRITICAL: {color: '#DC2626', bg: '#FEE2E2', icon: AlertTriangle, label: 'Critical'},

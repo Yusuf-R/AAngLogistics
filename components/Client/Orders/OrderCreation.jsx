@@ -23,7 +23,7 @@ import {ORDER_STEPS} from '../../../utils/Constant'
 // Import components
 import ProgressIndicator from './ProgressIndicator';
 import FloatingActionPanel from './FloatingActionPanel';
-import CustomHeader from "../CustomHeader";
+import CustomHeader from "../../CustomHeader";
 import Step1 from "./Step1";
 import Step2 from "./Step2";
 import Step3 from "./Step3";

@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import {Ionicons} from "@expo/vector-icons";
 import {router} from "expo-router";
-import CustomHeader from "../CustomHeader";
+import CustomHeader from "../../CustomHeader";
 
 const {width} = Dimensions.get('window');
 

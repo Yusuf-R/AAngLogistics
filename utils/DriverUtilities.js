@@ -1,5 +1,5 @@
 // utils/DriverUtils.js
-import { axiosPrivate, axiosPublic } from "./AxiosInstance";
+import {axiosPrivate, axiosPublic} from "./AxiosInstance";
 
 class DriverUtils {
     // Helper: truthy string/number
@@ -12,7 +12,7 @@ class DriverUtils {
      * Returns: { percent: number, isComplete: boolean, missing: string[] }
      */
     static getProfileCompletion(user) {
-        if (!user) return { percent: 0, isComplete: false, missing: ["no-user"] };
+        if (!user) return {percent: 0, isComplete: false, missing: ["no-user"]};
 
         const missing = [];
 
@@ -82,7 +82,7 @@ class DriverUtils {
         const overallApproved = user?.verification?.overallStatus === "approved";
         const isComplete = percent === 100 && overallApproved;
 
-        return { percent, isComplete, missing };
+        return {percent, isComplete, missing};
     }
 
     /**
@@ -124,6 +124,195 @@ class DriverUtils {
         }
     }
 
+    static async UpdateProfile(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: '/driver/update-profile',
+                data: obj,
+            });
+            return response.data;
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Locations
+    static async GetSavedLocations() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/driver/location/saved',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async CreateLocation(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/drver/location/create',
+                data: obj,
+            });
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async UpdateLocation(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: '/drver/location/update',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async DeleteLocation(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "DELETE",
+                url: '/drver/location/delete',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Cloudinary
+    // get signed URL for image upload
+    static async GetSignedUrl() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/auth/get-signed-url',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async UpdateAvatar(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: '/drver/update-avatar',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async Verification() {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/driver/verification/status',
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async GetDriverPresignedUrl(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/s3/driver/presigned-url',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error.response?.data?.error || 'Failed to get presigned URL');
+        }
+    }
+
+    static async DeleteFile(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "DELETE",
+                url: '/s3/delete',
+                data: obj,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error.response?.data?.error || 'Failed to delete file');
+        }
+    }
+
+    static async SubmitVerification(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PATCH",
+                url: '/driver/verification/submit',
+                data: obj,
+            });
+            return response.data;
+        } catch (error) {
+            console.log({error});
+            throw new Error(error.response?.data?.error || 'Failed to delete file');
+        }
+    }
 
 
 }

@@ -14,7 +14,7 @@ import {
 import { router } from "expo-router";
 import { getSocket } from "../../../hooks/useSocket";
 import { useOrderStore } from "../../../store/useOrderStore";
-import CustomHeader from "../CustomHeader";
+import CustomHeader from "../../CustomHeader";
 
 // Individual Timeline Item Component
 const TimelineItem = ({ item, isLast, isActive }) => {

@@ -20,7 +20,7 @@ import { useOrderStore } from '../../../store/useOrderStore';
 import { useSessionStore } from '../../../store/useSessionStore';
 import useMediaStore from '../../../store/useMediaStore';
 import ClientUtils from '../../../utils/ClientUtilities';
-import CustomHeader from '../CustomHeader';
+import CustomHeader from '../../CustomHeader';
 import SessionManager from "../../../lib/SessionManager";
 
 import ClientUtilities from "../../../utils/ClientUtilities";

@@ -15,6 +15,20 @@ export default function AccountLayout() {
                     headerShown: false
                 }}
             />
+
+            <Stack.Screen
+                name="profile"
+                options={{
+                    headerShown: false
+                }}
+            />
+
+            <Stack.Screen
+                name="verification"
+                options={{
+                    headerShown: false
+                }}
+            />
         </Stack>
     );
 }
