@@ -1,20 +1,21 @@
 // components/Driver/Account/DataVerification/ApprovedScreen.jsx
-import React from 'react';
+import React, {useState} from 'react';
 import {
     View,
     Text,
     ScrollView,
     Pressable,
     StyleSheet,
-    Animated
+    Animated, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import CustomHeader from '../../../CustomHeader';
 
-function ApprovedScreen({ verification, userData }) {
+function ApprovedScreen({ verification, userData, onRefresh }) {
     const router = useRouter();
+    const [refreshing, setRefreshing] = useState(false);
     const scaleAnim = React.useRef(new Animated.Value(0)).current;
 
     React.useEffect(() => {
@@ -39,6 +40,11 @@ function ApprovedScreen({ verification, userData }) {
             year: 'numeric'
         });
     };
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await onRefresh();
+        setRefreshing(false);
+    };
 
     const verificationDate = verification?.verificationDate || verification?.lastReviewDate;
 
@@ -53,6 +59,14 @@ function ApprovedScreen({ verification, userData }) {
                 style={styles.content}
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor="#10b981"
+                        colors={['#10b981']}
+                    />
+                }
             >
                 {/* Success Animation */}
                 <Animated.View

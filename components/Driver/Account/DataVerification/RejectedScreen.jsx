@@ -1,11 +1,12 @@
 // components/Driver/Account/DataVerification/RejectedScreen.js
-import React from 'react';
+import React, {useState} from 'react';
 import {
     View,
     Text,
     ScrollView,
     Pressable,
-    StyleSheet
+    StyleSheet,
+    RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,9 +15,10 @@ import CustomHeader from '../../../CustomHeader';
 
 function RejectedScreen({ verification, userData, onRefresh, statusType = 'rejected' }) {
     const router = useRouter();
+    const [refreshing, setRefreshing] = useState(false);
 
     const handleResubmit = () => {
-        router.push('/driver/account/data-verification?edit=true');
+        router.push('/driver/account/verification?edit=true');
     };
 
     const formatDate = (dateString) => {
@@ -62,6 +64,12 @@ function RejectedScreen({ verification, userData, onRefresh, statusType = 'rejec
     const rejectionReason = verification?.rejectionReason || 'No specific reason provided';
     const reviewDate = verification?.lastReviewDate;
 
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await onRefresh();
+        setRefreshing(false);
+    };
+
     return (
         <View style={styles.container}>
             <CustomHeader
@@ -73,6 +81,15 @@ function RejectedScreen({ verification, userData, onRefresh, statusType = 'rejec
                 style={styles.content}
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor="#10b981"
+                        colors={['#10b981']}
+                    />
+                }
+
             >
                 {/* Status Header */}
                 <View style={styles.statusCard}>

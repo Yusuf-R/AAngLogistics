@@ -12,6 +12,7 @@ import DriverUtils from "../../../../utils/DriverUtilities";
 
 function DataVerificationScreen() {
     const userData = useSessionStore((state) => state.user);
+    console.log({userData})
     const params = useLocalSearchParams();
     const forceEdit = params?.edit === 'true';
     const [verificationData, setVerificationData] = useState(null);
@@ -99,6 +100,7 @@ function DataVerificationScreen() {
                 <ApprovedScreen
                     verification={verification}
                     userData={userData}
+                    onRefresh={refetch}
                 />
             );
 
