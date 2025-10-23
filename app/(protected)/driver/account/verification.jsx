@@ -12,7 +12,6 @@ import DriverUtils from "../../../../utils/DriverUtilities";
 
 function DataVerificationScreen() {
     const userData = useSessionStore((state) => state.user);
-    console.log({userData})
     const params = useLocalSearchParams();
     const forceEdit = params?.edit === 'true';
     const [verificationData, setVerificationData] = useState(null);
@@ -20,7 +19,7 @@ function DataVerificationScreen() {
     const { data, isSuccess, isLoading, error, refetch } = useQuery({
         queryKey: ['GetValidationData'],
         queryFn: DriverUtils.Verification,
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        staleTime: 'infinity', // 5 minutes
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
         refetchOnMount: true,

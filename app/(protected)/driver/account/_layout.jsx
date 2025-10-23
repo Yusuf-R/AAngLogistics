@@ -29,6 +29,14 @@ export default function AccountLayout() {
                     headerShown: false
                 }}
             />
+
+            <Stack.Screen
+                name="utility"
+                options={{
+                    title: 'Developer Utilities',
+                }}
+            />
+
         </Stack>
     );
 }

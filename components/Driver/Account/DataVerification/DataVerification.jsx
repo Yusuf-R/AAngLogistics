@@ -70,9 +70,6 @@ const isSpecificCompleteFor = (vehicleType, specificDocs) => {
 
 
 function DataVerification({ userData, verification, isEditMode = false, onUpdateSuccess }) {
-    console.log({
-        verification
-    })
     const { width } = useWindowDimensions();
     const isCompact = width < 380;
     const router = useRouter();

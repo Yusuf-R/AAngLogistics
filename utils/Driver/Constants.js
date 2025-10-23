@@ -40,73 +40,14 @@ export const LOCATION_COLORS = {
 
 export const ROUTES = {
     // Tab Bar Routes
-    HOME: '/client/dashboard',
+    HOME: '/driver/dashboard',
     PROFILE: '/driver/account/profile',
     VERIFICATION: '/driver/account/verification',
     WALLET: '/client/wallet',
     NOTIFICATIONS: '/client/notifications',
+    UTILITY: '/driver/account/utility',
+}
 
-    // Nested Routes (No Tab Bar)
-    SECURITY: '/client/profile/security',
-    'VERIFY-EMAIL': '/client/profile/verify-email',
-    'UPDATE-PASSWORD': '/client/profile/update-password',
-    'AUTH-PIN': '/client/profile/auth-pin',
-    'UPDATE-PIN': '/client/profile/update-pin',
-    'RESET-PIN': '/client/profile/reset-pin',
-    TC: '/client/profile/tcs',
-    UTILITY: '/client/profile/utility',
-    'EDIT-PROFILE': '/client/profile/edit-profile',
-    'UPDATE-AVATAR': '/client/profile/update-avatar',
-    "PRIVACY-POLICY": '/client/profile/privacy-policy',
-    "LOCATION": '/client/profile/location',
-    "PAYMENT": '/client/profile/payment',
-    'HELP-CENTER': '/client/profile/help-center',
-    'NIN-VERIFICATION': '/client/profile/nin-verification',
-
-    // Add other nested routes here
-    'ORDER-CREATE': '/client/orders/create',
-    'ORDER-MANAGE': '/client/orders/manage',
-    'ORDER-VIEW': '/client/orders/view',
-};
-
-// Explicit list of routes where Tab Bar should appear
-export const TAB_BAR_VISIBLE_ROUTES = [
-    ROUTES.HOME,
-    ROUTES.ORDERS,
-    ROUTES.PROFILE,
-    ROUTES.WALLET,
-    ROUTES.NOTIFICATIONS,
-];
-
-export const TAB_BAR_HIDDEN_EXCEPTIONS = [
-    // PROFILE
-    '/client/profile/edit-profile',
-    '/client/profile/update-password',
-    '/client/profile/location',
-    '/client/profile/update-avatar',
-    '/client/profile/privacy-policy',
-    '/client/profile/security',
-    '/client/profile/nin-verification',
-    '/client/profile/payment',
-    '/client/profile/auth-pin',
-    '/client/profile/reset-pin',
-    '/client/profile/help-center',
-    '/client/profile/tcs',
-    '/client/profile/verify-email',
-    '/client/profile/utility',
-    //  ORDERS
-    '/client/orders/create',
-    '/client/orders/manage',
-    '/client/orders/view',
-    '/client/orders/payment-status',
-    '/client/orders/track',
-
-    // notifications
-    '/client/notifications/details',
-
-];
-
-//
 // States and LGA data
 export const stateAndLGA = {
     Abia: [

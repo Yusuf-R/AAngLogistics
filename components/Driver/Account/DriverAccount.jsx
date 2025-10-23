@@ -29,6 +29,10 @@ function DriverAccount ({ userData }) {
         router.push(ROUTES.VERIFICATION);
     }
 
+    const goToUtility = () => {
+        router.push(ROUTES.UTILITY);
+    }
+
 
     const handleLogout = async () => {
         try {
