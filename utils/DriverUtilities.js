@@ -138,6 +138,20 @@ class DriverUtils {
         }
     }
 
+    static async TermsConditions(payload) {
+        try {
+            const response = await axiosPrivate({
+                method: "PATCH",
+                url: '/driver/tcs',
+                data: payload,
+            });
+            return response.data;
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
     // Locations
     static async GetSavedLocations() {
         try {
@@ -313,6 +327,160 @@ class DriverUtils {
             throw new Error(error.response?.data?.error || 'Failed to delete file');
         }
     }
+
+    static async sendMessage(conversationId, messageData) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/driver/support/chat/message/send`,
+                data: {
+                    conversationId,
+                    messageData
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('Send message error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async markChatAsRead(conversationId, lastReadSeq) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/driver/support/chat/message/read`,
+                data: {
+                    conversationId,
+                    lastReadSeq
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.error('mark chat as read error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async createConversation(targetUserId, targetRole, orderId = null) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/driver/support/chat/create`,
+                data: {
+                    targetUserId,
+                    targetRole,
+                    orderId,
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Creat conversation error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async getOrCreateDriverSupportConversation() {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/driver/support/chat/get-or-create`,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    /**
+     * Create support ticket
+     */
+    static async createSupportTicket(ticketData) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/driver/support/ticket/create`,
+                data: ticketData,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    /**
+     * Get user's tickets
+     */
+    static async getSupportTickets(status) {
+        const params = {};
+        if (status) {
+            params.status = status;
+        }
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/support/ticket/all`,
+                params: params,
+                data: status,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    /**
+     * Get ticket details
+     */
+    static async getTicketById(ticketId) {
+
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/support/ticket/get`,
+                prams: ticketId,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async deleteSupportTicket(ticketId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'DELETE',
+                url: `/driver/support/ticket/delete`,
+                data:  {ticketId}
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Delete error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async updateSupportTicket(ticketId, ticketData) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PUT',
+                url: `/driver/support/ticket/update`,
+                params: ticketId,
+                data: ticketData,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Update error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
 
 
 }

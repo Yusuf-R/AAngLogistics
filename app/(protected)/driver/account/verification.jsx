@@ -19,7 +19,7 @@ function DataVerificationScreen() {
     const { data, isSuccess, isLoading, error, refetch } = useQuery({
         queryKey: ['GetValidationData'],
         queryFn: DriverUtils.Verification,
-        staleTime: 'infinity', // 5 minutes
+        staleTime: 'infinity',
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
         refetchOnMount: true,

@@ -1,3 +1,4 @@
+// components/StatusModal/StatusModal.jsx
 import React from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
 import LottieView from 'lottie-react-native';

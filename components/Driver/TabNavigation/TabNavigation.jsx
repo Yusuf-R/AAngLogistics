@@ -4,8 +4,9 @@ import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
 import { useLinkBuilder, useTheme } from '@react-navigation/native';
 import { Ionicons, AntDesign, FontAwesome5 } from "@expo/vector-icons";
 import { useNotificationStore } from "../../../store/useNotificationStore";
+import {router} from "expo-router";
 
-export function TabNavigation({ state, descriptors, navigation }) {
+export function TabNavigation({ state, descriptors, navigation, canAccess }) {
     const { colors } = useTheme();
     const { buildHref } = useLinkBuilder();
     const [previousIndex, setPreviousIndex] = useState(state.index);
@@ -83,12 +84,13 @@ export function TabNavigation({ state, descriptors, navigation }) {
                 });
 
                 const onPress = () => {
-                    const event = navigation.emit({
-                        type: 'tabPress',
-                        target: route.key,
-                        canPreventDefault: true,
-                    });
+                    // 🔒 gate here
+                    if (canAccess && !canAccess(name)) {
+                        router.replace("/driver/tcs-required");
+                        return;
+                    }
 
+                    const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                     if (!isFocused && !event.defaultPrevented) {
                         navigation.navigate(route.name, route.params);
                     }

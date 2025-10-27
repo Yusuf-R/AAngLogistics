@@ -46,6 +46,8 @@ export const ROUTES = {
     WALLET: '/client/wallet',
     NOTIFICATIONS: '/client/notifications',
     UTILITY: '/driver/account/utility',
+    SUPPORT: '/driver/account/support',
+    POLICY: '/driver/account/policy',
 }
 
 // States and LGA data
@@ -1550,749 +1552,472 @@ export const NIGERIAN_BANKS = [
 ]
 
 // Terms and Conditions Constants
-export const sections = [
+export const tcs = [
     {
         id: 'definitions',
-        title: 'Definitions',
+        title: 'Definitions & Interpretation',
         icon: 'document-text-outline',
         content: [
-            {term: 'Company', definition: 'refers to AANG Logistics, a registered logistics service provider.'},
-            {term: 'Customer', definition: 'refers to the individual or entity using the Company\'s services.'},
-            {
-                term: 'Goods',
-                definition: 'refers to the items being transported, stored, or handled by our logistics services.'
-            },
-            {term: 'Services', definition: 'refers to all logistics and related services provided by the Company.'},
+            {term: 'Platform', definition: 'refers to AANG Logistics digital marketplace connecting senders with drivers.'},
+            {term: 'Driver', definition: 'refers to the independent contractor providing delivery services through the Platform.'},
+            {term: 'Sender', definition: 'refers to the individual or entity requesting delivery services through the Platform.'},
+            {term: 'Delivery Request', definition: 'refers to a request for delivery services made by a Sender through the Platform.'},
+            {term: 'Service Fee', definition: 'refers to the amount payable to the Driver for completed delivery services.'},
+            {term: 'Platform Commission', definition: 'refers to the percentage of Service Fee retained by the Platform for providing the marketplace.'},
+            {term: 'Active Hours', definition: 'refers to time spent by the Driver while available to accept Delivery Requests on the Platform.'},
         ]
     },
     {
-        id: 'scope',
-        title: 'Scope of Services',
-        icon: 'car-outline',
-        content: `AANG Logistics provides comprehensive logistics services including:
-
-• Transportation services (road and rail)
-• Last-mile delivery solutions
-`
+        id: 'driver-status',
+        title: 'Independent Contractor Status',
+        icon: 'person-outline',
+        content: `As a Driver on our Platform, you are an independent contractor, not an employee:`,
+        body:`• You have complete control over your schedule, working hours, and acceptance of Delivery Requests
+• You are responsible for your own taxes, insurance, and business expenses
+• You provide your own vehicle, equipment, and tools necessary for delivery services
+• You are not entitled to employee benefits, including health insurance, paid leave, or retirement benefits
+• You may work for other delivery platforms or engage in other business activities
+• The Platform does not direct or control the manner in which you perform delivery services`
     },
     {
-        id: 'obligations',
-        title: 'Customer Obligations',
-        icon: 'checkmark-circle-outline',
-        content: `As our valued customer, you agree to:
-
-• Provide accurate and complete shipment details (weight, dimensions, contents, destination)
-• Ensure goods are properly packed, labeled, and comply with all legal and safety requirements
-• Notify the Company immediately of any hazardous materials or special handling requirements
-• Pay all applicable charges as per the agreed terms and conditions
-• Comply with all applicable laws and regulations`
+        id: 'registration',
+        title: 'Driver Registration & Verification',
+        icon: 'id-card-outline',
+        content: `Registration Requirements:`,
+        body:`• Must be at least 18 years old with valid Nigerian Driver's License
+• Must possess valid vehicle registration and roadworthiness certificate from FRSC
+• Must maintain current Third-Party or Comprehensive vehicle insurance
+• Must complete NIN/BVN verification for identity confirmation
+• Must pass background checks including driving history and criminal record
+• Must provide accurate and current contact information
+• Must maintain a smartphone with GPS capability and reliable internet access
+• Registration may be suspended or terminated for providing false information`
     },
     {
-        id: 'pricing',
-        title: 'Quotations & Pricing',
-        icon: 'card-outline',
-        content: `Pricing Terms:
-
-• Quotations are valid for 30 days unless otherwise specified
-• Prices may be subject to change due to fuel surcharges, customs fees, or unforeseen circumstances
-• Additional charges may apply for special handling, extended storage, or incorrect documentation
-• All prices are exclusive of applicable taxes unless otherwise stated
-• Volume discounts available for regular customers`
+        id: 'service-standards',
+        title: 'Service Standards & Conduct',
+        icon: 'ribbon-outline',
+        content: `Professional Conduct Requirements:`,
+        body:`• Maintain professional appearance and courteous communication with Senders
+• Handle all packages with care and follow specific handling instructions
+• Use provided navigation tools for efficient route planning
+• Arrive at pickup locations within the estimated time window
+• Verify package details and condition before acceptance
+• Obtain proper delivery confirmation (OTP, signature, photo proof)
+• Report any delivery issues or safety concerns immediately
+• Maintain vehicle cleanliness and presentable condition
+• Comply with all traffic laws and road safety regulations`
     },
     {
-        id: 'payment',
-        title: 'Payment Terms',
-        icon: 'wallet-outline',
-        content: `Payment Conditions:
-
-• Payment is due within 30 days of invoice issuance
-• Late payments may incur interest at 1.5% per month
-• The Company reserves the right to withhold services or goods for unpaid invoices
-• Accepted payment methods: Bank transfer, credit cards, and approved digital wallets
-• Payment disputes must be raised within 7 days of invoice receipt`
+        id: 'earnings-payments',
+        title: 'Earnings & Payment Terms',
+        icon: 'cash-outline',
+        content: `Payment Structure:`,
+        body:`• Service Fees are calculated based on distance, package size, and demand factors
+• Platform Commission ranges from 15-20% based on driver tier and performance
+• Tips and bonuses are 100% yours with no commission deducted
+• Earnings are held in escrow and released after successful delivery confirmation
+• Weekly payouts processed every Monday for previous week's completed deliveries
+• Instant transfers available for a small convenience fee (₦50-₦100)
+• You are responsible for declaring income and paying applicable taxes to FIRS
+• The Platform provides monthly earnings statements for tax purposes`
     },
     {
-        id: 'liability',
-        title: 'Liability & Insurance',
+        id: 'cancellation-policy',
+        title: 'Cancellation & No-Show Policy',
+        icon: 'close-circle-outline',
+        content: `Cancellation Guidelines:`,
+        body:`• You may decline Delivery Requests without penalty, but acceptance rate affects priority
+• Cancellations after acceptance but before pickup affect your completion rate
+• Cancellations after pickup are only permitted for valid safety or operational reasons
+• Excessive cancellations (above 30% weekly rate) may result in temporary suspension
+• Valid cancellation reasons: safety concerns, vehicle breakdown, incorrect package details
+• Sender cancellations after you've started traveling entitle you to partial compensation
+• Repeated no-shows or pattern cancellations lead to account deactivation`
+    },
+    {
+        id: 'safety-security',
+        title: 'Safety & Security Protocols',
         icon: 'shield-checkmark-outline',
-        content: `Liability Framework:
-
-• The Company's liability for loss or damage is limited to 3 times the freight charges or as per applicable law
-• Customers must declare high-value goods and arrange additional insurance if needed
-• The Company maintains comprehensive insurance coverage for standard operations
-• We are not liable for delays caused by force majeure events (e.g., natural disasters, strikes, government actions).
-`
+        content: `Safety Requirements:`,
+        body:`• Always prioritize personal safety over delivery completion
+• Use the emergency button for immediate security assistance
+• Report suspicious packages or senders immediately through the app
+• Maintain valid vehicle insurance and safety equipment at all times
+• Follow all road safety regulations and avoid risky driving behavior
+• Do not accept prohibited items (illegal substances, weapons, hazardous materials)
+• Keep your vehicle in safe operating condition with regular maintenance
+• The Platform provides 24/7 security support and emergency response coordination`
     },
     {
-        id: 'delivery',
-        title: 'Delivery & Service Standards',
-        icon: 'time-outline',
-        content: `Delivery Terms:
-
-• Estimated delivery times are provided as guidance and are not guaranteed
-• Customers must inspect goods upon delivery and report any damages within 48 hours
-• Storage fees may apply if the customer fails to accept delivery within the agreed timeframe
-• Delivery attempts will be made during standard business hours (8 AM - 6 PM)
-• Special delivery arrangements available upon request`
+        id: 'ratings-performance',
+        title: 'Ratings & Performance Management',
+        icon: 'star-outline',
+        content: `Performance System:`,
+        body:`• Senders rate your service on a 5-star scale after each delivery
+• Your overall rating affects your priority for high-value Delivery Requests
+• Performance metrics tracked: acceptance rate, completion rate, on-time delivery, customer rating
+• Driver tiers: Bronze (0-100 deliveries), Silver (100-500, 4.5+ rating), Gold (500+, 4.8+ rating)
+• Higher tiers receive lower commission rates and priority access to premium deliveries
+• Ratings below 3.5 trigger performance improvement plans
+• Consistent ratings below 3.0 may result in account deactivation
+• You may dispute unfair ratings with supporting evidence within 48 hours`
     },
     {
-        id: 'force-majeure',
-        title: 'Force Majeure',
+        id: 'vehicle-requirements',
+        title: 'Vehicle & Equipment Standards',
+        icon: 'car-outline',
+        content: `Vehicle Requirements:`,
+        body:`• Vehicles must be 2008 model year or newer (cars), 2015 or newer (motorcycles)
+• Valid vehicle registration and roadworthiness certificate required
+• Current insurance coverage (Third-Party minimum, Comprehensive recommended)
+• Regular maintenance records must be maintained
+• Vehicle inspection may be required upon registration and periodically
+• Motorcycles must have proper safety gear including helmets
+• Vehicle changes must be reported and re-verified within 7 days
+• The Platform may suspend accounts for vehicles in unsafe condition`
+    },
+    {
+        id: 'insurance-liability',
+        title: 'Insurance & Liability',
+        icon: 'umbrella-outline',
+        content: `Insurance Coverage:`,
+        body:`• You are responsible for maintaining valid vehicle insurance
+• The Platform provides commercial auto coverage during active deliveries
+• Standard coverage includes liability protection and basic cargo insurance
+• High-value items require additional insurance declaration
+• You are liable for damages caused by negligence or violation of platform policies
+• Accident procedures: ensure safety, document scene, contact support, file police report if needed
+• Insurance claims must be filed within 24 hours of incident
+• The Platform assists with insurance coordination for platform-covered incidents`
+    },
+    {
+        id: 'intellectual-property',
+        title: 'Intellectual Property & Data',
+        icon: 'lock-closed-outline',
+        content: `Data Usage & Platform Rights:`,
+        body:`• The Platform owns all intellectual property related to the app and services
+• You grant the Platform license to use your name, photo, and vehicle information for service provision
+• GPS and delivery data are collected for service optimization and safety monitoring
+• Your personal data is protected under Nigeria Data Protection Regulation (NDPR)
+• You may not misuse platform data or attempt to bypass the Platform for direct business
+• All delivery transactions must occur through the Platform to maintain insurance coverage
+• Violation of data policies may result in immediate account termination`
+    },
+    {
+        id: 'suspension-termination',
+        title: 'Suspension & Termination',
         icon: 'warning-outline',
-        content: `The Company is not liable for failures or delays due to events beyond our reasonable control, including:
-
-• Natural disasters, floods, earthquakes, or severe weather conditions
-• War, terrorism, or civil unrest
-• Government restrictions, sanctions, or regulatory changes
-• Labor strikes or industrial action
-• Pandemic-related restrictions or quarantine measures
-• Infrastructure failures or cyber attacks`
+        content: `Account Actions:`,
+        body:`• The Platform may suspend accounts for policy violations, safety concerns, or legal requirements
+• Temporary suspension reasons: low ratings, excessive cancellations, document expiration
+• Permanent termination reasons: fraud, theft, safety violations, prohibited items, fake identity
+• You will receive written notice of suspension or termination with specific reasons
+• Appeal process available within 7 days of suspension/termination notice
+• Final earnings will be paid out after account closure minus any valid deductions
+• Reactivation may be possible for temporary suspensions after meeting requirements`
     },
     {
-        id: 'cancellation',
-        title: 'Cancellation & Refunds',
-        icon: 'return-up-back-outline',
-        content: `Cancellation Policy:
-
-• Cancellations must be submitted in writing or through our mobile app
-• Cancellations made 24 hours before scheduled pickup: Full refund minus 5% administrative fee
-• Cancellations made less than 24 hours: 50% refund
-• No refunds for services already commenced or completed
-• Emergency cancellations will be reviewed on a case-by-case basis`
+        id: 'dispute-resolution',
+        title: 'Dispute Resolution',
+        icon: 'scale-outline',
+        content: `Conflict Resolution Process:`,
+        body:`• Delivery disputes should be reported immediately through the app with supporting evidence
+• The Platform's resolution team mediates between Drivers and Senders
+• Escrow funds are held until dispute resolution
+• Unresolved disputes may be escalated to binding arbitration under Nigerian Arbitration Act
+• Legal proceedings shall be conducted in English in courts of Abuja, FCT
+• Both parties agree to attempt good-faith negotiation before legal action
+• The Platform's decisions on disputes are final and binding for platform-related matters`
     },
     {
-        id: 'governing-law',
-        title: 'Governing Law & Dispute Resolution',
-        icon: 'library-outline',
-        content: `Legal Framework:
-
-• These terms are governed by the laws of Nigeria and the Federal Capital Territory
-• Any disputes shall first be resolved through good-faith negotiation
-• Unresolved disputes may be submitted to binding arbitration under the Nigerian Arbitration Act
-• The courts of Abuja, FCT shall have exclusive jurisdiction
-• All legal proceedings shall be conducted in English`
-    },
-    {
-        id: 'amendments',
+        id: 'modifications',
         title: 'Terms Modification',
-        icon: 'create-outline',
-        content: `The Company reserves the right to modify these terms at any time. Changes will be communicated through:
-
-• Email notifications to registered customers
-• In-app notifications
-• Website updates
-• SMS alerts for significant changes
-
-Continued use of our services after notification constitutes acceptance of the updated terms.`
+        icon: 'refresh-outline',
+        content: `Policy Updates:`,
+        body:`• The Platform reserves the right to modify these terms with 30 days' notice
+• Significant changes will be communicated via email, in-app notifications, and SMS
+• Continued use of the Platform after changes constitutes acceptance
+• You may terminate your account if you do not agree with modified terms
+• Current terms are always available in the Driver App and website
+• Material changes to commission structure require 45 days' notice
+• Emergency modifications for legal or safety reasons may be implemented immediately`
+    },
+    {
+        id: 'miscellaneous',
+        title: 'Miscellaneous Provisions',
+        icon: 'ellipsis-horizontal-outline',
+        content: `Additional Terms:`,
+        body:`• These terms constitute the entire agreement between you and the Platform
+• If any provision is found invalid, the remaining terms remain in effect
+• No partnership, joint venture, or employment relationship is created
+• You are responsible for compliance with all applicable Nigerian laws and regulations
+• The Platform may assign these terms to affiliates or successors
+• Notices may be delivered electronically through the app or registered email
+• Force majeure events relieve the Platform from liability for service interruptions`
     }
 ];
 
-// FAQ Constants
-export const faqData = {
-    General: [
-        {
-            question: "How does the delivery platform work?",
-            answer: "Our platform connects senders who need to transport items with available drivers. Simply create a delivery request, get an automated price estimate, and nearby drivers will receive notifications to accept or counter-offer your request."
-        },
-        {
-            question: "What areas do you cover?",
-            answer: "We operate nationwide across Nigeria, with drivers available in major cities and towns. The platform matches you with drivers within your specific location radius."
-        },
-        {
-            question: "How is pricing calculated?",
-            answer: "Pricing is automatically calculated based on distance, weight, urgency, and package type. Our dynamic pricing system adjusts based on demand and delivery conditions."
-        },
-        {
-            question: "What items can I send?",
-            answer: "You can send most legal items. Prohibited items include illegal goods, perishable items without proper packaging, hazardous materials, and items exceeding our weight limits."
-        },
-        {
-            question: "What are your operating hours?",
-            answer: "Our platform operates 24/7, but delivery availability may vary by location and time. Drivers set their own schedules, so you may find fewer options late at night."
-        },
-        {
-            question: "How do I contact customer support?",
-            answer: "Use the in-app chat feature for immediate assistance or email support@deliveryplatform.com. For urgent issues, call our hotline at +234-800-123-4567 (available 8am-8pm daily)."
-        }
-    ],
-    Account: [
-        {
-            question: "How do I create an account?",
-            answer: "Download our app and sign up with your phone number. You'll need to verify your identity using your NIN or BVN for security purposes before you can start using the platform."
-        },
-        {
-            question: "Why do I need to verify my identity?",
-            answer: "Identity verification (KYC) helps us maintain a secure platform, prevent fraud, and comply with Nigerian regulations. We use your NIN/BVN to verify your identity."
-        },
-        {
-            question: "Can I have multiple accounts?",
-            answer: "No, each person is allowed only one account per verified identity. Multiple accounts are prohibited and will result in account suspension."
-        },
-        {
-            question: "How do I update my profile information?",
-            answer: "Go to your profile settings in the app where you can update your contact information, address, and preferences. Some changes may require re-verification."
-        },
-        {
-            question: "What should I do if I can't access my account?",
-            answer: "Use the 'Forgot Password' feature or contact our support team with proof of identity. For security reasons, we may require additional verification to restore access."
-        },
-        {
-            question: "How do I delete my account?",
-            answer: "Submit a request through the app settings. Note that account deletion is permanent and may take up to 30 days to fully process all associated data."
-        }
-    ],
-    Service: [
-        {
-            question: "How do I track my delivery?",
-            answer: "Once your delivery is accepted, you'll receive real-time GPS tracking updates. You can see your driver's location and estimated arrival time in the app."
-        },
-        {
-            question: "What if my driver doesn't show up?",
-            answer: "If a driver doesn't arrive within the agreed timeframe, you can cancel the request for a full refund. Drivers with frequent no-shows face penalties and account suspension."
-        },
-        {
-            question: "Can I cancel my delivery request?",
-            answer: "Yes, you can cancel before a driver accepts your request for a full refund. After acceptance, you have a 30-second window to cancel before charges apply."
-        },
-        {
-            question: "What happens if my package gets lost or damaged?",
-            answer: "All deliveries require photo proof and OTP confirmation. If your package is lost or damaged, report it immediately through the app. We have a compensation policy for verified cases."
-        },
-        {
-            question: "How do I become a driver?",
-            answer: "Apply through our driver portal with valid driver's license, vehicle registration, insurance, and pass our background verification. You'll also need NIN/BVN verification."
-        },
-        {
-            question: "Can I schedule deliveries in advance?",
-            answer: "Yes, you can schedule deliveries up to 7 days in advance. Scheduled requests are sent to drivers 2 hours before the pickup time."
-        },
-        {
-            question: "What if my package is overweight?",
-            answer: "Drivers may reject overweight packages. If discovered after pickup, you'll be charged an additional fee and may face account restrictions for repeated violations."
-        },
-        {
-            question: "How are fragile items handled?",
-            answer: "Clearly mark fragile items when creating your request. While we encourage careful handling, we recommend purchasing insurance for valuable fragile items."
-        }
-    ],
-    Payment: [
-        {
-            question: "What payment methods do you accept?",
-            answer: "We accept credit/debit cards, bank transfers, and digital wallets through secure payment gateways like Paystack and Flutterwave."
-        },
-        {
-            question: "When am I charged for delivery?",
-            answer: "Payment is held in escrow when you confirm a delivery request. Funds are only released to the driver after successful delivery confirmation with OTP and photo proof."
-        },
-        {
-            question: "Why did my payment fail?",
-            answer: "Payment failures can occur due to insufficient funds, expired cards, network issues, or security checks. Ensure your payment method is valid and has sufficient balance."
-        },
-        {
-            question: "How do refunds work?",
-            answer: "Refunds are processed automatically for valid cancellations or failed deliveries. The money is returned to your original payment method within 3-7 business days."
-        },
-        {
-            question: "Are there any hidden charges?",
-            answer: "No, all charges are transparent. You'll see the breakdown of delivery fee, service charge, and applicable taxes before confirming your request."
-        },
-        {
-            question: "What is your VAT policy?",
-            answer: "We charge 7.5% VAT on all service fees as required by Nigerian law. This is clearly displayed during checkout and on your receipt."
-        },
-        {
-            question: "How do drivers receive their earnings?",
-            answer: "Drivers can withdraw earnings to their bank accounts or mobile wallets. Processing takes 1-2 business days, with a small transaction fee for instant transfers."
-        }
-    ],
-    Safety: [
-        {
-            question: "What safety measures are in place?",
-            answer: "We require identity verification for all users, real-time tracking, delivery confirmation via OTP, and photo proof. All transactions are secured through our escrow payment system."
-        },
-        {
-            question: "How do you verify drivers?",
-            answer: "Drivers undergo thorough background checks including FRSC license verification, vehicle inspection, and NIN/BVN validation before being approved on our platform."
-        },
-        {
-            question: "What should I do if I feel unsafe during a delivery?",
-            answer: "Use the emergency button in the app to alert our security team and local authorities. We'll immediately track your location and dispatch assistance."
-        },
-        {
-            question: "How is my personal data protected?",
-            answer: "We comply with Nigeria Data Protection Regulation (NDPR), using AES-256 encryption for all sensitive data. Your information is never shared without consent."
-        },
-        {
-            question: "What happens if a prohibited item is discovered?",
-            answer: "Delivery will be immediately canceled, reported to authorities, and both sender and driver accounts will be suspended pending investigation."
-        }
-    ],
-    Insurance: [
-        {
-            question: "Do you offer delivery insurance?",
-            answer: "Yes, we offer optional insurance coverage for your items. You can select insurance coverage when creating your delivery request for an additional fee."
-        },
-        {
-            question: "What does the insurance cover?",
-            answer: "Insurance covers loss, theft, and accidental damage during transit. It does not cover improper packaging or prohibited items."
-        },
-        {
-            question: "How do I file an insurance claim?",
-            answer: "Report the issue immediately through the app with supporting evidence (photos, videos). Our claims team will investigate and process valid claims within 14 business days."
-        },
-        {
-            question: "What items cannot be insured?",
-            answer: "We cannot insure cash, jewelry, antiques, perishable goods, or any prohibited items. Please check our full list of uninsurable items in the Terms of Service."
-        },
-        {
-            question: "How are insurance payouts calculated?",
-            answer: "Payouts are based on the declared value of your item (with receipt proof) up to the maximum coverage limit. Deductibles may apply for certain claims."
-        }
-    ],
-    Business: [
-        {
-            question: "Do you offer corporate accounts?",
-            answer: "Yes, we provide special business accounts with features like bulk deliveries, dedicated account managers, and monthly invoicing. Contact our sales team for details."
-        },
-        {
-            question: "Can I integrate with your API?",
-            answer: "Enterprise clients can access our API for seamless logistics integration. Documentation is available for approved business partners."
-        },
-        {
-            question: "What are your business hours for corporate support?",
-            answer: "Our corporate support team is available Monday-Friday from 8am-6pm, with emergency support for critical delivery issues 24/7."
-        },
-        {
-            question: "Do you offer volume discounts?",
-            answer: "Businesses with regular high-volume deliveries qualify for discounted rates. Discount tiers are based on monthly delivery volume."
-        }
-    ],
-    Technology: [
-        {
-            question: "What devices are supported?",
-            answer: "Our app works on iOS (version 12+) and Android (version 8+) smartphones. We also have a web version for desktop users."
-        },
-        {
-            question: "How do I update the app?",
-            answer: "Updates are automatically pushed through app stores. Enable automatic updates in your device settings or manually update when notified."
-        },
-        {
-            question: "What should I do if the app crashes?",
-            answer: "Restart the app and your device. If issues persist, clear the app cache or reinstall. Report persistent problems to our tech support team."
-        },
-        {
-            question: "Is my location data shared?",
-            answer: "Location data is only used for delivery matching and tracking. We never sell or share your precise location data with third parties."
-        }
-    ]
-};
-
-// Dashboard Constants
-export const serviceFeatures = [
-    {
-        icon: Zap,
-        title: 'Instant Delivery',
-        description: 'Same-day delivery across the city',
-        color: '#F59E0B'
+export const driverFaqData = {
+    'Getting Started': {
+        icon: 'rocket-launch',
+        iconFamily: 'MaterialIcons',
+        color: '#3B82F6',
+        questions: [
+            {
+                question: "What are the requirements to become a driver?",
+                answer: "To join our platform as a driver, you need: (1) A valid Nigerian Driver's License, (2) Vehicle registration and roadworthiness certificate from FRSC, (3) Valid vehicle insurance (Third-Party or Comprehensive), (4) NIN/BVN verification for identity confirmation, (5) Smartphone with GPS capability, (6) Clean driving record verified through background checks. You must be at least 18 years old with minimum one year of driving experience."
+            },
+            {
+                question: "How long does the driver verification process take?",
+                answer: "The verification process typically takes 2-5 business days. This includes document review, background checks with FRSC and local law enforcement, vehicle inspection verification, and identity validation through NIN/BVN. You'll receive real-time updates on your application status via SMS and app notifications."
+            },
+            {
+                question: "What types of vehicles are accepted on the platform?",
+                answer: "We accept motorcycles (dispatch bikes), tricycles (Keke NAPEP), cars, vans, and small trucks. All vehicles must have valid registration, current roadworthiness certificates, and appropriate insurance coverage. Motorcycles must have helmets and safety gear, while larger vehicles need proper cargo securing equipment."
+            },
+            {
+                question: "Is there a registration fee to become a driver?",
+                answer: "No, there is no upfront registration fee. Our platform is free to join. However, we charge a service commission on completed deliveries. You only pay when you earn, making it risk-free to start."
+            },
+            {
+                question: "Can I drive part-time or do I need to be full-time?",
+                answer: "You have complete flexibility! You can drive part-time, full-time, or whenever you want. Set your own schedule by turning your availability on/off in the app. Many drivers work around other commitments, while others drive full-time for maximum earnings."
+            },
+            {
+                question: "What happens after my application is approved?",
+                answer: "Once approved, you'll receive an activation email and SMS. Log into the driver app, complete the onboarding tutorial, set up your payment information for withdrawals, and toggle your availability to 'Online' to start receiving delivery requests immediately."
+            }
+        ]
     },
-    {
-        icon: Shield,
-        title: 'Secure & Insured',
-        description: 'Your packages are fully protected',
-        color: '#10B981'
+    'Earnings & Payments': {
+        icon: 'attach-money',
+        iconFamily: 'MaterialIcons',
+        color: '#10B981',
+        questions: [
+            {
+                question: "How much can I earn as a driver?",
+                answer: "Earnings vary based on delivery volume, distance, and time commitment. Active drivers typically earn ₦15,000-₦50,000 weekly. Factors affecting earnings include: delivery completion rate, peak hours (higher demand = higher fares), vehicle type (larger vehicles command higher rates), and customer ratings (high-rated drivers get priority offers)."
+            },
+            {
+                question: "How is my payment calculated per delivery?",
+                answer: "Your payment includes: Base fare (calculated by distance), Weight/size premium (heavier items earn more), Urgency bonus (express deliveries pay extra), Peak time multipliers (1.5x-2x during high demand). The platform commission is deducted before payout. You'll see the exact amount you'll earn before accepting any request."
+            },
+            {
+                question: "When and how do I receive my earnings?",
+                answer: "Earnings are held in escrow and released after successful delivery confirmation (recipient OTP + photo proof). You can withdraw funds to your bank account or mobile wallet anytime through the app. Standard withdrawals process in 1-2 business days (free), while instant transfers complete within minutes for a small fee (₦50-₦100)."
+            },
+            {
+                question: "What is the platform commission structure?",
+                answer: "The platform charges a 15-20% commission on completed deliveries, depending on your driver tier. Higher-rated drivers with more completed deliveries enjoy lower commission rates. Bonuses and tips from customers are 100% yours with no commission deducted."
+            },
+            {
+                question: "Do I receive tips from customers?",
+                answer: "Yes! Customers can tip you directly through the app after delivery completion. Tips are 100% yours with zero commission. Providing excellent service, timely delivery, and professional communication increases your tip earnings significantly."
+            },
+            {
+                question: "What happens if a customer cancels after I've started driving?",
+                answer: "If cancellation occurs after you've accepted and started traveling to pickup, you'll receive a partial compensation (typically ₦200-₦500) for your time and fuel. The amount depends on how far you've traveled. Frequent customer cancellations are tracked and penalized by the system."
+            },
+            {
+                question: "Are there bonuses or incentive programs?",
+                answer: "Yes! We offer multiple incentive programs: Weekly completion bonuses (complete 50+ deliveries for extra ₦5,000-₦10,000), Referral bonuses (earn ₦2,000 for every new driver you bring), Peak hour multipliers (1.5x-2x earnings during rush periods), Monthly top performer awards, and Perfect rating bonuses for maintaining 5-star service."
+            }
+        ]
     },
-    {
-        icon: Users,
-        title: 'Trusted Couriers',
-        description: 'Verified and professional drivers',
-        color: '#3B82F6'
-    }
-];
-
-
-// Order Utilities
-// orderUtils.js - Utility functions for order creation
-export const ORDER_TYPES = [
-    {
-        id: 'instant',
-        title: 'Send Now',
-        subtitle: 'Immediate pickup',
-        icon: 'flash',
-        color: ['#ff6b6b', '#ee5a24'],
-        popular: true
+    'Delivery Operations': {
+        icon: 'local-shipping',
+        iconFamily: 'MaterialIcons',
+        color: '#F59E0B',
+        questions: [
+            {
+                question: "How do I receive delivery requests?",
+                answer: "When you're online and available, delivery requests from nearby senders are pushed to your app via notifications. You'll see: pickup and drop-off locations, package size/weight, estimated distance and time, offered payment amount, and customer rating. You have 60 seconds to accept or counter-offer before the request goes to other drivers."
+            },
+            {
+                question: "Can I reject delivery requests without penalty?",
+                answer: "Yes, you can decline requests without immediate penalty. However, your acceptance rate is tracked and affects your driver score. Consistently low acceptance rates (below 50%) may reduce your priority for high-value deliveries. We recommend only going online when you're ready to accept requests."
+            },
+            {
+                question: "What is the counter-offer feature and how does it work?",
+                answer: "If you feel the offered price is too low, you can send a counter-offer with your proposed amount. The sender receives your counter-offer and can accept, decline, or negotiate further. Counter-offers work best when you explain your reasoning (e.g., 'Traffic is heavy,' or 'Long distance requires fuel'). Be reasonable—excessive counter-offers may lead to rejections."
+            },
+            {
+                question: "What should I do if the pickup address is wrong or unclear?",
+                answer: "Use the in-app chat or call button to contact the sender immediately for clarification. If you cannot locate the sender after reasonable attempts (10-15 minutes), you can cancel the delivery with proof (screenshots, call logs). You'll receive partial compensation for your time, and the sender will be flagged for providing incorrect information."
+            },
+            {
+                question: "How do I confirm successful delivery?",
+                answer: "Upon arrival at the drop-off location: (1) Request the 6-digit OTP code from the recipient, (2) Enter the OTP in your app, (3) Take a clear photo of the recipient with the package, (4) Submit the delivery confirmation. Only after completing all steps are your earnings released from escrow."
+            },
+            {
+                question: "What if the recipient refuses to accept the package?",
+                answer: "If the recipient refuses delivery, document the situation with photos/videos and contact support immediately through the app. Do not abandon the package. You may need to return it to the sender (you'll be compensated for the return trip) or deliver it to a platform-authorized holding location. Follow support team instructions carefully."
+            },
+            {
+                question: "Can I make multiple deliveries at once?",
+                answer: "Yes, if you have the capacity! You can accept multiple delivery requests going in the same direction to maximize earnings and efficiency. The app provides optimized routing to help you complete multiple deliveries quickly. Ensure you can safely handle multiple packages without damage."
+            },
+            {
+                question: "What happens if I get into an accident during delivery?",
+                answer: "Your safety is priority. If involved in an accident: (1) Ensure everyone's safety and call emergency services if needed, (2) Document the scene with photos, (3) Notify our platform support immediately via the emergency button, (4) File a police report if required, (5) Submit your insurance claim. The platform will assist with the process and pause your account temporarily until resolved."
+            }
+        ]
     },
-    {
-        id: 'scheduled',
-        title: 'Schedule',
-        subtitle: 'Pick a time',
-        icon: 'time',
-        color: ['#667eea', '#764ba2']
+    'Safety & Security': {
+        icon: 'shield',
+        color: '#EF4444',
+        questions: [
+            {
+                question: "How does the platform ensure my safety as a driver?",
+                answer: "We implement multiple safety measures: (1) All senders undergo KYC verification (NIN/BVN), (2) Real-time GPS tracking for emergency response, (3) In-app emergency button directly connected to security team, (4) Payment held in escrow (no cash handling reduces robbery risk), (5) Sender ratings and history visible before acceptance, (6) 24/7 security support hotline."
+            },
+            {
+                question: "What should I do if I feel unsafe during a delivery?",
+                answer: "Trust your instincts. If you feel unsafe: (1) Press the in-app emergency button immediately to alert our security team and share your live location with authorities, (2) Cancel the delivery and leave the area, (3) Contact our emergency hotline, (4) File a detailed incident report. You will not be penalized for safety-related cancellations, and the sender will be investigated."
+            },
+            {
+                question: "Are there restricted or prohibited items I should refuse?",
+                answer: "Yes, you must refuse: illegal drugs/substances, weapons and ammunition, hazardous/flammable materials, live animals (unless pre-approved pet transport), perishable food without proper packaging, items exceeding platform weight limits, suspicious packages without proper description. Accepting prohibited items violates platform policy and Nigerian law, leading to immediate account suspension and legal consequences."
+            },
+            {
+                question: "How is my personal information protected?",
+                answer: "Your data is protected by: AES-256 encryption for all sensitive information, Compliance with Nigeria Data Protection Regulation (NDPR), Limited data sharing (senders only see your first name and vehicle type), Secure payment processing through certified gateways, No selling of driver data to third parties. Only your driver ID, ratings, and vehicle type are visible to customers."
+            },
+            {
+                question: "What happens if a sender makes false accusations against me?",
+                answer: "All deliveries have digital proof (GPS logs, photos, OTP confirmations, timestamps). If accused falsely: (1) The platform investigates using delivery evidence, (2) Your earnings remain protected in escrow until resolution, (3) False accusers face penalties including account suspension and blacklisting, (4) You can submit counter-evidence and testimonials. Our system favors drivers with strong proof and good ratings."
+            },
+            {
+                question: "Can I see a sender's rating and history before accepting?",
+                answer: "Yes! Before accepting any request, you can view: sender's overall rating (1-5 stars), number of completed deliveries, cancellation rate, and recent reviews from other drivers. This helps you make informed decisions and avoid problematic senders."
+            }
+        ]
     },
-    {
-        id: 'recurring',
-        title: 'Recurring',
-        subtitle: 'Regular deliveries',
-        icon: 'repeat',
-        color: ['#2ecc71', '#27ae60']
-    }
-];
-
-export const ORDER_STEPS = [
-    {id: 'type', title: 'Type', icon: 'package'},
-    {id: 'locations', title: 'Locations', icon: 'map-pin'},
-    {id: 'vehicle', title: 'Vehicle', icon: 'truck'},
-    {id: 'review', title: 'Review', icon: 'check-circle'},
-    {id: 'payment', title: 'Payment', icon: 'credit-card'},
-]
-
-export const PACKAGE_CATEGORIES = [
-    {id: 'document', title: 'Documents', icon: 'document-text', color: '#3b82f6'},
-    {id: 'parcel', title: 'Parcel', icon: 'cube', color: '#8b5cf6'},
-    {id: 'food', title: 'Food', icon: 'restaurant', color: '#f59e0b'},
-    {id: 'mobilePhone', title: 'Mobile Phone', icon: 'phone-portrait', color: '#10b981'},
-    {id: 'laptop', title: 'Laptop', icon: 'laptop', color: '#063970'},
-    {id: 'cake', title: 'Cake', icon: 'pie-chart', color: '#ec4899'},
-    {id: 'clothing', title: 'Clothing', icon: 'shirt', color: '#f472b6'},
-    {id: 'furniture', title: 'Furniture', icon: 'bed', color: '#f97316'},
-    {id: 'electronics', title: 'Electronics', icon: 'hardware-chip', color: '#22713F'},
-    {id: 'jewelry', title: 'Jewelry', icon: 'diamond', color: '#682271'},
-    {id: 'gifts', title: 'Gifts', icon: 'gift', color: '#f43f5e'},
-    {id: 'books', title: 'Books', icon: 'book', color: '#8b5cf6'},
-    {id: 'fragile', title: 'Fragile', icon: 'warning', color: '#ef4444'},
-    {id: 'medicine', title: 'Medicine', icon: 'medical', color: '#10b981'},
-    {id: 'others', title: 'Others', icon: 'ellipsis-horizontal', color: '#9ca3af'}
-];
-
-
-/**
- * Calculate estimated pricing for an order
- * @param {Object} orderData - The order data object
- * @returns {Promise<Object>} - Pricing information
- */
-export const calculateOrderPricing = async (orderData) => {
-    try {
-        // Extract relevant data for pricing calculation
-        const {pickup, dropoff, package: packageData, vehicleRequirements, orderType} = orderData;
-
-        // Calculate distance (you might want to use a proper distance calculation service)
-        const distance = calculateDistance(
-            pickup.coordinates.lat,
-            pickup.coordinates.lng,
-            dropoff.coordinates.lat,
-            dropoff.coordinates.lng
-        );
-
-        // Base pricing logic
-        let basePrice = 500; // Base price in your currency
-        let distancePrice = distance * 50; // Price per km
-        let vehicleMultiplier = getVehicleMultiplier(vehicleRequirements);
-        let packageMultiplier = getPackageMultiplier(packageData);
-        let urgencyMultiplier = orderType === 'instant' ? 1.2 : 1.0;
-
-        // Calculate total
-        const subtotal = (basePrice + distancePrice) * vehicleMultiplier * packageMultiplier * urgencyMultiplier;
-        const tax = subtotal * 0.075; // 7.5% tax
-        const total = subtotal + tax;
-
-        return {
-            basePrice,
-            distancePrice,
-            distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
-            vehicleMultiplier,
-            packageMultiplier,
-            urgencyMultiplier,
-            subtotal: Math.round(subtotal),
-            tax: Math.round(tax),
-            total: Math.round(total),
-            currency: 'NGN',
-            breakdown: [
-                {label: 'Base Price', amount: basePrice},
-                {label: `Distance (${Math.round(distance * 100) / 100}km)`, amount: Math.round(distancePrice)},
-                {label: 'Vehicle Type', amount: Math.round((basePrice + distancePrice) * (vehicleMultiplier - 1))},
-                {
-                    label: 'Package Type',
-                    amount: Math.round((basePrice + distancePrice) * vehicleMultiplier * (packageMultiplier - 1))
-                },
-                {
-                    label: 'Urgency Fee',
-                    amount: Math.round((basePrice + distancePrice) * vehicleMultiplier * packageMultiplier * (urgencyMultiplier - 1))
-                },
-                {label: 'Tax (7.5%)', amount: Math.round(tax)}
-            ]
-        };
-    } catch (error) {
-        console.error('Pricing calculation error:', error);
-        throw new Error('Unable to calculate pricing at this time');
+    'Account & Ratings': {
+        icon: 'star-rate',
+        iconFamily: 'MaterialIcons',
+        color: '#8B5CF6',
+        questions: [
+            {
+                question: "How does the driver rating system work?",
+                answer: "After each delivery, senders rate you on a 5-star scale. Your overall rating is the average of all ratings received. Ratings are based on: Timeliness (on-time delivery), Professionalism (communication and behavior), Package handling (condition on delivery), Overall experience. Your rating is prominently displayed and affects your priority for high-value deliveries."
+            },
+            {
+                question: "What happens if my rating drops below a certain threshold?",
+                answer: "Maintaining a good rating (4.0+) is crucial. If your rating falls below 3.5: (1) You'll receive fewer delivery offers, (2) You'll be placed on a 'Performance Improvement' plan with mandatory training, (3) Ratings below 3.0 may lead to temporary suspension, (4) Consistent low ratings (below 3.0 for 30 days) result in permanent deactivation. You'll receive warnings before any action."
+            },
+            {
+                question: "Can I dispute an unfair rating?",
+                answer: "Yes, you can dispute ratings within 48 hours of receipt. Provide evidence (photos, chat logs, GPS data) supporting your case. Our review team investigates and may remove ratings proven to be unjust or retaliatory. However, only ratings with clear evidence of abuse are removed—subjective poor service ratings stand."
+            },
+            {
+                question: "How can I improve my driver rating?",
+                answer: "Tips for better ratings: (1) Always communicate promptly with senders, (2) Arrive on time (or notify if delayed), (3) Handle packages with visible care, (4) Be professional and courteous, (5) Keep your vehicle clean, (6) Follow delivery instructions exactly, (7) Go the extra mile (help elderly recipients, deliver to door instead of gate). Small gestures create excellent experiences."
+            },
+            {
+                question: "What are driver tiers and how do I advance?",
+                answer: "We have three driver tiers: Bronze (0-100 deliveries), Silver (100-500 deliveries, 4.5+ rating), Gold (500+ deliveries, 4.8+ rating). Benefits increase per tier: lower commission rates, priority access to high-value deliveries, exclusive bonuses, faster payouts, dedicated support. Maintain excellent ratings and complete deliveries consistently to advance."
+            },
+            {
+                question: "Can I update my profile or vehicle information?",
+                answer: "Yes, update your profile anytime through the app. For basic info (phone, photo), changes are instant. For sensitive updates (vehicle change, license renewal, insurance update), you'll need to re-submit documents for verification. Keep your information current to avoid account suspension."
+            }
+        ]
+    },
+    'Issues & Support': {
+        icon: 'alert-circle',
+        color: '#EC4899',
+        questions: [
+            {
+                question: "What should I do if the app crashes or malfunctions?",
+                answer: "First, try these steps: (1) Force close and restart the app, (2) Check your internet connection, (3) Clear app cache in device settings, (4) Update to the latest app version, (5) Restart your phone. If issues persist, contact tech support with your device model and error screenshots. For active deliveries, call our emergency hotline immediately."
+            },
+            {
+                question: "How do I report a problem with a delivery?",
+                answer: "Report issues immediately: (1) Tap 'Report Issue' button in the active delivery screen, (2) Select issue type (wrong address, package mismatch, recipient unavailable, accident/incident, safety concern), (3) Provide detailed description and photos, (4) Submit report. Support team responds within 15-30 minutes for urgent issues."
+            },
+            {
+                question: "What if a sender doesn't provide the OTP code?",
+                answer: "The OTP is mandatory for delivery completion. If the recipient refuses or cannot provide it: (1) Politely explain it's required for confirmation, (2) Contact the sender via in-app chat/call for assistance, (3) If unresolved after 10 minutes, contact support with photo proof of delivery attempt. Support will manually verify and release your payment. Do not leave packages without OTP confirmation."
+            },
+            {
+                question: "How quickly does customer support respond?",
+                answer: "Response times vary by urgency: Emergency issues (safety, accidents): Immediate response via emergency hotline (24/7), Active delivery problems: 15-30 minutes via in-app chat, Payment/earnings inquiries: 2-4 hours during business hours (8am-8pm), General questions: 24-48 hours via email. Use the appropriate channel for faster resolution."
+            },
+            {
+                question: "What happens if I lose or damage a package?",
+                answer: "If a package is lost or damaged: (1) Report immediately through the app with full details, (2) Document the situation with photos/videos, (3) Cooperate fully with investigation, (4) Your earnings for that delivery will be withheld, (5) You may be required to compensate the sender based on declared value, (6) Insurance may cover some losses if applicable. Repeated incidents lead to account suspension."
+            },
+            {
+                question: "Can I contact the sender directly outside the app?",
+                answer: "No, all communication should happen through the in-app chat or call features. This protects both parties' privacy and provides recorded evidence for dispute resolution. Sharing personal contact information or conducting business outside the platform violates our terms and can lead to account suspension."
+            },
+            {
+                question: "How do I appeal an account suspension?",
+                answer: "If your account is suspended: (1) You'll receive an email detailing the reason, (2) Review the violation and gather supporting evidence, (3) Submit an appeal through the support portal within 7 days, (4) Provide comprehensive explanation and proof, (5) Appeals are reviewed within 5-10 business days. Decisions on serious violations (fraud, safety issues) are typically final."
+            }
+        ]
+    },
+    'Policies & Compliance': {
+        icon: 'help-circle',
+        color: '#6366F1',
+        questions: [
+            {
+                question: "What happens if I violate platform policies?",
+                answer: "Violations are treated seriously: Minor violations (late deliveries, poor communication): Warnings and rating penalties, Moderate violations (excessive cancellations, customer complaints): Temporary suspension (3-14 days), Severe violations (fraud, theft, prohibited items, fake identity): Permanent ban and legal reporting to EFCC/Nigerian Police. Your offense history is tracked, and repeat violations escalate penalties."
+            },
+            {
+                question: "Am I required to have vehicle insurance?",
+                answer: "Yes, valid vehicle insurance is mandatory and must be maintained at all times. You need either Third-Party or Comprehensive insurance coverage. Upload proof during registration and update whenever renewed. Driving without valid insurance violates platform policy and Nigerian law, resulting in immediate account suspension."
+            },
+            {
+                question: "Do I need to pay taxes on my earnings?",
+                answer: "Yes, as an independent contractor, you're responsible for declaring your income and paying applicable taxes to FIRS. The platform provides monthly earnings statements to help with tax filing. We recommend consulting a tax professional. We may be required to report high-earning drivers to tax authorities under Nigerian law."
+            },
+            {
+                question: "Can I refer other drivers and earn bonuses?",
+                answer: "Yes! Our referral program rewards you for bringing quality drivers to the platform. Share your unique referral code. When your referral completes their first 20 deliveries with a 4.0+ rating, you earn ₦2,000 bonus. There's no limit to referral earnings—the more qualified drivers you bring, the more you earn!"
+            },
+            {
+                question: "What is the platform's cancellation policy?",
+                answer: "Cancellations before accepting a request: No penalty. Cancellations after acceptance but before pickup: Tracked in your stats; frequent cancellations reduce your acceptance rate. Cancellations after pickup: Only allowed for valid reasons (safety concerns, wrong package, recipient unavailable). Unjustified cancellations after pickup incur penalties (₦500-₦1,000 deduction) and affect your ratings."
+            },
+            {
+                question: "How long does my account stay active if I'm inactive?",
+                answer: "Accounts remain active for 6 months of inactivity. After that, you'll receive an email notification. If you don't log in within 30 days of the notice, your account is deactivated (not deleted). To reactivate, log back in and update any expired documents (license, insurance, etc.). Extended inactivity may require re-verification."
+            },
+            {
+                question: "Can I delete my driver account permanently?",
+                answer: "Yes, you can request account deletion through app settings. Note: Account deletion is permanent and irreversible, pending earnings will be paid out first, all data will be deleted within 30 days per NDPR compliance, you cannot re-register with the same phone number/NIN for 90 days. Consider temporary deactivation instead if you might return."
+            }
+        ]
+    },
+    'Technical & App': {
+        icon: 'smartphone',
+        iconFamily: 'MaterialIcons',
+        color: '#14B8A6',
+        questions: [
+            {
+                question: "What phone requirements do I need to use the app?",
+                answer: "Minimum requirements: Android 8.0+ or iOS 12+, At least 2GB RAM for smooth performance, GPS capability (mandatory for tracking), Stable internet connection (3G minimum, 4G recommended), Minimum 100MB free storage space. The app works best with newer devices and reliable data plans."
+            },
+            {
+                question: "How does GPS tracking work and why is it required?",
+                answer: "GPS tracking is mandatory for: Safety (emergency response and driver location), Delivery proof (confirms you reached pickup/drop-off locations), Route optimization (helps you navigate efficiently), Customer transparency (senders track delivery progress). GPS must remain on during active deliveries. Turning it off may result in penalties and lost earnings."
+            },
+            {
+                question: "Does the app drain my phone battery quickly?",
+                answer: "The app is optimized for battery efficiency, but GPS tracking does consume power. Tips to manage battery: Keep your phone charged while driving (use car charger), Close unnecessary background apps, Lower screen brightness, Enable battery saver mode when not on an active delivery, Consider carrying a power bank for long shifts."
+            },
+            {
+                question: "How do I update the driver app?",
+                answer: "Updates are released regularly for improvements and bug fixes. Enable automatic updates in your app store (Google Play/Apple App Store) for seamless updates. You'll receive in-app notifications when updates are available. Critical updates may be mandatory—failure to update may temporarily restrict access until you upgrade."
+            },
+            {
+                question: "What should I do if I experience network connectivity issues?",
+                answer: "If you lose connection during a delivery: (1) The app saves your progress locally, (2) Continue to the destination if directions are already loaded, (3) Complete the delivery when connection resumes, (4) Contact support if offline for extended periods. For persistent connectivity issues, consider switching mobile data providers or checking your device settings."
+            }
+        ]
     }
 };
-
-/**
- * Calculate distance between two coordinates using Haversine formula
- * @param {number} lat1 - Latitude of first point
- * @param {number} lon1 - Longitude of first point
- * @param {number} lat2 - Latitude of second point
- * @param {number} lon2 - Longitude of second point
- * @returns {number} - Distance in kilometers
- */
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-};
-
-const toRad = (deg) => {
-    return deg * (Math.PI / 180);
-};
-
-/**
- * Get pricing multiplier based on vehicle requirements
- * @param {Array} vehicleRequirements - Array of required vehicle types
- * @returns {number} - Multiplier value
- */
-const getVehicleMultiplier = (vehicleRequirements) => {
-    if (!vehicleRequirements || vehicleRequirements.length === 0) return 1.0;
-
-    const multipliers = {
-        bicycle: 0.8,
-        motorcycle: 1.0,
-        tricycle: 1.2,
-        van: 1.5,
-        truck: 2.0,
-        pickup: 1.8
-    };
-
-    // Use the highest multiplier if multiple vehicles are selected
-    return Math.max(...vehicleRequirements.map(vehicle => multipliers[vehicle] || 1.0));
-};
-
-/**
- * Get pricing multiplier based on package characteristics
- * @param {Object} packageData - Package information
- * @returns {number} - Multiplier value
- */
-const getPackageMultiplier = (packageData) => {
-    let multiplier = 1.0;
-
-    // Size-based multiplier
-    if (packageData.weight?.value > 20) multiplier *= 1.3;
-    if (packageData.dimensions?.length > 100 || packageData.dimensions?.width > 100) multiplier *= 1.2;
-
-    // Special handling
-    if (packageData.isFragile) multiplier *= 1.15;
-    if (packageData.requiresSpecialHandling) multiplier *= 1.25;
-    if (packageData.temperature?.controlled) multiplier *= 1.4;
-
-    // High-value items
-    if (packageData.value > 100000) multiplier *= 1.1; // For items over 100k
-
-    return multiplier;
-};
-
-/**
- * Get device IP address
- * @returns {Promise<string>} - Device IP address
- */
-export const getDeviceIP = async () => {
-    try {
-        const networkState = await Network.getNetworkStateAsync();
-        return networkState.details?.ipAddress || 'unknown';
-    } catch (error) {
-        console.error('Error getting device IP:', error);
-        return 'unknown';
-    }
-};
-
-/**
- * Get device information
- * @returns {Promise<string>} - Device user agent string
- */
-export const getDeviceInfo = async () => {
-    try {
-        const deviceInfo = {
-            brand: Device.brand,
-            manufacturer: Device.manufacturer,
-            modelName: Device.modelName,
-            osName: Device.osName,
-            osVersion: Device.osVersion,
-            platformApiLevel: Device.platformApiLevel,
-            deviceType: Device.deviceType
-        };
-
-        return `${deviceInfo.manufacturer} ${deviceInfo.modelName} (${deviceInfo.osName} ${deviceInfo.osVersion})`;
-    } catch (error) {
-        console.error('Error getting device info:', error);
-        return 'unknown';
-    }
-};
-
-/**
- * Validate phone number format
- * @param {string} phone - Phone number to validate
- * @returns {boolean} - Whether the phone number is valid
- */
-const isValidPhoneNumber = (phone) => {
-    // Basic Nigerian phone number validation
-    const phoneRegex = /^(\+234|234|0)?[789][01]\d{8}$/;
-    return phoneRegex.test(phone.replace(/\s+/g, ''));
-};
-
-/**
- * Format currency amount
- * @param {number} amount - Amount to format
- * @param {string} currency - Currency code (default: NGN)
- * @returns {string} - Formatted currency string
- */
-export const formatCurrency = (amount, currency = 'NGN') => {
-    if (typeof amount !== 'number') return '₦0.00';
-
-    const formatter = new Intl.NumberFormat('en-NG', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
-
-    return formatter.format(amount);
-};
-
-/**
- * Generate a unique order reference
- * @returns {string} - Order reference
- */
-export const generateOrderRef = () => {
-    const prefix = 'ORD';
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substr(2, 4).toUpperCase();
-    return `${prefix}-${timestamp}-${random}`;
-};
-
-/**
- * Generate a delivery token
- * @returns {string} - Delivery token
- */
-export const generateDeliveryToken = () => {
-    return Math.random().toString(36).substr(2, 8).toUpperCase();
-};
-
-export const timeAgo = (date) => {
-    const now = new Date();
-    const diff = now - new Date(date);
-    const seconds = Math.floor(diff / 1000);
-
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days === 1) return `Yesterday`;
-    return `${days}d ago`;
-}
-
-// Vehicle selection constants
-/**
- * Some constant criterion for delivery options
- */
-// utils/vehicleRules.js
-export const VEHICLE_PROFILES = {
-    bicycle: {
-        maxWeightKg: 10,
-        maxVolumeL: 40,
-        maxDistanceKm: 12,
-        fragileOk: false,
-        speedTier: 1,
-        costTier: 1,
-        stability: 1,
-        foodOk: true
-    },
-    motorcycle: {
-        maxWeightKg: 25,
-        maxVolumeL: 100,
-        maxDistanceKm: 75,
-        fragileOk: 'limited',
-        speedTier: 3,
-        costTier: 2,
-        stability: 2,
-        foodOk: true
-    },
-    tricycle: {
-        maxWeightKg: 80,
-        maxVolumeL: 300,
-        maxDistanceKm: 75,
-        fragileOk: true,
-        speedTier: 2,
-        costTier: 3,
-        stability: 3,
-        foodOk: true
-    },
-    car: {
-        maxWeightKg: 200,
-        maxVolumeL: 600,
-        maxDistanceKm: 500,
-        fragileOk: true,
-        speedTier: 3,
-        costTier: 4,
-        stability: 4,
-        foodOk: true
-    },
-    van: {
-        maxWeightKg: 800,
-        maxVolumeL: 2500,
-        maxDistanceKm: 500,
-        fragileOk: true,
-        speedTier: 2,
-        costTier: 5,
-        stability: 5,
-        foodOk: true
-    },
-    truck: {
-        maxWeightKg: 3000,
-        maxVolumeL: 10000,
-        maxDistanceKm: 500,
-        fragileOk: true,
-        speedTier: 1,
-        costTier: 6,
-        stability: 6,
-        foodOk: false
-    },
-};
-
-export const CATEGORY_HINTS = {
-    food: {prefer: ['bicycle', 'motorcycle', 'tricycle', 'car'], avoid: ['truck', 'van']},
-    document: {prefer: ['bicycle', 'motorcycle', 'tricycle', 'car'], avoid: []},
-    fragile: {prefer: ['car', 'van'], avoid: ['bicycle']},
-    electronics: {prefer: ['motorcycle', 'tricycle', 'car', 'van'], avoid: ['bicycle']},
-    furniture: {prefer: ['van', 'truck'], avoid: ['bicycle', 'motorcycle']},
-    medicine: {prefer: ['motorcycle', 'car'], avoid: []},
-    parcel: {prefer: ['motorcycle', 'car'], avoid: []},
-    clothing: {prefer: ['motorcycle', 'car'], avoid: []},
-    jewelry: {prefer: ['motorcycle', 'car', 'van'], avoid: ['bicycle']},
-    gifts: {prefer: ['motorcycle', 'car'], avoid: []},
-    others: {prefer: [], avoid: []},
-};
-
-export function haversineKm([lng1, lat1], [lng2, lat2]) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) ** 2;
-    return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
-
-export function volumeLiters(dimensions) {
-    if (!dimensions) return 0;
-    const {length = 0, width = 0, height = 0, unit = 'cm'} = dimensions;
-    const toCm = unit === 'inch' ? 2.54 : 1;
-    const cm3 = (length * toCm) * (width * toCm) * (height * toCm);
-    return cm3 / 1000; // L
-};
-
-export const ALL_TYPES = ['bicycle', 'motorcycle', 'tricycle', 'car', 'van', 'truck'];

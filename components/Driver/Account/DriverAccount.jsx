@@ -33,6 +33,14 @@ function DriverAccount ({ userData }) {
         router.push(ROUTES.UTILITY);
     }
 
+    const goToSupport = () => {
+        router.push(ROUTES.SUPPORT);
+    }
+
+    const goToPolicy = () => {
+        router.push(ROUTES.POLICY);
+    }
+
 
     const handleLogout = async () => {
         try {
@@ -188,7 +196,16 @@ function DriverAccount ({ userData }) {
                         icon: 'lock-closed-outline',
                         iconType: 'Ionicons',
                         title: 'Privacy Policy',
-                        hasChevron: true
+                        hasChevron: true,
+                        onPress: () => goToPolicy(),
+                    })}
+
+                    {renderMenuItem({
+                        icon: 'support-agent',
+                        iconType: 'MaterialIcons',
+                        title: 'Support',
+                        hasChevron: true,
+                        onPress: () => goToSupport(),
                     })}
 
                     {renderMenuItem({

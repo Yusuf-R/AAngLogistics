@@ -10,17 +10,17 @@ import {
 } from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 
-import Logo from '../../../../../assets/svg/AAng.svg';
-import {useSessionStore} from "../../../../../store/useSessionStore";
-import StatusModal from "../../../../StatusModal/StatusModal";
+import Logo from '../../../../assets/svg/AAng.svg';
+import {useSessionStore} from "../../../../store/useSessionStore";
+import StatusModal from "../../../StatusModal/StatusModal";
 import {useMutation} from "@tanstack/react-query";
-import ClientUtils from "../../../../../utils/ClientUtilities";
+import DriverUtils from "../../../../utils/DriverUtilities";
 import {router} from "expo-router";
-import SessionManager from "../../../../../lib/SessionManager";
-import SecureStorage from "../../../../../lib/SecureStorage";
-import { sections } from "../../../../../utils/Constant"
+import SessionManager from "../../../../lib/SessionManager";
+import { tcs } from "../../../../utils/Driver/Constants";
+import CustomHeader from "../../../CustomHeader"; // Updated import
 
-const TermsAndConditions = () => {
+const TermsConditions = () => {
     const userData = useSessionStore((state) => state.user);
     const [expandedSections, setExpandedSections] = useState({});
     const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -28,11 +28,11 @@ const TermsAndConditions = () => {
     // Status Modal
     const [modalVisible, setModalVisible] = useState(false);
     const [modalStatus, setModalStatus] = useState('loading');
-    const [modalMessage, setModalMessage] = useState('Accepting TCs...');
+    const [modalMessage, setModalMessage] = useState('Accepting Terms...');
 
     const mutation = useMutation({
         mutationKey: ['AcceptTCs'],
-        mutationFn: ClientUtils.AcceptTCs,
+        mutationFn: DriverUtils.TermsConditions,
     });
 
     const toggleSection = (sectionId) => {
@@ -42,19 +42,18 @@ const TermsAndConditions = () => {
         }));
     };
 
-
-
     const handleAcceptTerms = () => {
         setAcceptedTerms(!acceptedTerms);
     };
 
     const handleProceed = async () => {
         if (!acceptedTerms) {
-            // Navigate to next screen or perform action
-            return null
+            return null;
         }
 
         setModalVisible(true);
+        setModalStatus('loading');
+        setModalMessage('Accepting Terms and Conditions...');
 
         const payload = {
             acceptedTcs: acceptedTerms
@@ -63,21 +62,19 @@ const TermsAndConditions = () => {
         mutation.mutate(payload, {
             onSuccess: async (respData) => {
                 setModalStatus('success');
-                setModalMessage('Terms and Conditions Accepted! 🤝');
+                setModalMessage('Terms Accepted Successfully! 🎉');
 
                 const {user} = respData;
-
                 await SessionManager.updateUser(user);
 
                 setTimeout(() => {
-                    setModalStatus('success');
-                    setModalMessage('Terms and Conditions Accepted! 🤝');
+                    setModalVisible(false);
+                    // Navigate to driver dashboard after successful acceptance
+                    router.replace('/driver/dashboard');
                 }, 2000);
-
-                setModalVisible(false);
             },
             onError: (error) => {
-                let errorMessage = 'Failed to send reset instructions ⚠️';
+                let errorMessage = 'Failed to accept terms. Please try again. ⚠️';
                 if (error.message === "Network error") {
                     errorMessage = 'No internet connection 🔌';
                 } else {
@@ -105,22 +102,31 @@ const TermsAndConditions = () => {
             );
         }
         return (
-            <Text style={styles.sectionContent}>{section.content}</Text>
+            <>
+                <Text style={styles.sectionContent}>{section.content}</Text>
+                {section.body && (
+                    <Text style={styles.sectionContentBody}>{section.body}</Text>
+                )}
+            </>
         );
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <>
+            <CustomHeader
+                title="Terms & Conditions"
+                onBackPress={() => router.back()}
+            />
+            <SafeAreaView style={styles.container}>
 
             {/* Company Info Banner */}
             <View style={styles.companyBanner}>
                 <View style={styles.companyInfo}>
                     <Text style={styles.companyName}>AAng Logistics</Text>
+                    <Text style={styles.driverTitle}>Driver Terms & Conditions</Text>
                     <Text style={styles.lastUpdated}>Last Updated: May 04, 2025</Text>
                 </View>
                 <Logo width={70} height={70}/>
-
-                {/*<Ionicons name="business-outline" size={40} color="#2C5AA0" />*/}
             </View>
 
             <ScrollView
@@ -129,21 +135,34 @@ const TermsAndConditions = () => {
                 contentContainerStyle={{flexGrow: 1}}
                 keyboardShouldPersistTaps="handled"
             >
-                {/* Introduction */}
+                {/* Driver-Specific Introduction */}
                 <View style={styles.introSection}>
-                    <Text style={styles.introTitle}>Welcome to AANG Logistics</Text>
+                    <View style={styles.driverBadge}>
+                        <Ionicons name="car-sport" size={20} color="#FFFFFF"/>
+                        <Text style={styles.driverBadgeText}>Driver Portal</Text>
+                    </View>
+                    <Text style={styles.introTitle}>Welcome to AANG Logistics Driver Platform</Text>
                     <Text style={styles.introText}>
-                        These Terms and Conditions govern your use of our logistics services.
-                        Please read them carefully before using our services.
+                        These Terms and Conditions govern your relationship with AANG Logistics as an independent
+                        contractor.
+                        Please read them carefully as they outline your rights, responsibilities, and the platform's
+                        policies.
                     </Text>
+                    <View style={styles.importantNote}>
+                        <Ionicons name="warning" size={16} color="#D97706"/>
+                        <Text style={styles.importantNoteText}>
+                            Important: You are an independent contractor, not an employee
+                        </Text>
+                    </View>
                 </View>
 
-                {/* Sections */}
-                {sections.map((section, index) => (
+                {/* Driver-Specific Sections */}
+                {tcs.map((section, index) => (
                     <View key={section.id} style={styles.sectionContainer}>
                         <TouchableOpacity
                             style={styles.sectionHeader}
                             onPress={() => toggleSection(section.id)}
+                            activeOpacity={0.7}
                         >
                             <View style={styles.sectionHeaderLeft}>
                                 <View style={styles.sectionNumber}>
@@ -169,70 +188,72 @@ const TermsAndConditions = () => {
                     </View>
                 ))}
 
-                {/* Contact Information */}
+                {/* Driver-Specific Contact Information */}
                 <View style={styles.contactSection}>
-                    <Text style={styles.contactTitle}>Contact Information</Text>
-                    <Text style={styles.contactText}>For questions or concerns, contact us:</Text>
+                    <Text style={styles.contactTitle}>Driver Support & Contact</Text>
+                    <Text style={styles.contactText}>
+                        For driver-specific questions, support, or concerns about these terms:
+                    </Text>
 
                     <View style={styles.contactItem}>
-                        <Ionicons name="business-outline" size={20} color="#2C5AA0"/>
-                        <Text style={styles.contactItemText}>AANG Logistics</Text>
+                        <Ionicons name="headset" size={20} color="#2C5AA0"/>
+                        <Text style={styles.contactItemText}>Driver Support Hotline: +234 (0) 9 123 4567</Text>
                     </View>
 
                     <View style={styles.contactItem}>
-                        <Ionicons name="location-outline" size={20} color="#2C5AA0"/>
+                        <Ionicons name="mail" size={20} color="#2C5AA0"/>
+                        <Text style={styles.contactItemText}>drivers@aanglogistics.com</Text>
+                    </View>
+
+                    <View style={styles.contactItem}>
+                        <Ionicons name="time" size={20} color="#2C5AA0"/>
+                        <Text style={styles.contactItemText}>Support Hours: 24/7 for emergencies</Text>
+                    </View>
+
+                    <View style={styles.contactItem}>
+                        <Ionicons name="business" size={20} color="#2C5AA0"/>
                         <Text style={styles.contactItemText}>Plot 123, Central Business District, Abuja, FCT,
                             Nigeria</Text>
-                    </View>
-
-                    <View style={styles.contactItem}>
-                        <Ionicons name="call-outline" size={20} color="#2C5AA0"/>
-                        <Text style={styles.contactItemText}>+234 (0) 9 123 4567</Text>
-                    </View>
-
-                    <View style={styles.contactItem}>
-                        <Ionicons name="mail-outline" size={20} color="#2C5AA0"/>
-                        <Text style={styles.contactItemText}>support@aanglogistics.com</Text>
-                    </View>
-
-                    <View style={styles.contactItem}>
-                        <Ionicons name="globe-outline" size={20} color="#2C5AA0"/>
-                        <Text style={styles.contactItemText}>www.aanglogistics.com</Text>
                     </View>
                 </View>
 
                 <View style={styles.bottomSpacing}/>
             </ScrollView>
 
-            {/* Accept Terms Footer */}
-            {!userData.tcs.isAccepted && (
-                <>
-                    <View style={styles.footer}>
-                        <TouchableOpacity
-                            style={styles.checkboxContainer}
-                            onPress={handleAcceptTerms}
-                        >
-                            <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
-                                {acceptedTerms && (
-                                    <Ionicons name="checkmark" size={16} color="#FFFFFF"/>
-                                )}
-                            </View>
-                            <Text style={styles.checkboxText}>
-                                I have read and agree to the Terms and Conditions
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.proceedButton, acceptedTerms && styles.proceedButtonActive]}
-                            onPress={handleProceed}
-                            disabled={!acceptedTerms}
-                        >
-                            <Text style={[styles.proceedButtonText, acceptedTerms && styles.proceedButtonTextActive]}>
-                                Accept
-                            </Text>
-                        </TouchableOpacity>
+            {/* Accept Terms Footer - Only show if TCs not accepted */}
+            {!userData?.tcs?.isAccepted && (
+                <View style={styles.footer}>
+                    <View style={styles.termsSummary}>
+                        <Ionicons name="information-circle" size={20} color="#2C5AA0"/>
+                        <Text style={styles.termsSummaryText}>
+                            By accepting, you acknowledge you've read and understood all {tcs.length} sections
+                        </Text>
                     </View>
-                </>
+
+                    <TouchableOpacity
+                        style={styles.checkboxContainer}
+                        onPress={handleAcceptTerms}
+                    >
+                        <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+                            {acceptedTerms && (
+                                <Ionicons name="checkmark" size={16} color="#FFFFFF"/>
+                            )}
+                        </View>
+                        <Text style={styles.checkboxText}>
+                            I have read and agree to the Driver Terms and Conditions
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.proceedButton, acceptedTerms && styles.proceedButtonActive]}
+                        onPress={handleProceed}
+                        disabled={!acceptedTerms}
+                    >
+                        <Text style={[styles.proceedButtonText, acceptedTerms && styles.proceedButtonTextActive]}>
+                            Accept & Continue Driving
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             )}
 
             <StatusModal
@@ -240,8 +261,10 @@ const TermsAndConditions = () => {
                 status={modalStatus}
                 message={modalMessage}
                 onClose={() => setModalVisible(false)}
+                onRetry={modalStatus === 'error' ? handleProceed : undefined}
             />
         </SafeAreaView>
+        </>
     );
 };
 
@@ -249,36 +272,8 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',
-    },
-    logo: {
-        width: 90,
-        height: 90,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E2E8F0',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 1},
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-    },
-    backButton: {
-        padding: 5,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#1E293B',
-    },
-    placeholder: {
-        width: 34,
+        paddingVertical: 8,
+        paddingHorizontal: 8,
     },
     companyBanner: {
         flexDirection: 'row',
@@ -290,18 +285,29 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
     },
     companyInfo: {
         flex: 1,
     },
     companyName: {
         fontSize: 24,
-        fontWeight: '700',
+        fontFamily: 'PoppinsSemiBold',
         color: '#2C5AA0',
-        marginBottom: 4,
+    },
+    driverTitle: {
+        fontSize: 16,
+        fontFamily: 'PoppinsRegular',
+        fontWeight: '600',
+        color: '#475569',
     },
     lastUpdated: {
-        fontSize: 14,
+        fontSize: 12,
+        fontFamily: 'PoppinsRegular',
         color: '#64748B',
     },
     scrollView: {
@@ -311,22 +317,68 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         padding: 20,
         marginBottom: 10,
+        borderLeftWidth: 4,
+        borderLeftColor: '#2C5AA0',
+    },
+    driverBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        backgroundColor: '#2C5AA0',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        marginBottom: 12,
+    },
+    driverBadgeText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '600',
+        marginLeft: 6,
     },
     introTitle: {
         fontSize: 20,
+        fontFamily: 'PoppinsSemiBold',
         fontWeight: '600',
         color: '#1E293B',
         marginBottom: 10,
+        lineHeight: 28,
     },
     introText: {
         fontSize: 16,
+        fontFamily: 'PoppinsRegular',
         color: '#64748B',
         lineHeight: 24,
+        marginBottom: 12,
+        textAlign: 'justify'
+    },
+    importantNote: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFFBEB',
+        padding: 12,
+        borderRadius: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: '#D97706',
+    },
+    importantNoteText: {
+        fontFamily: 'PoppinsRegular',
+        fontSize: 14,
+        color: '#92400E',
+        fontWeight: '500',
+        marginLeft: 8,
+        flex: 1,
     },
     sectionContainer: {
         backgroundColor: '#FFFFFF',
-        marginBottom: 10,
+        marginBottom: 8,
         overflow: 'hidden',
+        borderRadius: 12,
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -352,6 +404,7 @@ const styles = StyleSheet.create({
     },
     sectionNumberText: {
         color: '#FFFFFF',
+        fontFamily: 'PoppinsSemiBold',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -362,18 +415,31 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 16,
+        fontFamily: 'PoppinsSemiBold',
         fontWeight: '600',
         color: '#1E293B',
         marginLeft: 10,
+        flex: 1,
     },
     sectionContentContainer: {
-        padding: 20,
-        paddingTop: 0,
+        padding: 15,
+        paddingTop: 10,
     },
     sectionContent: {
-        fontSize: 15,
+        fontSize: 14,
+        fontFamily: 'PoppinsBold',
         color: '#475569',
-        lineHeight: 24,
+        textAlign: 'justify',
+        marginBottom: 10,
+        marginTop: 10
+    },
+    sectionContentBody: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#475569',
+        lineHeight: 40,
+        fontWeight: '400',
+        textAlign: 'justify',
     },
     definitionsContainer: {
         gap: 15,
@@ -387,12 +453,16 @@ const styles = StyleSheet.create({
     },
     definitionTerm: {
         fontSize: 16,
+        fontFamily: 'PoppinsSemiBold',
         fontWeight: '600',
         color: '#2C5AA0',
+
         marginBottom: 5,
     },
     definitionText: {
         fontSize: 15,
+        textAlign: 'justify',
+        fontFamily: 'PoppinsRegular',
         color: '#475569',
         lineHeight: 22,
     },
@@ -400,17 +470,23 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         padding: 20,
         marginBottom: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
     contactTitle: {
         fontSize: 18,
+        fontFamily: 'PoppinsSemiBold',
         fontWeight: '600',
         color: '#1E293B',
         marginBottom: 10,
     },
     contactText: {
         fontSize: 15,
+        fontFamily: 'PoppinsRegular',
         color: '#64748B',
         marginBottom: 20,
+        lineHeight: 22,
     },
     contactItem: {
         flexDirection: 'row',
@@ -419,9 +495,11 @@ const styles = StyleSheet.create({
     },
     contactItemText: {
         fontSize: 15,
+        fontFamily: 'PoppinsRegular',
         color: '#475569',
         marginLeft: 15,
         flex: 1,
+        lineHeight: 22,
     },
     bottomSpacing: {
         height: 20,
@@ -436,6 +514,23 @@ const styles = StyleSheet.create({
         shadowOffset: {width: 0, height: -2},
         shadowOpacity: 0.1,
         shadowRadius: 4,
+        borderRadius: 20
+    },
+    termsSummary: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#EFF6FF',
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 15,
+    },
+    termsSummaryText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#1E40AF',
+        marginLeft: 10,
+        flex: 1,
+        lineHeight: 20,
     },
     checkboxContainer: {
         flexDirection: 'row',
@@ -457,10 +552,12 @@ const styles = StyleSheet.create({
         borderColor: '#2C5AA0',
     },
     checkboxText: {
-        fontSize: 15,
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
         color: '#475569',
         flex: 1,
         lineHeight: 22,
+        fontWeight: '500',
     },
     proceedButton: {
         backgroundColor: '#E2E8F0',
@@ -473,6 +570,7 @@ const styles = StyleSheet.create({
     },
     proceedButtonText: {
         fontSize: 16,
+        fontFamily: 'PoppinsRegular',
         fontWeight: '600',
         color: '#94A3B8',
     },
@@ -481,4 +579,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default TermsAndConditions;
+export default TermsConditions;

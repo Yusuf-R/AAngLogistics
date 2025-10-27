@@ -1,7 +1,8 @@
 import {Redirect, Stack, usePathname} from 'expo-router';
-import {useSessionStore} from "../../../../store/useSessionStore";
+import {useSessionStore} from "../../../../../store/useSessionStore";
 
-export default function DiscoverLayout() {
+
+export default function SupportLayout() {
     const userData = useSessionStore((state) => state.user);
     const isAccepted = !!userData?.tcs?.isAccepted;
 
@@ -13,20 +14,14 @@ export default function DiscoverLayout() {
     if (!isAccepted && !isAllowlisted) {
         return <Redirect href="/driver/tcs-required" />;
     }
+
     return (
         <Stack
             screenOptions={{
-                headerShown: true,
+                headerShown: false, // Hide header for all screens in this layout
                 headerBackTitleVisible: false,
                 headerShadowVisible: false,
             }}
-        >
-            <Stack.Screen
-                name="index"
-                options={{
-                    headerShown: false
-                }}
-            />
-        </Stack>
+        />
     );
 }
