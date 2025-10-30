@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
 import { useLinkBuilder, useTheme } from '@react-navigation/native';
 import { Ionicons, AntDesign, FontAwesome5 } from "@expo/vector-icons";
-import { useNotificationStore } from "../../../store/useNotificationStore";
+import { useNotificationStore } from "../../../store/Driver/useNotificationStore";
 import {router} from "expo-router";
 
 export function TabNavigation({ state, descriptors, navigation, canAccess }) {

@@ -17,6 +17,7 @@ import {Send, ArrowLeft, AlertCircle, CheckCheck, Clock} from 'lucide-react-nati
 import DriverUtils from '../../../../utils/DriverUtilities';
 import socketClient from '../../../../lib/driver/SocketClient';
 import {Ionicons} from "@expo/vector-icons";
+import { toast } from "sonner-native";
 
 const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
     // Validate userData
@@ -34,8 +35,8 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
     const orderInfo = conversationData?.orderInfo || null;
 
     if (!conversation?._id) {
-        console.error('❌ Conversation data is invalid:', conversationData);
-        Alert.alert('Error', 'Conversation not found');
+        console.log('❌ Conversation data is invalid:', conversationData);
+        toast.error('Conversation not found');
         onBack?.();
         return null;
     }
@@ -115,12 +116,13 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
                 );
                 maybeScrollToBottom();
             } else {
+                toast.error(response.error || 'Failed to send message');
                 throw new Error(response.error || 'Failed to send message');
             }
         } catch (error) {
-            console.error('❌ Failed to send message:', error);
+            toast.error('Failed to send message. Please try again.');
+            console.log('❌ Failed to send message:', error);
             setMessages((prev) => prev.filter((msg) => msg._id !== optimisticMessage._id));
-            Alert.alert('Error', 'Failed to send message. Please try again.');
         } finally {
             setIsSending(false);
         }
@@ -189,7 +191,8 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
                 await socketClient.connect();
                 setIsConnected(true);
             } catch (error) {
-                console.error('❌ Failed to connect to socket:', error);
+                console.log('❌ Failed to connect to socket:', error);
+                toast.error('Failed to connect to socket');
                 setIsConnected(false);
             }
         };
@@ -252,13 +255,7 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
         };
     }, [conversationId, isNearBottom]);
 
-    // Debug user
-    useEffect(() => {
-        // console.log('User data:', userData, 'Conversation:', conversationId);
-    }, []);
-
     // Key extractor
-    // const keyExtractor = (item) => `${item._id}-${item.createdAt}-${item.isOptimistic ? 'opt' : 'real'}`;
     const keyExtractor = (item) => item._id;
 
     const handleRefresh = () => {
@@ -268,12 +265,11 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
 
     return (
         <>
-
             <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={22} color="#007AFF"/>
+                        <Ionicons name="chevron-back" size={22} color="#FFF"/>
                     </TouchableOpacity>
 
                     <View style={styles.headerInfo}>
@@ -352,7 +348,7 @@ const styles = StyleSheet.create({
     },
     backButton: {
         marginRight: 12,
-        backgroundColor: 'green',
+        backgroundColor: '#2a5298',
         padding: 4,
         borderRadius: 6
     },

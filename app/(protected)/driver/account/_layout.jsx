@@ -63,6 +63,20 @@ export default function AccountLayout() {
                 }}
             />
 
+            <Stack.Screen
+                name="payment"
+                options={{
+                    headerShown: false
+                }}
+            />
+
+            <Stack.Screen
+                name="security"
+                options={{
+                    headerShown: false
+                }}
+            />
+
         </Stack>
     );
 }

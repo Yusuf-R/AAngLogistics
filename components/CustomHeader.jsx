@@ -2,7 +2,7 @@ import React from 'react';
 import {View, Text, Pressable, StyleSheet} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 
-const CustomHeader = ({title, onBackPress}) => {
+const CustomHeader = ({title, onBackPress, rightComponent}) => {
 
     return (
         <>
@@ -24,6 +24,7 @@ const CustomHeader = ({title, onBackPress}) => {
 
                     <View style={styles.rightContainer}>
                         {/* Empty space for symmetry */}
+                        {rightComponent}
                     </View>
                 </View>
             </View>
@@ -69,10 +70,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     headerText: {
-        fontSize: 17,
+        fontSize: 18,
         fontFamily: 'PoppinsSemiBold',
         color: '#000000',
         textAlign: 'center',
+        fontWeight: '600',
+        lineHeight: 22,
+
     },
 });
 

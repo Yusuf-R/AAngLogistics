@@ -110,14 +110,10 @@ class DriverUtils {
         try {
             const response = await axiosPrivate({
                 method: "POST",
-                url: '/auth/update-password',
+                url: '/driver/auth/password/reset',
                 data: obj,
             });
-            if (response.status === 201) {
-                return response.data;
-            } else {
-                throw new Error(response.error);
-            }
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
@@ -137,6 +133,65 @@ class DriverUtils {
             throw new Error(error);
         }
     }
+
+    static async GetToken(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/driver/auth/get/token',
+                data: obj,
+            });
+            return response.data
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+    static async VerifyAuthToken(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/driver/auth/verify/auth-token',
+                data: obj,
+            });
+            return response.data
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+
+
+    }
+
+    static async VerifyEmail(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/driver/auth/verify/email',
+                data: obj,
+            });
+            return response.data
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+
+    }
+
+    static async SetAuthPin(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/driver/auth/set/auth-pin',
+                data: obj,
+            });
+            return response.data
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
 
     static async TermsConditions(payload) {
         try {
@@ -480,6 +535,95 @@ class DriverUtils {
             return {success: false, error: error.message};
         }
     }
+
+    // Notifications
+    static async GetNotification() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/notification/all`,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async GetNotificationStats () {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/notification/stats`,
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async MarkAsRead(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "PATCH",
+                url: `/driver/notification/mark-as-read`,
+                data: obj,
+            });
+                return response.data;
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Mark all as read
+    static async MarkAllAsRead() {
+        try {
+            const response = await axiosPrivate({
+                method: "PUT",
+                url: `/driver/notification/mark-all-as-read`,
+            });
+                return response.data;
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Delete Notification
+    static async DeleteNotification(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "DELETE",
+                url: `/driver/notification/delete`,
+                data: obj,
+            });
+                return response.data;
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    // Delete all notifications
+    static async DeleteAllNotification() {
+        try {
+            const response = await axiosPrivate({
+                method: "DELETE",
+                url: `/driver/notification/delete/all`,
+            });
+                return response.data;
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+
+
+
+
 
 
 

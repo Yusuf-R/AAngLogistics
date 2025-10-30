@@ -16,7 +16,7 @@ export default function NotificationLayout() {
     return (
         <Stack
             screenOptions={{
-                headerShown: true,
+                headerShown: false,
                 headerBackTitleVisible: false,
                 headerShadowVisible: false,
             }}

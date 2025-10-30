@@ -40,10 +40,6 @@ function Message() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [ticketRef, setTicketRef] = useState('');
-    console.log('Current queries in cache:');
-    queryClient.getQueryCache().getAll().forEach(query => {
-        console.log('Query Key:', query.queryKey);
-    });
 
     const handleSubmit = async () => {
         // Validation

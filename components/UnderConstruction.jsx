@@ -7,7 +7,6 @@ import {
     Animated,
     Easing,
     Dimensions,
-    Button
 } from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {Ionicons, MaterialIcons} from '@expo/vector-icons';
@@ -16,7 +15,7 @@ import {useRouter} from "expo-router";
 const {width, height} = Dimensions.get('window');
 
 
-function UnderConstruction({ onRefresh, title="Chat Feature", description="We're building something amazing!" }) {
+function UnderConstruction({ onRefresh, title="Chat Feature", description="We're building something amazing!", subtitle="" }) {
     const router = useRouter();
     const spinValue = React.useRef(new Animated.Value(0)).current;
     const floatValue = React.useRef(new Animated.Value(0)).current;
@@ -89,7 +88,7 @@ function UnderConstruction({ onRefresh, title="Chat Feature", description="We're
                         <Text style={styles.title}>🚧 {title.toUpperCase()} 🚧</Text>
                         <Text style={styles.description}>{description}</Text>
                         <Text style={styles.subDescription}>
-                            Our team is working hard to bring you an incredible chat experience
+                            {subtitle || 'Our team is working hard to bring you an incredible feature experience🚀🚀'}
                         </Text>
 
                         {/* Progress Indicator */}
@@ -98,22 +97,6 @@ function UnderConstruction({ onRefresh, title="Chat Feature", description="We're
                                 <View style={styles.progressFill} />
                             </View>
                             <Text style={styles.progressText}>Building in progress... 65%</Text>
-                        </View>
-
-                        {/* Features Preview */}
-                        <View style={styles.featuresContainer}>
-                            <View style={styles.featureItem}>
-                                <Ionicons name="chatbubbles" size={20} color="#4ECDC4" />
-                                <Text style={styles.featureText}>Real-time messaging</Text>
-                            </View>
-                            <View style={styles.featureItem}>
-                                <Ionicons name="notifications" size={20} color="#FFD166" />
-                                <Text style={styles.featureText}>Push notifications</Text>
-                            </View>
-                            <View style={styles.featureItem}>
-                                <Ionicons name="people" size={20} color="#FF6B6B" />
-                                <Text style={styles.featureText}>Group chats</Text>
-                            </View>
                         </View>
 
                         {/* Estimated Completion */}
@@ -132,7 +115,7 @@ function UnderConstruction({ onRefresh, title="Chat Feature", description="We're
                             colors={['#FF6B6B', '#191654']}
                             style={styles.buttonGradient}
                         >
-                            <Text style={styles.buttonText}>🚧 GO BACK 🚧</Text>
+                            <Text style={styles.buttonText}>BACK</Text>
                         </LinearGradient>
                     </TouchableOpacity>
 

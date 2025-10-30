@@ -6,11 +6,20 @@ import {socketClient} from '../../../lib/driver/SocketClient';
 import {useSessionStore} from '../../../store/useSessionStore';
 import {queryClient} from '../../../lib/queryClient';
 import {useTCGuard} from "../../../hooks/useTCGuard";
+import {useNotificationStore} from "../../../store/Driver/useNotificationStore";
+import {toast} from "sonner-native";
 
 export default function DriverTabsLayout() {
     const pathname = usePathname();
     const segments = useSegments();
     const user = useSessionStore(state => state.user);
+
+    // ✅ Initialize notification system
+    const {
+        fetchNotificationStats,
+        incrementBadge,
+        decrementBadge
+    } = useNotificationStore();
 
     // 🔒 Enforce T&Cs globally for driver area
     const guard = useTCGuard({
@@ -24,11 +33,17 @@ export default function DriverTabsLayout() {
 
         console.log('🚀 Initializing driver socket connection...');
 
+        // ✅ Fetch notification stats when user loads the app
+        fetchNotificationStats();
+
         // Connect socket
         socketClient.connect()
             .then(() => {
                 console.log('✅ Driver socket connected successfully');
                 setupSocketListeners();
+
+                // 🔥 NEW: Subscribe to important notification categories
+                socketClient.subscribeToCategories(['ORDER', 'DELIVERY', 'SECURITY']);
             })
             .catch((error) => {
                 console.error('❌ Driver socket connection failed:', error);
@@ -41,22 +56,58 @@ export default function DriverTabsLayout() {
         };
     }, [user?.id]);
 
-    // ✅ Setup socket event listeners
+    // ✅ Enhanced socket event listeners with badge support
     const setupSocketListeners = async () => {
-        // Notifications
-        socketClient.on('notification', async (notification) => {
-            console.log('📬 Driver notification received');
-            await queryClient.invalidateQueries({queryKey: ['GetNotifications']});
-            await queryClient.invalidateQueries({queryKey: ['GetUnreadCount']});
-            // Add to your notification store if you have one
+        // 🔥 ENHANCED: Real-time badge-specific events
+        socketClient.on('badge-increment', (data) => {
+            console.log('➕ Real-time badge increment');
+            incrementBadge();
+
+            // Optional: Show subtle notification
+            // toast.info(`New ${data.category} notification`);
         });
 
-        // Order assignments
+        socketClient.on('badge-decrement', (data) => {
+            console.log('➖ Real-time badge decrement');
+            decrementBadge();
+        });
+
+        socketClient.on('badge-sync', (data) => {
+            console.log('🔄 Badge sync received');
+            // Force refresh stats to ensure accuracy
+            fetchNotificationStats();
+        });
+
+        // Connection quality monitoring
+        socketClient.on('connection-quality', (stats) => {
+            if (stats.quality === 'poor') {
+                console.warn('📶 Poor connection quality');
+                // You could show a subtle indicator to the user
+                toast.info('Poor connection quality');
+            }
+        });
+
+        // 🔥 ENHANCED: Use the existing 'notification' event for full data when needed
+        socketClient.on('notification', async (notification) => {
+            console.log('📬 Full notification received:', notification);
+
+            // Increment badge for any new notification
+            incrementBadge();
+
+            // Invalidate queries to refresh data
+            await queryClient.invalidateQueries({queryKey: ['GetNotifications']});
+            await queryClient.invalidateQueries({queryKey: ['GetUnreadCount']});
+        });
+
+        // Order assignments - also trigger badge updates
         socketClient.on('order-assignment', (orderData) => {
             console.log('📦 New order assigned to driver');
+
+            // 🔥 NEW: Increment badge for new orders
+            incrementBadge();
+
             queryClient.invalidateQueries({queryKey: ['GetActiveOrders']});
             queryClient.invalidateQueries({queryKey: ['GetOrders']});
-            // Show in-app notification
         });
 
         // Order updates
@@ -82,11 +133,26 @@ export default function DriverTabsLayout() {
 
         socketClient.on('reconnected', () => {
             console.log('✅ Socket reconnected');
+            // 🔥 NEW: Re-subscribe to categories after reconnection
+            socketClient.subscribeToCategories(['ORDER', 'DELIVERY', 'SECURITY']);
+        });
+
+        // 🔥 NEW: Handle reconnect attempts
+        socketClient.on('reconnect-attempt', (data) => {
+            console.log(`🔄 Reconnect attempt ${data.attemptNumber}`);
         });
     };
 
-    // ✅ Cleanup socket listeners
+    // ✅ Enhanced cleanup socket listeners
     const cleanupSocketListeners = () => {
+        // Remove badge-specific events
+        socketClient.off('badge-increment');
+        socketClient.off('badge-decrement');
+        socketClient.off('badge-sync');
+        socketClient.off('connection-quality');
+        socketClient.off('reconnect-attempt');
+
+        // Remove existing events
         socketClient.off('notification');
         socketClient.off('order-assignment');
         socketClient.off('order-status-updated');
@@ -94,6 +160,33 @@ export default function DriverTabsLayout() {
         socketClient.off('disconnected');
         socketClient.off('reconnected');
     };
+
+    // 🔥 NEW: Monitor socket connection status
+    useEffect(() => {
+        const checkConnection = () => {
+            if (socketClient.getConnectionStatus()) {
+                console.log('✅ Socket is connected');
+            } else {
+                console.log('❌ Socket is disconnected');
+            }
+        };
+
+        // Check initially
+        checkConnection();
+
+        // Set up interval to monitor connection
+        const interval = setInterval(checkConnection, 60000); // Every 30 seconds
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // 🔥 NEW: Request badge sync when component mounts
+    useEffect(() => {
+        if (socketClient.getConnectionStatus()) {
+            // Request initial badge sync to ensure accuracy
+            socketClient.requestBadgeSync();
+        }
+    }, [socketClient.getConnectionStatus()]);
 
     // ✅ Define routes where tab bar should be hidden
     const hideTabBarRoutes = useMemo(() => [
@@ -112,16 +205,15 @@ export default function DriverTabsLayout() {
         '/driver/account/help-center',
         '/driver/orders/details',
         '/driver/notifications/details',
-        '/driver/support/chat', // ✅ Add support chat route
+        '/driver/support/chat',
         '/driver/support/message',
         '/driver/support/resources',
         '/driver/tcs',
     ], []);
 
-    // ⛔ Guard tab presses, so users can’t bypass via the tab bar
+    // ⛔ Guard tab presses
     const canAccess = useCallback((routeName) => {
         if (guard.isAccepted) return true;
-        // map routeName to path prefix
         const routeToPrefix = {
             dashboard: '/driver/dashboard',
             discover: '/driver/discover',
@@ -131,18 +223,15 @@ export default function DriverTabsLayout() {
         const target = routeToPrefix[routeName] || '';
         const restrictedHit = ['/driver/account','/driver/discover','/driver/notifications']
             .some(p => target.startsWith(p));
-        return !restrictedHit; // allow only non-restricted when not accepted
+        return !restrictedHit;
     }, [guard.isAccepted]);
 
     // ✅ Check if current route should hide tab bar
     const shouldHideTabBar = useMemo(() => {
-        // Check exact matches
         if (hideTabBarRoutes.includes(pathname)) {
             return true;
         }
 
-        // Check if it's a nested route (more than 3 segments means nested)
-        // e.g., ['(protected)', 'driver', 'account', 'edit'] = 4 segments
         const driverSegmentIndex = segments.findIndex(s => s === 'driver');
         if (driverSegmentIndex !== -1 && segments.length > driverSegmentIndex + 2) {
             return true;

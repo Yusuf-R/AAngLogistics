@@ -80,7 +80,7 @@ function DriverAccountScreen() {
                 setUserData(storedUser);
                 await checkAndPromptNotifications(storedUser);
             } catch (error) {
-                console.error('Failed to fetch user data:', error);
+                console.log('Failed to fetch user data:', error);
             } finally {
                 setLoading(false);
             }
@@ -90,7 +90,7 @@ function DriverAccountScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#60a5fa"/>
             </SafeAreaView>
         );
@@ -98,7 +98,7 @@ function DriverAccountScreen() {
 
     if (!userData) {
         return (
-            <SafeAreaView style={styles.container}>
+            <SafeAreaView style={styles.loadingContainer}>
                 <Text>Failed to load profile data</Text>
             </SafeAreaView>
         );
@@ -117,13 +117,11 @@ function DriverAccountScreen() {
 };
 
 const styles = StyleSheet.create({
-    container: {
+    loadingContainer: {
         flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
         backgroundColor: '#fff',
-        borderBottomLeftRadius: 20,
-        borderBottomRightRadius: 20,
-        overflow: 'hidden',
-        marginBottom: 5,
     },
 });
 

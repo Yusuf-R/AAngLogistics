@@ -1,5 +1,13 @@
-import {Text} from "react-native";
+import React from 'react';
+import NotificationManagement from '../../../../components/Driver/Notifications/NotificationManagement';
 
-export default function DriverEarnings() {
-    return <Text className="text-center mt-10">Earnings Dashboard</Text>;
+
+function NotificationScreen() {
+    return (
+        <>
+            <NotificationManagement />
+        </>
+    );
 }
+
+export default NotificationScreen;

@@ -10,7 +10,10 @@ import {
     SafeAreaView,
     StatusBar,
     Modal,
-    Pressable, ActivityIndicator
+    Pressable, ActivityIndicator,
+    Dimensions,
+    Platform,
+
 } from 'react-native';
 import { Ionicons, Feather, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import SessionManager from "../../../lib/SessionManager";
@@ -18,19 +21,19 @@ import { toast } from 'sonner-native';
 import { ROUTES } from "../../../utils/Driver/Constants";
 import {router} from "expo-router";
 
+
 function DriverAccount ({ userData }) {
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [showOptions, setShowOptions] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(false);
 
     const goToProfile = () => {
         router.push(ROUTES.PROFILE);
     }
+
     const goToDataVerification = () => {
         router.push(ROUTES.VERIFICATION);
-    }
-
-    const goToUtility = () => {
-        router.push(ROUTES.UTILITY);
     }
 
     const goToSupport = () => {
@@ -41,6 +44,17 @@ function DriverAccount ({ userData }) {
         router.push(ROUTES.POLICY);
     }
 
+    const goToPayment = () => {
+        router.push(ROUTES.PAYMENT);
+    }
+
+    const goToSecurity = () => {
+        router.push(ROUTES.SECURITY);
+    }
+
+    const goToAnalytics = () => {
+        router.push(ROUTES.ANALYTICS);
+    }
 
     const handleLogout = async () => {
         try {
@@ -53,6 +67,77 @@ function DriverAccount ({ userData }) {
             setIsLoggingOut(false);
             toast.error('Logout failed. Please try again.');
             setLogoutModalVisible(true);
+        }
+    };
+
+    // DROPDOWN FUNCTIONS - ADDED
+    const closeDropdown = () => setShowOptions(false);
+
+    const toggleDarkMode = () => {
+        setIsDarkMode(!isDarkMode);
+        toast.info('Theme switching coming soon!');
+        setShowOptions(false);
+    };
+
+    const openSupportChat = () => {
+        router.push('/driver/account/support/chat');
+        setShowOptions(false);
+    };
+
+    const viewTCS = () => {
+        router.push('/driver/tcs');
+        setShowOptions(false);
+    };
+
+    const shareApp = () => {
+        toast.info('Share feature coming soon!');
+        setShowOptions(false);
+    };
+
+    const quickOptions = [
+        {
+            icon: 'message-circle',
+            iconType: 'Feather',
+            label: 'Support Chat',
+            onPress: openSupportChat,
+            color: '#3B82F6'
+        },
+        {
+            icon: isDarkMode ? 'sun' : 'moon',
+            iconType: 'Feather',
+            label: isDarkMode ? 'Light Mode' : 'Dark Mode',
+            onPress: toggleDarkMode,
+            color: '#F59E0B'
+        },
+        {
+            icon: 'file-text',
+            iconType: 'Feather',
+            label: 'Terms & Conditions',
+            onPress: viewTCS,
+            color: '#10B981'
+        },
+        {
+            icon: 'share-2',
+            iconType: 'Feather',
+            label: 'Share App',
+            onPress: shareApp,
+            color: '#8B5CF6'
+        }
+    ];
+
+    // DROPDOWN ICON RENDERER - ADDED
+    const renderDropdownIcon = (iconType, icon, color, size = 20) => {
+        switch (iconType) {
+            case 'Ionicons':
+                return <Ionicons name={icon} size={size} color={color} />;
+            case 'Feather':
+                return <Feather name={icon} size={size} color={color} />;
+            case 'FontAwesome':
+                return <FontAwesome name={icon} size={size} color={color} />;
+            case 'MaterialIcons':
+                return <MaterialIcons name={icon} size={size} color={color} />;
+            default:
+                return <Feather name={icon} size={size} color={color} />;
         }
     };
 
@@ -87,7 +172,7 @@ function DriverAccount ({ userData }) {
                             trackColor={{ false: "#e0e0e0", true: "#00c6a7" }}
                             thumbColor={isDarkMode ? "#ffffff" : "#ffffff"}
                             ios_backgroundColor="#e0e0e0"
-                            onValueChange={toggleSwitch}
+                            onValueChange={toggleDarkMode}
                             value={isDarkMode}
                         />
                     )}
@@ -96,8 +181,6 @@ function DriverAccount ({ userData }) {
             </TouchableOpacity>
         );
     };
-
-
 
     return (
         <SafeAreaView style={styles.container}>
@@ -112,9 +195,37 @@ function DriverAccount ({ userData }) {
                     />
                     <Text style={styles.headerTitle}>Account</Text>
                 </View>
-                <TouchableOpacity style={styles.moreButton}>
-                    <Feather name="more-horizontal" size={24} color="#333" />
-                </TouchableOpacity>
+
+                {/* MORE BUTTON WITH DROPDOWN - MODIFIED */}
+                <View style={styles.moreButtonContainer}>
+                    <TouchableOpacity
+                        style={styles.moreButton}
+                        onPress={() => setShowOptions(!showOptions)}
+                    >
+                        <Feather name="more-horizontal" size={24} color="#333" />
+                    </TouchableOpacity>
+
+                    {/* DROPDOWN MENU - ADDED */}
+                    {showOptions && (
+                        <View style={styles.dropdownMenu}>
+                            {quickOptions.map((option, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.dropdownItem}
+                                    onPress={option.onPress}
+                                >
+                                    {renderDropdownIcon(option.iconType, option.icon, option.color)}
+                                    <Text style={styles.dropdownText}>{option.label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                </View>
+
+                {/* OVERLAY TO CLOSE DROPDOWN - ADDED */}
+                {showOptions && (
+                    <Pressable style={styles.overlay} onPress={closeDropdown} />
+                )}
             </View>
 
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -139,7 +250,7 @@ function DriverAccount ({ userData }) {
 
                     {userData?.fullName ? (
                         <Text style={styles.profileName}>
-                            Hi, {userData.fullName.split(' ')[0]} {/* Shows first name only */}
+                            Hi, {userData.fullName.split(' ')[0]}
                         </Text>
                     ) : (
                         <Text style={styles.profileName}>Welcome to AAngLogistics</Text>
@@ -171,24 +282,28 @@ function DriverAccount ({ userData }) {
                     })}
 
                     {renderMenuItem({
-                        icon: 'notifications-outline',
-                        iconType: 'Ionicons',
-                        title: 'Notification',
-                        hasChevron: true
-                    })}
-
-                    {renderMenuItem({
                         icon: 'wallet-outline',
                         iconType: 'Ionicons',
                         title: 'Payment',
-                        hasChevron: true
+                        hasChevron: true,
+                        onPress: () => goToPayment(),
                     })}
+
+                    {renderMenuItem({
+                        icon: 'analytics-outline',
+                        iconType: 'Ionicons',
+                        title: 'Analytics',
+                        hasChevron: true,
+                        onPress: () => goToAnalytics(),
+                    })}
+
 
                     {renderMenuItem({
                         icon: 'shield-outline',
                         iconType: 'Ionicons',
                         title: 'Security',
-                        hasChevron: true
+                        hasChevron: true,
+                        onPress: () => goToSecurity(),
                     })}
 
 
@@ -288,6 +403,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 5,
         paddingVertical: 5,
+        position: 'relative',
     },
     headerContent: {
         flexDirection: 'row',
@@ -313,6 +429,10 @@ const styles = StyleSheet.create({
         color: '#333',
         fontFamily: 'PoppinsBold'
     },
+    moreButtonContainer: {
+        position: 'relative',
+        zIndex: 1000,
+    },
     moreButton: {
         width: 35,
         height: 35,
@@ -321,6 +441,46 @@ const styles = StyleSheet.create({
         borderColor: '#eee',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    dropdownMenu: {
+        position: 'absolute',
+        top: 40,
+        right: 0,
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        paddingVertical: 8,
+        minWidth: 180,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#f0f0f0',
+    },
+    dropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        gap: 12,
+    },
+    dropdownText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#333',
+        flex: 1,
+    },
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 999,
     },
     scrollView: {
         flex: 1,
@@ -400,7 +560,7 @@ const styles = StyleSheet.create({
         color: '#777',
     },
 
-    // Modal Styles
+
     modalOverlay: {
         flex: 1,
         justifyContent: 'flex-end',

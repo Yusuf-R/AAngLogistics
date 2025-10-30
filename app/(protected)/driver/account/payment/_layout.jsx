@@ -2,7 +2,7 @@ import {Redirect, Stack, usePathname} from 'expo-router';
 import {useSessionStore} from "../../../../../store/useSessionStore";
 
 
-export default function SupportLayout() {
+export default function PaymentLayout() {
     const userData = useSessionStore((state) => state.user);
     const isAccepted = !!userData?.tcs?.isAccepted;
 
