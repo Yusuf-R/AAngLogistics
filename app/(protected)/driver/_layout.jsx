@@ -46,7 +46,7 @@ export default function DriverTabsLayout() {
                 socketClient.subscribeToCategories(['ORDER', 'DELIVERY', 'SECURITY']);
             })
             .catch((error) => {
-                console.error('❌ Driver socket connection failed:', error);
+                console.log('❌ Driver socket connection failed:', error);
             });
 
         return () => {
@@ -81,7 +81,7 @@ export default function DriverTabsLayout() {
         // Connection quality monitoring
         socketClient.on('connection-quality', (stats) => {
             if (stats.quality === 'poor') {
-                console.warn('📶 Poor connection quality');
+                console.log('📶 Poor connection quality');
                 // You could show a subtle indicator to the user
                 toast.info('Poor connection quality');
             }

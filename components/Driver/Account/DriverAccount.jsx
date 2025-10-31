@@ -52,6 +52,10 @@ function DriverAccount ({ userData }) {
         router.push(ROUTES.SECURITY);
     }
 
+    const goToLocation = () => {
+        router.push(ROUTES.LOCATION);
+    }
+
     const goToAnalytics = () => {
         router.push(ROUTES.ANALYTICS);
     }
@@ -287,6 +291,14 @@ function DriverAccount ({ userData }) {
                         title: 'Payment',
                         hasChevron: true,
                         onPress: () => goToPayment(),
+                    })}
+
+                    {renderMenuItem({
+                        icon: 'location-outline',
+                        iconType: 'Ionicons',
+                        title: 'Location',
+                        hasChevron: true,
+                        onPress: () => goToLocation(),
                     })}
 
                     {renderMenuItem({

@@ -70,7 +70,13 @@ export default ({config}) => ({
     },
     plugins: [
         "expo-router",
-        "expo-notifications",
+        [
+            "expo-notifications",
+            {
+                "defaultChannel": "default",
+                "enableBackgroundRemoteNotifications": false
+            }
+        ],
         [
             "expo-splash-screen",
             {
@@ -114,7 +120,13 @@ export default ({config}) => ({
                     newArchEnabled: true
                 }
             }
-        ]
+        ],
+        [
+            "expo-location",
+            {
+                "locationAlwaysAndWhenInUsePermission": "Allow AAngLogistics to use your location."
+            }
+        ],
     ],
     experiments: {
         typedRoutes: true

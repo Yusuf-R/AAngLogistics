@@ -30,7 +30,7 @@ import {useLocalSearchParams, useRouter} from 'expo-router';
 import SessionManager from "../../../../lib/SessionManager";
 import ConfirmationModal from "../../../ConfrimationModal/ConfirmationModal"
 const {width, height} = Dimensions.get('window');
-
+import { toast } from "sonner-native";
 // Colors matching your design system
 const COLORS = {
     primary: '#4361EE',
@@ -113,7 +113,8 @@ function Locations({userData}) {
             const {status} = await Location.requestForegroundPermissionsAsync();
             setLocationPermission(status === 'granted');
         } catch (error) {
-            console.error('Error requesting location permission:', error);
+            toast.error('Error requesting location permission');
+            console.log('Error requesting location permission:', error);
         }
     };
 

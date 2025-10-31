@@ -16,7 +16,7 @@ export default function AccountLayout() {
     return (
         <Stack
             screenOptions={{
-                headerShown: true,
+                headerShown: false,
                 headerBackTitleVisible: false,
                 headerShadowVisible: false,
             }}
@@ -72,6 +72,13 @@ export default function AccountLayout() {
 
             <Stack.Screen
                 name="security"
+                options={{
+                    headerShown: false
+                }}
+            />
+
+            <Stack.Screen
+                name="location"
                 options={{
                     headerShown: false
                 }}

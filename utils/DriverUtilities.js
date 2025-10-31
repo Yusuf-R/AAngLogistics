@@ -147,6 +147,7 @@ class DriverUtils {
             throw new Error(error);
         }
     }
+
     static async VerifyAuthToken(obj) {
         try {
             const response = await axiosPrivate({
@@ -229,14 +230,10 @@ class DriverUtils {
         try {
             const response = await axiosPrivate({
                 method: "POST",
-                url: '/drver/location/create',
+                url: '/driver/location/create',
                 data: obj,
             });
-            if (response.status === 201) {
-                return response.data;
-            } else {
-                throw new Error(response.error);
-            }
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
@@ -247,32 +244,25 @@ class DriverUtils {
         try {
             const response = await axiosPrivate({
                 method: "PUT",
-                url: '/drver/location/update',
+                url: '/driver/location/update',
                 data: obj,
             });
-            if (response.status === 200) {
-                return response.data;
-            } else {
-                throw new Error(response.error);
-            }
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
         }
     }
 
+
     static async DeleteLocation(obj) {
         try {
             const response = await axiosPrivate({
                 method: "DELETE",
-                url: '/drver/location/delete',
+                url: '/driver/location/delete',
                 data: obj,
             });
-            if (response.status === 200) {
-                return response.data;
-            } else {
-                throw new Error(response.error);
-            }
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
@@ -287,11 +277,7 @@ class DriverUtils {
                 method: "GET",
                 url: '/auth/get-signed-url',
             });
-            if (response.status === 200) {
-                return response.data;
-            } else {
-                throw new Error(response.error);
-            }
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
@@ -302,7 +288,7 @@ class DriverUtils {
         try {
             const response = await axiosPrivate({
                 method: "PUT",
-                url: '/drver/update-avatar',
+                url: '/driver/update-avatar',
                 data: obj,
             });
             if (response.status === 200) {
@@ -512,7 +498,7 @@ class DriverUtils {
             const response = await axiosPrivate({
                 method: 'DELETE',
                 url: `/driver/support/ticket/delete`,
-                data:  {ticketId}
+                data: {ticketId}
             });
             return response.data;
         } catch (error) {
@@ -550,7 +536,7 @@ class DriverUtils {
         }
     }
 
-    static async GetNotificationStats () {
+    static async GetNotificationStats() {
         try {
             const response = await axiosPrivate({
                 method: 'GET',
@@ -570,7 +556,7 @@ class DriverUtils {
                 url: `/driver/notification/mark-as-read`,
                 data: obj,
             });
-                return response.data;
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
@@ -584,7 +570,7 @@ class DriverUtils {
                 method: "PUT",
                 url: `/driver/notification/mark-all-as-read`,
             });
-                return response.data;
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
@@ -599,7 +585,7 @@ class DriverUtils {
                 url: `/driver/notification/delete`,
                 data: obj,
             });
-                return response.data;
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
@@ -613,18 +599,12 @@ class DriverUtils {
                 method: "DELETE",
                 url: `/driver/notification/delete/all`,
             });
-                return response.data;
+            return response.data;
         } catch (error) {
             console.log({error});
             throw new Error(error);
         }
     }
-
-
-
-
-
-
 
 
 }

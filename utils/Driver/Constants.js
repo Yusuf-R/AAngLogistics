@@ -51,6 +51,7 @@ export const ROUTES = {
     PAYMENT: '/driver/account/payment',
     SECURITY: '/driver/account/security',
     ANALYTICS: '/driver/account/analytics',
+    LOCATION: '/driver/account/location',
 }
 
 // States and LGA data
