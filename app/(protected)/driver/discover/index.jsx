@@ -1,5 +1,10 @@
 import {Text} from "react-native";
+import Discover from "/components/Driver/Discover/Discover"
 
-export default function Discover() {
-    return <Text className="text-center mt-10">Discover</Text>;
+function DiscoverScreen() {
+    return (
+        <Discover />
+    );
 }
+
+export default DiscoverScreen;

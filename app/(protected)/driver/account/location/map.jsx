@@ -424,7 +424,7 @@ function LocationMapScreen() {
                             style={styles.map}
                             provider={PROVIDER_GOOGLE}
                             initialRegion={region}
-                            showsUserLocation={true}
+                            showsUserLocation={false}
                             showsMyLocationButton={false}
                             onPress={handleMapPress}
                             onMapReady={() => setMapReady(true)}
