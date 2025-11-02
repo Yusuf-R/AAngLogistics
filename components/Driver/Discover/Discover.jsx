@@ -24,7 +24,7 @@ const TOP_DEFAULT = Platform.OS === 'ios' ? 60 : 20;
 function Discover() {
     const [activeTab, setActiveTab] = useState('map'); // 'map' or 'orders'
 
-    // Scale/opacity anims for tab icons
+    // Scale/opacity for tab icons
     const mapScale = useSharedValue(1);
     const ordersScale = useSharedValue(0.85);
     const mapOpacity = useSharedValue(1);

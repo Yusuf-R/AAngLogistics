@@ -1,8 +1,16 @@
 // components/Driver/Discover/OrdersList.jsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import {useSessionStore} from "../../../store/useSessionStore";
 
 function OrdersList() {
+    const userData = useSessionStore((state) => state.user);
+
+    console.log({
+        userData
+    })
+
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>📦 Available Orders</Text>

@@ -60,6 +60,10 @@ function DriverAccount ({ userData }) {
         router.push(ROUTES.ANALYTICS);
     }
 
+    const goToUtility = () => {
+        router.push(ROUTES.UTILITY);
+    }
+
     const handleLogout = async () => {
         try {
             setIsLoggingOut(true);
@@ -283,6 +287,14 @@ function DriverAccount ({ userData }) {
                         title: 'Data Verification',
                         hasChevron: true,
                         onPress: () => goToDataVerification(),
+                    })}
+
+                    {renderMenuItem({
+                        icon: 'home-outline',
+                        iconType: 'Ionicons',
+                        title: 'Utility Test',
+                        hasChevron: true,
+                        onPress: () => goToUtility(),
                     })}
 
                     {renderMenuItem({

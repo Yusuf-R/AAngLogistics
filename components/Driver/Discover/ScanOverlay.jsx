@@ -22,7 +22,7 @@ import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-const Utility = ({ visible, onClose, onScanComplete }) => {
+function ScanOverlay ({ visible, onClose, onScanComplete }) {
     const [isScanning, setIsScanning] = useState(false);
     const [timeLeft, setTimeLeft] = useState(30);
     const [scanResult, setScanResult] = useState(null);
@@ -516,4 +516,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default Utility;
+export default ScanOverlay;

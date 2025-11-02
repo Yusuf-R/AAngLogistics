@@ -382,7 +382,7 @@ class DriverUtils {
 
             return response.data;
         } catch (error) {
-            console.error('Send message error:', error);
+            console.log('Send message error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -400,7 +400,7 @@ class DriverUtils {
 
             return response.data;
         } catch (error) {
-            console.error('mark chat as read error:', error);
+            console.log('mark chat as read error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -418,7 +418,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Creat conversation error:', error);
+            console.log('Creat conversation error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -431,7 +431,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Get-Create error:', error);
+            console.log('Get-Create error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -448,7 +448,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Get-Create error:', error);
+            console.log('Get-Create error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -470,7 +470,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Get-Create error:', error);
+            console.log('Get-Create error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -488,7 +488,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Get-Create error:', error);
+            console.log('Get-Create error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -502,7 +502,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Delete error:', error);
+            console.log('Delete error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -517,7 +517,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Update error:', error);
+            console.log('Update error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -531,7 +531,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Get-Create error:', error);
+            console.log('Get-Create error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -544,7 +544,7 @@ class DriverUtils {
             });
             return response.data;
         } catch (error) {
-            console.error('Get-Create error:', error);
+            console.log('Get-Create error:', error);
             return {success: false, error: error.message};
         }
     }
@@ -605,6 +605,364 @@ class DriverUtils {
             throw new Error(error);
         }
     }
+
+    // utils/DriverOrdersAPI.js
+
+    /**
+     * Fetch available orders based on driver's location and settings
+     * @param {Object} params - Query parameters
+     * @param {number} params.lat - Driver's latitude
+     * @param {number} params.lng - Driver's longitude
+     * @param {string} params.area - 'current' | 'territorial'
+     * @param {number} params.radius - Search radius in km (for 'current' mode)
+     * @param {Array<string>} params.vehicleFilter - Array of vehicle types
+     * @param {string} params.priorityFilter - 'all' | 'high_priority' | 'urgent'
+     * @param {number} params.maxDistance - Max distance willing to travel
+     * @returns {Promise<{success: boolean, orders: Array, count: number}>}
+     */
+    static async getAvailableOrders(params) {
+        try {
+            const queryParams = {
+                lat: params.lat,
+                lng: params.lng,
+                area: params.area || 'current',
+                radius: params.radius || 5,
+                maxDistance: params.maxDistance || 10,
+                priorityFilter: params.priorityFilter || 'all'
+            };
+
+            // Add vehicle filter if provided
+            if (params.vehicleFilter && params.vehicleFilter.length > 0) {
+                queryParams.vehicleFilter = params.vehicleFilter.join(',');
+            }
+
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/driver/orders/get/available',
+                params: queryParams
+            });
+
+            return {
+                success: true,
+                orders: response.data.orders || [],
+                count: response.data.count || 0,
+                metadata: response.data.metadata
+            };
+
+        } catch (error) {
+            console.log('Get available orders error:', error);
+
+            // Handle specific error cases
+            if (error.response?.status === 400) {
+                return {
+                    success: false,
+                    message: error.response.data.error || 'Invalid request parameters',
+                    orders: [],
+                    count: 0
+                };
+            }
+
+            return {
+                success: false,
+                message: error.response?.data?.error || 'Failed to fetch orders',
+                orders: [],
+                count: 0
+            };
+        }
+    }
+
+    /**
+     * Accept an order
+     * @param {string} orderId - Order ID to accept
+     * @param {Object} currentLocation - Driver's current location
+     * @param {number} currentLocation.lat - Latitude
+     * @param {number} currentLocation.lng - Longitude
+     * @param {number} currentLocation.accuracy - GPS accuracy in meters
+     * @returns {Promise<{success: boolean, order?: Object, warning?: string}>}
+     */
+    static async acceptOrder(orderId, currentLocation) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/driver/accept-order',
+                data: {
+                    orderId,
+                    currentLocation: {
+                        lat: currentLocation.lat,
+                        lng: currentLocation.lng,
+                        accuracy: currentLocation.accuracy || 0
+                    }
+                }
+            });
+
+            return {
+                success: true,
+                order: response.data.order,
+                message: response.data.message,
+                warning: response.data.warning || null
+            };
+
+        } catch (error) {
+            console.log('Accept order error:', error);
+
+            // Handle specific errors
+            if (error.response?.status === 400) {
+                return {
+                    success: false,
+                    message: error.response.data.error,
+                    currentStatus: error.response.data.currentStatus
+                };
+            }
+
+            if (error.response?.status === 404) {
+                return {
+                    success: false,
+                    message: 'Order not found or no longer available'
+                };
+            }
+
+            return {
+                success: false,
+                message: error.response?.data?.error || 'Failed to accept order'
+            };
+        }
+    }
+
+    /**
+     * Update driver location during active delivery
+     * @param {string} orderId - Active order ID
+     * @param {Object} location - Current location
+     * @returns {Promise<{success: boolean}>}
+     */
+    static async updateCurrentLocation(orderId, location) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/driver/update/current/location',
+                data: {
+                    orderId,
+                    location: {
+                        lat: location.lat,
+                        lng: location.lng,
+                        accuracy: location.accuracy || 0,
+                        speed: location.speed || 0
+                    }
+                }
+            });
+
+            return {
+                success: true,
+                message: response.data.message
+            };
+
+        } catch (error) {
+            console.log('Update location error:', error);
+
+            return {
+                success: false,
+                message: error.response?.data?.error || 'Failed to update location'
+            };
+        }
+    }
+
+    /**
+     * Notify system about location tracking loss
+     * @param {string} orderId - Active order ID
+     * @param {Object} lastKnownLocation - Last known location
+     * @param {number} failureCount - Number of consecutive failures
+     * @returns {Promise<{success: boolean, action?: string}>}
+     */
+    static async notifyLocationLoss(orderId, lastKnownLocation, failureCount) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/driver/location-lost',
+                data: {
+                    orderId,
+                    lastKnownLocation,
+                    failureCount
+                }
+            });
+
+            return {
+                success: true,
+                message: response.data.message,
+                action: response.data.action
+            };
+
+        } catch (error) {
+            console.log('Location loss notification error:', error);
+
+            return {
+                success: false,
+                message: 'Failed to notify location loss'
+            };
+        }
+    }
+
+    /**
+     * Confirm package pickup
+     * @param {string} orderId - Order ID
+     * @param {Object} location - Pickup location
+     * @param {Array<string>} photos - Photo URLs/paths
+     * @returns {Promise<{success: boolean, penalty?: Object}>}
+     */
+    static async confirmPickup(orderId, location, photos = []) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/driver/confirm-pickup',
+                data: {
+                    orderId,
+                    location,
+                    photos
+                }
+            });
+
+            return {
+                success: true,
+                order: response.data.order,
+                penalty: response.data.penalty || null,
+                message: response.data.message
+            };
+
+        } catch (error) {
+            console.log('Confirm pickup error:', error);
+
+            return {
+                success: false,
+                message: error.response?.data?.error || 'Failed to confirm pickup'
+            };
+        }
+    }
+
+    /**
+     * Confirm delivery completion
+     * @param {string} orderId - Order ID
+     * @param {Object} params - Delivery confirmation params
+     * @returns {Promise<{success: boolean}>}
+     */
+    static async confirmDelivery(orderId, params) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/driver/confirm-delivery',
+                data: {
+                    orderId,
+                    ...params
+                }
+            });
+
+            return {
+                success: true,
+                message: response.data.message,
+                earnings: response.data.earnings
+            };
+
+        } catch (error) {
+            console.log('Confirm delivery error:', error);
+
+            return {
+                success: false,
+                message: error.response?.data?.error || 'Failed to confirm delivery'
+            };
+        }
+    }
+
+    /**
+     * Cancel order (driver-initiated)
+     * @param {string} orderId - Order ID
+     * @param {string} reason - Cancellation reason
+     * @returns {Promise<{success: boolean}>}
+     */
+    static async cancelOrder(orderId, reason) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/driver/cancel-order',
+                data: {
+                    orderId,
+                    reason
+                }
+            });
+
+            return {
+                success: true,
+                message: response.data.message,
+                penalty: response.data.penalty || null
+            };
+
+        } catch (error) {
+            console.log('Cancel order error:', error);
+
+            return {
+                success: false,
+                message: error.response?.data?.error || 'Failed to cancel order'
+            };
+        }
+    }
+
+    /**
+     * Get active order details
+     * @param {string} orderId - Order ID
+     * @returns {Promise<{success: boolean, order?: Object}>}
+     */
+    static async getOrderDetails(orderId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/order/${orderId}`
+            });
+
+            return {
+                success: true,
+                order: response.data.order
+            };
+
+        } catch (error) {
+            console.log('Get order details error:', error);
+
+            return {
+                success: false,
+                message: error.response?.data?.error || 'Failed to fetch order details'
+            };
+        }
+    }
+
+    /**
+     * Report an issue with the order
+     * @param {string} orderId - Order ID
+     * @param {Object} issue - Issue details
+     * @returns {Promise<{success: boolean}>}
+     */
+    static async reportIssue(orderId, issue) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/driver/report-issue',
+                data: {
+                    orderId,
+                    issueType: issue.type,
+                    description: issue.description,
+                    photos: issue.photos || []
+                }
+            });
+
+            return {
+                success: true,
+                message: response.data.message
+            };
+
+        } catch (error) {
+            console.log('Report issue error:', error);
+
+            return {
+                success: false,
+                message: error.response?.data?.error || 'Failed to report issue'
+            };
+        }
+    }
+
 
 
 }

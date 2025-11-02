@@ -1,5 +1,5 @@
 // components/Driver/Discover/LogisticMap.jsx
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, {useState, useEffect, useRef, useCallback, useMemo} from 'react';
 import {
     View,
     Text,
@@ -12,9 +12,9 @@ import {
     Modal,
     ScrollView
 } from 'react-native';
-import MapView, { Marker, Circle, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, {Marker, Circle, PROVIDER_GOOGLE} from 'react-native-maps';
 import * as Location from 'expo-location';
-import { Ionicons, FontAwesome6 } from '@expo/vector-icons';
+import {Ionicons} from '@expo/vector-icons';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -26,28 +26,33 @@ import Animated, {
     Easing,
     cancelAnimation
 } from 'react-native-reanimated';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { useSessionStore } from '../../../store/useSessionStore';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+
+import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
+import {useSessionStore} from '../../../store/useSessionStore';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
-import { BlurView } from 'expo-blur';
-import { toast } from 'sonner-native';
+import {BlurView} from 'expo-blur';
+import {toast} from 'sonner-native';
+import useLogisticStore from '../../../store/Driver/useLogisticStore';
+import ScanOverlay from "./ScanOverlay";
+import ScanSettingsModal from "./ScanSettingsModal";
+import OrdersListModal from "./OrdersListModal";
+import MapErrorBoundary from "../../MapErrorBoundary";
 
 // ---------- CONSTANTS (file scope) ----------
-const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
 
 const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 // Panel size
 const ACTION_PANEL_W = 200;
 const ACTION_PANEL_H = 60;
-// Layout guards
 const EDGE_MARGIN = 16;
-// const SAFE_TOP = (Platform.OS === 'ios' ? 100 : 150) + 8;
-const SAFE_TOP = EDGE_MARGIN + 50; // Below search bar
-// Protect the bottom area so the panel never sits under your bottom tab bar.
-const BOTTOM_UI_GUARD = 110;
-const SAFE_BOTTOM = SCREEN_H - ACTION_PANEL_H - EDGE_MARGIN - 50; // Above tab bar
+const SAFE_TOP = EDGE_MARGIN + 50;
+const SAFE_BOTTOM = SCREEN_H - ACTION_PANEL_H - EDGE_MARGIN - 50;
+
+const RECENTER_BTN_SIZE = 48;
+const RECENTER_SAFE_BOTTOM = 180;
 
 // ---------- WORKLET HELPERS (file scope) ----------
 function clampWithinScreen(tx, ty) {
@@ -56,6 +61,19 @@ function clampWithinScreen(tx, ty) {
     const maxX = SCREEN_W - ACTION_PANEL_W - EDGE_MARGIN;
     const minY = SAFE_TOP;
     const maxY = SAFE_BOTTOM;
+
+    if (tx.value < minX) tx.value = minX;
+    if (tx.value > maxX) tx.value = maxX;
+    if (ty.value < minY) ty.value = minY;
+    if (ty.value > maxY) ty.value = maxY;
+}
+
+function clampRecenterButton(tx, ty) {
+    'worklet';
+    const minX = EDGE_MARGIN;
+    const maxX = SCREEN_W - RECENTER_BTN_SIZE - EDGE_MARGIN;
+    const minY = SAFE_TOP;
+    const maxY = SCREEN_H - RECENTER_BTN_SIZE - RECENTER_SAFE_BOTTOM;
 
     if (tx.value < minX) tx.value = minX;
     if (tx.value > maxX) tx.value = maxX;
@@ -86,16 +104,47 @@ function snapActionPanel(tx, ty) {
     // clamp Y before/after snapping
     clampWithinScreen(tx, ty);
 
-    tx.value = withSpring(nearest, { damping: 18, stiffness: 220 });
+    tx.value = withSpring(nearest, {damping: 18, stiffness: 220});
     ty.value = withSpring(Math.min(Math.max(ty.value, SAFE_TOP), SAFE_BOTTOM), {
         damping: 18,
         stiffness: 220
     });
 }
 
+function snapRecenterButton(tx, ty) {
+    'worklet';
+    // Snap to edges: left or right
+    const leftX = EDGE_MARGIN;
+    const rightX = SCREEN_W - RECENTER_BTN_SIZE - EDGE_MARGIN;
+
+    const distToLeft = Math.abs(tx.value - leftX);
+    const distToRight = Math.abs(tx.value - rightX);
+
+    const targetX = distToLeft < distToRight ? leftX : rightX;
+
+    clampRecenterButton(tx, ty);
+    tx.value = withSpring(targetX, {damping: 18, stiffness: 220});
+    ty.value = withSpring(
+        Math.min(Math.max(ty.value, SAFE_TOP), SCREEN_H - RECENTER_BTN_SIZE - RECENTER_SAFE_BOTTOM),
+        {damping: 18, stiffness: 220}
+    );
+}
+
 // ---------- COMPONENT ----------
 function LogisticMap() {
     const userData = useSessionStore((state) => state.user);
+
+    // Zustand Store
+    const {
+        currentLocation: storeLocation,
+        availableOrders,
+        orderCount,
+        fetchAvailableOrders,
+        startOrderPolling,
+        stopOrderPolling,
+        updateLocation,
+        isOnActiveDelivery
+    } = useLogisticStore();
 
     const [location, setLocation] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
@@ -104,32 +153,85 @@ function LogisticMap() {
     const [savedLocationsModal, setSavedLocationsModal] = useState(false);
     const [manualLocation, setManualLocation] = useState(null);
 
-    // --- Action panel SVs (start bottom-right, snapped & clamped) ---
-    // const actionTx = useSharedValue(SCREEN_W - ACTION_PANEL_W - EDGE_MARGIN);
+    // SCAN STATE
+    const [isScanning, setIsScanning] = useState(false);
+    const [secondsLeft, setSecondsLeft] = useState(30);
+    const [scanCenter, setScanCenter] = useState(null); // { latitude, longitude, label? }
+
+    const [scanResult, setScanResult] = useState(null);
+
+    // Modals
+    const [showScanOverlay, setShowScanOverlay] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
+    const [showOrdersModal, setShowOrdersModal] = useState(false);
+
+    // Action panel SVs
     const actionTx = useSharedValue(EDGE_MARGIN);
     const actionTy = useSharedValue(SAFE_BOTTOM);
     const actionPickedUp = useSharedValue(0);
     const actionScale = useSharedValue(1);
 
-    // --- Sonar SVs (continuous pulses) ---
+    // Recenter button SVs (start at right side, above zoom controls)
+    const recenterTx = useSharedValue(SCREEN_W - RECENTER_BTN_SIZE - EDGE_MARGIN);
+    const recenterTy = useSharedValue(SCREEN_H - RECENTER_BTN_SIZE - RECENTER_SAFE_BOTTOM - 60);
+    const recenterPickedUp = useSharedValue(0);
+    const recenterScale = useSharedValue(1);
+
+    // Sonar pulses
     const pulse1 = useSharedValue(0);
     const pulse2 = useSharedValue(0);
     const pulse3 = useSharedValue(0);
 
     const mapRef = useRef(null);
     const autocompleteRef = useRef(null);
-
     const savedLocations = userData?.savedLocations || [];
+
+
+    const scanPulse = useSharedValue(0);
 
     useEffect(() => {
         initializeMap();
+
+        // Start background order polling
+        startOrderPolling();
+
+        return () => {
+            stopOrderPolling();
+        };
     }, []);
 
     // Start sonar animation when location is available
     useEffect(() => {
         if (location) {
-            startSonarAnimation();
+            const PULSE_DURATION = 2500;
+
+            pulse1.value = 0;
+            pulse2.value = 0;
+            pulse3.value = 0;
+
+            pulse1.value = withRepeat(
+                withTiming(1, {duration: PULSE_DURATION, easing: Easing.linear}),
+                -1,
+                false
+            );
+
+            setTimeout(() => {
+                pulse2.value = withRepeat(
+                    withTiming(1, {duration: PULSE_DURATION, easing: Easing.linear}),
+                    -1,
+                    false
+                );
+            }, PULSE_DURATION / 3);
+
+            setTimeout(() => {
+                pulse3.value = withRepeat(
+                    withTiming(1, {duration: PULSE_DURATION, easing: Easing.linear}),
+                    -1,
+                    false
+                );
+            }, (PULSE_DURATION * 2) / 3);
         }
+
         return () => {
             cancelAnimation(pulse1);
             cancelAnimation(pulse2);
@@ -137,20 +239,37 @@ function LogisticMap() {
         };
     }, [location]);
 
+    // Fetch orders when location changes
+    useEffect(() => {
+        if (location && !isOnActiveDelivery) {
+            const locationForFetch = {
+                lat: location.latitude,
+                lng: location.longitude
+            };
+            fetchAvailableOrders(locationForFetch, true); // Silent fetch
+        }
+    }, [location?.latitude, location?.longitude]);
+
     const initializeMap = async () => {
         try {
             setErrorMsg(null);
 
-            const { status } = await Location.requestForegroundPermissionsAsync();
+            const {status} = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
+                toast.info('Location Permission Denied');
                 setErrorMsg('Permission to access location was denied');
                 return;
             }
 
             const currentLocation = await Location.getCurrentPositionAsync({});
-            const { latitude, longitude } = currentLocation.coords;
+            const {latitude, longitude} = currentLocation.coords;
+            console.log({currentLocation, pt: 'init'})
 
             setLocation(currentLocation.coords);
+
+            // Update store location
+            updateLocation(currentLocation.coords);
+
             setRegion({
                 latitude,
                 longitude,
@@ -166,15 +285,67 @@ function LogisticMap() {
                 },
                 (newLocation) => {
                     setLocation(newLocation.coords);
+                    updateLocation(newLocation.coords);
                 }
             );
 
             return () => subscriber.remove();
         } catch (error) {
             console.log('Map init error:', error);
-            setErrorMsg('Failed to get location');
+            toast.info('Location Error: Try again without interference');
+            setErrorMsg('Failed to get location: Try again without interference');
         }
     };
+
+    // Pulses style
+    const pulse1Style = useAnimatedStyle(() => ({
+        transform: [{scale: pulse1.value * 15}],
+        opacity: 1 - pulse1.value
+    }));
+    const pulse2Style = useAnimatedStyle(() => ({
+        transform: [{scale: pulse2.value * 15}],
+        opacity: 1 - pulse2.value
+    }));
+    const pulse3Style = useAnimatedStyle(() => ({
+        transform: [{scale: pulse3.value * 15}],
+        opacity: 1 - pulse3.value
+    }));
+
+
+    // Scan pulse animation controller
+    useEffect(() => {
+        if (isScanning) {
+            // Big expanding ring
+            scanPulse.value = withRepeat(withTiming(1, {duration: 1500, easing: Easing.out(Easing.ease)}), -1, false);
+            // Staggered local sonar
+            pulse1.value = withRepeat(withTiming(1, {duration: 3000, easing: Easing.out(Easing.ease)}), -1, false);
+            pulse2.value = withRepeat(
+                withSequence(withTiming(0, {duration: 1000}), withTiming(1, {
+                    duration: 3000,
+                    easing: Easing.out(Easing.ease)
+                })),
+                -1,
+                false
+            );
+            pulse3.value = withRepeat(
+                withSequence(withTiming(0, {duration: 2000}), withTiming(1, {
+                    duration: 3000,
+                    easing: Easing.out(Easing.ease)
+                })),
+                -1,
+                false
+            );
+        } else {
+            cancelAnimation(scanPulse);
+            cancelAnimation(pulse1);
+            cancelAnimation(pulse2);
+            cancelAnimation(pulse3);
+            scanPulse.value = 0;
+            pulse1.value = 0;
+            pulse2.value = 0;
+            pulse3.value = 0;
+        }
+    }, [isScanning]);
 
     const startSonarAnimation = () => {
         'worklet';
@@ -185,15 +356,15 @@ function LogisticMap() {
 
         // Continuous and staggered pulses
         pulse1.value = withRepeat(
-            withTiming(1, { duration: 3000, easing: Easing.out(Easing.ease) }),
+            withTiming(1, {duration: 3000, easing: Easing.out(Easing.ease)}),
             -1,
             false
         );
 
         pulse2.value = withRepeat(
             withSequence(
-                withTiming(0, { duration: 1000 }),
-                withTiming(1, { duration: 3000, easing: Easing.out(Easing.ease) })
+                withTiming(0, {duration: 1000}),
+                withTiming(1, {duration: 3000, easing: Easing.out(Easing.ease)})
             ),
             -1,
             false
@@ -201,27 +372,13 @@ function LogisticMap() {
 
         pulse3.value = withRepeat(
             withSequence(
-                withTiming(0, { duration: 2000 }),
-                withTiming(1, { duration: 3000, easing: Easing.out(Easing.ease) })
+                withTiming(0, {duration: 2000}),
+                withTiming(1, {duration: 3000, easing: Easing.out(Easing.ease)})
             ),
             -1,
             false
         );
     };
-
-    // Pulses style (visible spread)
-    const pulse1Style = useAnimatedStyle(() => ({
-        transform: [{ scale: pulse1.value * 15 }],
-        opacity: 1 - pulse1.value
-    }));
-    const pulse2Style = useAnimatedStyle(() => ({
-        transform: [{ scale: pulse2.value * 15 }],
-        opacity: 1 - pulse2.value
-    }));
-    const pulse3Style = useAnimatedStyle(() => ({
-        transform: [{ scale: pulse3.value * 15 }],
-        opacity: 1 - pulse3.value
-    }));
 
     // Drag gesture for Action Panel
     const actionDragGesture = Gesture.Simultaneous(
@@ -237,11 +394,11 @@ function LogisticMap() {
                 if (!actionPickedUp.value) return;
                 actionTx.value += e.changeX;
                 actionTy.value += e.changeY;
-                clampWithinScreen(actionTx, actionTy); // live clamp
+                clampWithinScreen(actionTx, actionTy);
             })
             .onEnd(() => {
-                clampWithinScreen(actionTx, actionTy); // final clamp
-                snapActionPanel(actionTx, actionTy);   // then dock to L/C/R
+                clampWithinScreen(actionTx, actionTy);
+                snapActionPanel(actionTx, actionTy);
                 actionPickedUp.value = 0;
                 actionScale.value = withSpring(1);
             })
@@ -249,16 +406,47 @@ function LogisticMap() {
 
     const actionPanelStyle = useAnimatedStyle(() => ({
         transform: [
-            { translateX: actionTx.value },
-            { translateY: actionTy.value },
-            { scale: actionScale.value }
+            {translateX: actionTx.value},
+            {translateY: actionTy.value},
+            {scale: actionScale.value}
+        ]
+    }));
+
+    const recenterDragGesture = Gesture.Simultaneous(
+        Gesture.LongPress()
+            .minDuration(200)
+            .onStart(() => {
+                recenterPickedUp.value = 1;
+                recenterScale.value = withSpring(1.1);
+                runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+            }),
+        Gesture.Pan()
+            .onChange((e) => {
+                if (!recenterPickedUp.value) return;
+                recenterTx.value += e.changeX;
+                recenterTy.value += e.changeY;
+                clampRecenterButton(recenterTx, recenterTy);
+            })
+            .onEnd(() => {
+                clampRecenterButton(recenterTx, recenterTy);
+                snapRecenterButton(recenterTx, recenterTy);
+                recenterPickedUp.value = 0;
+                recenterScale.value = withSpring(1);
+            })
+    );
+
+    const recenterButtonStyle = useAnimatedStyle(() => ({
+        transform: [
+            {translateX: recenterTx.value},
+            {translateY: recenterTy.value},
+            {scale: recenterScale.value}
         ]
     }));
 
     const handlePlaceSelect = useCallback((data, details) => {
         if (!details?.geometry?.location) return;
 
-        const { lat, lng } = details.geometry.location;
+        const {lat, lng} = details.geometry.location;
         const newRegion = {
             latitude: lat,
             longitude: lng,
@@ -282,7 +470,7 @@ function LogisticMap() {
     }, []);
 
     const handleSavedLocationSelect = useCallback((savedLocation) => {
-        const { coordinates } = savedLocation;
+        const {coordinates} = savedLocation;
         const newRegion = {
             latitude: coordinates.lat,
             longitude: coordinates.lng,
@@ -294,6 +482,11 @@ function LogisticMap() {
         setSelectedLocation(savedLocation);
         setManualLocation(null);
         setSavedLocationsModal(false);
+        // Update to zustand
+        updateLocation({
+            latitude: coordinates.lat,
+            longitude: coordinates.lng,
+        });
 
         if (mapRef.current) {
             mapRef.current.animateToRegion(newRegion, 1000);
@@ -302,12 +495,13 @@ function LogisticMap() {
 
     const handleRecenter = useCallback(async () => {
         try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
+            const {status} = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') return;
 
             const currentLocation = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.Balanced
             });
+            console.log({currentLocation, pt: 'rec'})
 
             const userRegion = {
                 latitude: currentLocation.coords.latitude,
@@ -343,6 +537,37 @@ function LogisticMap() {
         return icons[type] || 'location';
     };
 
+    const handleScanComplete = useCallback(async (result) => {
+        if (result.success) {
+            toast.success(`Found ${result.orders?.length || 0} orders!`);
+            // Refresh available orders
+            await fetchAvailableOrders();
+        } else {
+            toast.info('No orders found in this area');
+        }
+    }, [fetchAvailableOrders]);
+
+    const getActiveCenter = useCallback(() => {
+        if (manualLocation) {
+            return {
+                latitude: manualLocation.latitude,
+                longitude: manualLocation.longitude,
+                label: manualLocation.address ?? 'selected point'
+            };
+        }
+        if (selectedLocation) {
+            return {
+                latitude: selectedLocation.coordinates.lat,
+                longitude: selectedLocation.coordinates.lng,
+                label: selectedLocation.address ?? selectedLocation.locationType ?? 'saved location',
+            };
+        }
+        if (location) {
+            return {latitude: location.latitude, longitude: location.longitude, label: 'your current location'};
+        }
+        return null;
+    }, [manualLocation, selectedLocation, location]);
+
     // Memoized Autocomplete
     const AutocompleteComponent = useMemo(
         () => (
@@ -359,7 +584,7 @@ function LogisticMap() {
                 debounce={400}
                 keyboardShouldPersistTaps="handled"
                 styles={{
-                    container: { flex: 0 },
+                    container: {flex: 0},
                     textInput: {
                         height: 48,
                         fontSize: 15,
@@ -368,7 +593,7 @@ function LogisticMap() {
                         borderRadius: 12,
                         paddingHorizontal: 16,
                         shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
+                        shadowOffset: {width: 0, height: 2},
                         shadowOpacity: 0.1,
                         shadowRadius: 4,
                         elevation: 3
@@ -379,15 +604,15 @@ function LogisticMap() {
                         marginTop: 8,
                         maxHeight: 300,
                         shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
+                        shadowOffset: {width: 0, height: 2},
                         shadowOpacity: 0.1,
                         shadowRadius: 4,
                         elevation: 3
                     },
-                    row: { padding: 13, minHeight: 60 },
-                    description: { fontFamily: 'PoppinsRegular', fontSize: 14 },
-                    poweredContainer: { display: 'none' },
-                    separator: { height: 0.5, backgroundColor: '#E5E7EB' }
+                    row: {padding: 13, minHeight: 60},
+                    description: {fontFamily: 'PoppinsRegular', fontSize: 14},
+                    poweredContainer: {display: 'none'},
+                    separator: {height: 0.5, backgroundColor: '#E5E7EB'}
                 }}
                 textInputProps={{
                     autoCorrect: false,
@@ -438,10 +663,48 @@ function LogisticMap() {
     if (!location) {
         return (
             <View style={styles.centerContainer}>
-                <ActivityIndicator size="large" color="#6366F1" />
+                <ActivityIndicator size="large" color="#6366F1"/>
                 <Text style={styles.loadingText}>Getting your location...</Text>
             </View>
         );
+    }
+
+    // Create a wrapper component
+    const SafeMarker = ({ coordinate, children, ...props }) => {
+        if (!isValidCoordinate(coordinate)) {
+            console.log('Invalid marker coordinate:', coordinate);
+            toast.info('Invalid marker cordinates')
+            return null;
+        }
+
+        return (
+            <Marker coordinate={coordinate} {...props}>
+                {children}
+            </Marker>
+        );
+    };
+
+    // Helper function
+    const isValidCoordinate = (coord) => {
+        if (!coord) return false;
+        const lat = coord.latitude || coord.lat;
+        const lng = coord.longitude || coord.lng;
+        return (
+            typeof lat === 'number' &&
+            typeof lng === 'number' &&
+            !isNaN(lat) &&
+            !isNaN(lng) &&
+            lat >= -90 &&
+            lat <= 90 &&
+            lng >= -180 &&
+            lng <= 180
+        );
+    };
+
+    if (!isValidCoordinate(location)) {
+        console.log('Invalid location:', location);
+        toast.info('Invalid location')
+        return null;
     }
 
     // Reusable pulsating marker (continuous)
@@ -452,36 +715,50 @@ function LogisticMap() {
                                                                     size = 24
                                                                 }) {
         const pulse = useSharedValue(0);
+        const [isReady, setIsReady] = useState(false); // ADD THIS
 
         useEffect(() => {
-            pulse.value = withRepeat(
-                withTiming(1, {
-                    duration: 2000,
-                    easing: Easing.out(Easing.ease)
-                }),
-                -1,
-                false
-            );
-            return () => cancelAnimation(pulse);
+            // ADD DELAY to ensure marker is mounted
+            const timer = setTimeout(() => {
+                setIsReady(true);
+                pulse.value = withRepeat(
+                    withTiming(1, {
+                        duration: 2000,
+                        easing: Easing.out(Easing.ease)
+                    }),
+                    -1,
+                    false
+                );
+            }, 100); // 100ms delay
+
+            return () => {
+                clearTimeout(timer);
+                cancelAnimation(pulse);
+            };
         }, []);
 
         const pulseStyle = useAnimatedStyle(() => ({
-            transform: [{ scale: pulse.value * 2 + 1 }], // 1x -> 3x
+            transform: [{scale: pulse.value * 2 + 1}],
             opacity: 1 - pulse.value
         }));
 
         const innerPulseStyle = useAnimatedStyle(() => ({
-            transform: [{ scale: pulse.value * 1.5 + 1 }], // 1x -> 2.5x
+            transform: [{scale: pulse.value * 1.5 + 1}],
             opacity: 1 - pulse.value * 0.7
         }));
 
+        // ADD SAFETY CHECK
+        if (!coordinate || !isReady) {
+            return null;
+        }
+
         return (
-            <Marker coordinate={coordinate} anchor={{ x: 0.5, y: 0.5 }}>
+            <Marker coordinate={coordinate} anchor={{x: 0.5, y: 0.5}}>
                 <View style={styles.pulsatingContainer}>
-                    <Animated.View style={[styles.pulseRing, pulseStyle, { borderColor: color }]} />
-                    <Animated.View style={[styles.pulseRing, innerPulseStyle, { borderColor: color }]} />
-                    <View style={[styles.markerCenter, { backgroundColor: color }]}>
-                        <Ionicons name={icon} size={size} color="#FFFFFF" />
+                    <Animated.View style={[styles.pulseRing, pulseStyle, {borderColor: color}]}/>
+                    <Animated.View style={[styles.pulseRing, innerPulseStyle, {borderColor: color}]}/>
+                    <View style={[styles.markerCenter, {backgroundColor: color}]}>
+                        <Ionicons name={icon} size={size} color="#FFFFFF"/>
                     </View>
                 </View>
             </Marker>
@@ -498,86 +775,134 @@ function LogisticMap() {
                         style={styles.savedLocationsButton}
                         onPress={() => setSavedLocationsModal(true)}
                     >
-                        <Ionicons name="bookmark" size={20} color="#6366F1" />
+                        <Ionicons name="bookmark" size={20} color="#6366F1"/>
                         <Text style={styles.savedLocationsText}>Saved Locations</Text>
                     </TouchableOpacity>
                 )}
             </View>
 
             {/* Map */}
-            <View style={styles.mapContainer}>
-                <MapView
-                    ref={mapRef}
-                    style={styles.map}
-                    provider={PROVIDER_GOOGLE}
-                    region={region}
-                    showsUserLocation={false}
-                    showsMyLocationButton={false}
-                    followsUserLocation={!manualLocation && !selectedLocation}
-                    zoomControlEnabled
-                    showsCompass
-                    mapType="standard"
-                    moveOnMarkerPress={false}
-                    pitchEnabled={false}
-                    rotateEnabled={false}
-                >
-                    {/* Accuracy Circle */}
-                    <Circle
-                        center={{ latitude: location.latitude, longitude: location.longitude }}
-                        radius={location.accuracy || 50}
-                        strokeColor="rgba(99, 102, 241, 0.2)"
-                        fillColor="rgba(99, 102, 241, 0.1)"
-                    />
-
-                    {/* Current Location: continuous pulsation + sonar spread */}
-                    <PulsatingMarker
-                        coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-                        color="#6366F1"
-                        icon="navigate"
-                        size={20}
-                    />
-                    <Marker
-                        coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-                        anchor={{ x: 0.5, y: 0.5 }}
+            <MapErrorBoundary>
+                <View style={styles.mapContainer}>
+                    <MapView
+                        ref={mapRef}
+                        style={styles.map}
+                        provider={PROVIDER_GOOGLE}
+                        region={region}
+                        showsUserLocation={false}
+                        showsMyLocationButton={false}
+                        followsUserLocation={!manualLocation && !selectedLocation}
+                        zoomControlEnabled
+                        showsCompass
+                        mapType="standard"
+                        moveOnMarkerPress={false}
+                        pitchEnabled={false}
+                        rotateEnabled={false}
                     >
-                        <View style={styles.sonarContainer}>
-                            <Animated.View style={[styles.sonarPulse, pulse1Style]} />
-                            <Animated.View style={[styles.sonarPulse, pulse2Style]} />
-                            <Animated.View style={[styles.sonarPulse, pulse3Style]} />
-                        </View>
-                    </Marker>
+                        {/* ADD VALIDATION for all markers */}
+                        {location && location.latitude && location.longitude && (
+                            <>
+                                {/* Accuracy Circle */}
+                                <Circle
+                                    center={{latitude: location.latitude, longitude: location.longitude}}
+                                    radius={location.accuracy || 50}
+                                    strokeColor="rgba(99, 102, 241, 0.2)"
+                                    fillColor="rgba(99, 102, 241, 0.1)"
+                                />
 
-                    {/* Manual / Saved Location */}
-                    {(manualLocation || selectedLocation) && (
-                        <PulsatingMarker
-                            coordinate={
-                                manualLocation || {
-                                    latitude: selectedLocation.coordinates.lat,
-                                    longitude: selectedLocation.coordinates.lng
-                                }
-                            }
-                            color="#EF4444"
-                            icon={selectedLocation ? getLocationIcon(selectedLocation.locationType) : 'location'}
-                            size={22}
-                        />
-                    )}
-                </MapView>
+                                {/* Current Location Marker */}
+                                <PulsatingMarker
+                                    coordinate={{latitude: location.latitude, longitude: location.longitude}}
+                                    color="#6366F1"
+                                    icon="navigate"
+                                    size={20}
+                                />
 
-                {/* Recenter */}
-                <TouchableOpacity style={styles.recenterButton} onPress={handleRecenter}>
-                    <Ionicons name="locate" size={24} color="#6366F1" />
-                </TouchableOpacity>
-            </View>
+                                {/* Sonar Animation */}
+                                <Marker
+                                    coordinate={{latitude: location.latitude, longitude: location.longitude}}
+                                    anchor={{x: 0.5, y: 0.5}}
+                                >
+                                    <View style={styles.sonarContainer}>
+                                        <Animated.View style={[styles.sonarPulse, pulse1Style]}/>
+                                        <Animated.View style={[styles.sonarPulse, pulse2Style]}/>
+                                        <Animated.View style={[styles.sonarPulse, pulse3Style]}/>
+                                    </View>
+                                </Marker>
+                            </>
+                        )}
 
-            {/* Draggable Action Panel (bottom-right, never lost) */}
+                        {/* Manual / Saved Location - ADD VALIDATION */}
+                        {(manualLocation || selectedLocation) && (
+                            (() => {
+                                const coord = manualLocation || {
+                                    latitude: selectedLocation?.coordinates?.lat,
+                                    longitude: selectedLocation?.coordinates?.lng
+                                };
+
+                                // Validate coordinates exist
+                                if (!coord.latitude || !coord.longitude) return null;
+
+                                return (
+                                    <PulsatingMarker
+                                        coordinate={coord}
+                                        color="#EF4444"
+                                        icon={selectedLocation ? getLocationIcon(selectedLocation.locationType) : 'location'}
+                                        size={22}
+                                    />
+                                );
+                            })()
+                        )}
+                    </MapView>
+
+
+                    {/* Draggable Recenter Button with Order Count Badge */}
+                    <GestureDetector gesture={recenterDragGesture}>
+                        <Animated.View style={[styles.recenterButton, recenterButtonStyle]}>
+                            <TouchableOpacity
+                                style={styles.recenterTouchable}
+                                onPress={handleRecenter}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="locate" size={24} color="#6366F1"/>
+                            </TouchableOpacity>
+                        </Animated.View>
+                    </GestureDetector>
+                </View>
+            </MapErrorBoundary>
+
+            {/* Draggable Action Panel */}
             <GestureDetector gesture={actionDragGesture}>
                 <Animated.View style={[styles.draggableActionPanel, actionPanelStyle]}>
                     <BlurView intensity={85} tint="light" style={styles.glassActionPanel}>
-                        <TouchableOpacity style={styles.glassActionButton}>
-                            <Ionicons name="settings" size={20} color="#6366F1" />
+                        {/* Settings */}
+                        <TouchableOpacity
+                            style={styles.glassActionButton}
+                            onPress={() => setShowSettingsModal(true)}
+                        >
+                            <Ionicons name="settings" size={20} color="#6366F1"/>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.glassActionButton}>
-                            <Ionicons name="radio-sharp" size={20} color="#6366F1" />
+
+                        {/* Scan */}
+                        <TouchableOpacity
+                            style={styles.glassActionButton}
+                            onPress={() => setShowScanOverlay(true)}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="radio-sharp" size={22} color="#6366F1"/>
+                        </TouchableOpacity>
+
+                        {/* Orders List with Count */}
+                        <TouchableOpacity
+                            style={styles.ordersButton}
+                            onPress={() => setShowOrdersModal(true)}
+                        >
+                            <Ionicons name="cube" size={20} color="#6366F1"/>
+                            {orderCount > 0 && (
+                                <View style={styles.orderCountBadge}>
+                                    <Text style={styles.orderCountText}>{orderCount}</Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
                     </BlurView>
                 </Animated.View>
@@ -594,7 +919,7 @@ function LogisticMap() {
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>Saved Locations</Text>
                         <TouchableOpacity onPress={() => setSavedLocationsModal(false)}>
-                            <Ionicons name="close" size={24} color="#111827" />
+                            <Ionicons name="close" size={24} color="#111827"/>
                         </TouchableOpacity>
                     </View>
 
@@ -624,20 +949,25 @@ function LogisticMap() {
                                         <Text style={styles.locationLandmark}>📍 {savedLocation.landmark}</Text>
                                     )}
                                 </View>
-                                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                                <Ionicons name="chevron-forward" size={20} color="#9CA3AF"/>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
                 </View>
             </Modal>
+            <ScanOverlay
+                visible={showScanOverlay}
+                onClose={() => setShowScanOverlay(false)}
+                onScanComplete={handleScanComplete}
+            />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F9FAFB' },
-    centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    loadingText: { fontSize: 16, fontFamily: 'PoppinsRegular', color: '#6B7280', marginTop: 12 },
+    container: {flex: 1, backgroundColor: '#F9FAFB'},
+    centerContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20},
+    loadingText: {fontSize: 16, fontFamily: 'PoppinsRegular', color: '#6B7280', marginTop: 12},
     errorText: {
         fontSize: 16,
         fontFamily: 'PoppinsRegular',
@@ -645,8 +975,8 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 16
     },
-    retryButton: { backgroundColor: '#6366F1', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-    retryButtonText: { color: '#fff', fontSize: 16, fontFamily: 'PoppinsSemiBold' },
+    retryButton: {backgroundColor: '#6366F1', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8},
+    retryButtonText: {color: '#fff', fontSize: 16, fontFamily: 'PoppinsSemiBold'},
 
     searchContainer: {
         position: 'absolute',
@@ -665,18 +995,17 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         borderRadius: 12,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3
     },
-    savedLocationsText: { fontSize: 14, fontFamily: 'PoppinsSemiBold', color: '#6366F1' },
+    savedLocationsText: {fontSize: 14, fontFamily: 'PoppinsSemiBold', color: '#6366F1'},
 
-    mapContainer: { flex: 1, position: 'relative' },
-    map: { width: '100%', height: '100%' },
+    mapContainer: {flex: 1, position: 'relative'},
+    map: {width: '100%', height: '100%'},
 
-    // Sonar spread (under the main pulsating center)
-    sonarContainer: { alignItems: 'center', justifyContent: 'center', width: 100, height: 100 },
+    sonarContainer: {alignItems: 'center', justifyContent: 'center', width: 100, height: 100},
     sonarPulse: {
         position: 'absolute',
         width: 20,
@@ -687,8 +1016,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(99, 102, 241, 0.5)'
     },
 
-    // Reusable pulsating marker visuals
-    pulsatingContainer: { alignItems: 'center', justifyContent: 'center', width: 80, height: 80 },
+    pulsatingContainer: {alignItems: 'center', justifyContent: 'center', width: 80, height: 80},
     pulseRing: {
         position: 'absolute',
         width: 40,
@@ -704,27 +1032,50 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 5
     },
 
+    // Draggable Recenter Button
     recenterButton: {
         position: 'absolute',
-        right: 16,
-        bottom: 120,
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: RECENTER_BTN_SIZE,
+        height: RECENTER_BTN_SIZE,
+        zIndex: 999,
+    },
+    recenterTouchable: {
+        width: '100%',
+        height: '100%',
+        borderRadius: RECENTER_BTN_SIZE / 2,
         backgroundColor: '#fff',
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.15,
         shadowRadius: 4,
         elevation: 5
+    },
+    orderBadge: {
+        position: 'absolute',
+        top: -4,
+        right: -4,
+        backgroundColor: '#EF4444',
+        borderRadius: 10,
+        minWidth: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 6,
+        borderWidth: 2,
+        borderColor: '#fff'
+    },
+    orderBadgeText: {
+        color: '#fff',
+        fontSize: 11,
+        fontFamily: 'PoppinsSemiBold'
     },
 
     // Draggable Action Panel
@@ -743,10 +1094,37 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.3)',
         backgroundColor: 'rgba(255,255,255,0.2)'
     },
-    glassActionButton: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    glassActionButton: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    ordersButton: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative'
+    },
+    orderCountBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 20,
+        backgroundColor: '#EF4444',
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 5
+    },
+    orderCountText: {
+        color: '#fff',
+        fontSize: 10,
+        fontFamily: 'PoppinsSemiBold'
+    },
 
     // Modal
-    modalContainer: { flex: 1, backgroundColor: '#fff', paddingTop: Platform.OS === 'ios' ? 60 : 20 },
+    modalContainer: {flex: 1, backgroundColor: '#fff', paddingTop: Platform.OS === 'ios' ? 60 : 20},
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -756,8 +1134,8 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB'
     },
-    modalTitle: { fontSize: 20, fontFamily: 'PoppinsSemiBold', color: '#111827' },
-    modalContent: { flex: 1, padding: 20 },
+    modalTitle: {fontSize: 20, fontFamily: 'PoppinsSemiBold', color: '#111827'},
+    modalContent: {flex: 1, padding: 20},
     savedLocationItem: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -774,10 +1152,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginRight: 12
     },
-    locationDetails: { flex: 1 },
-    locationType: { fontSize: 16, fontFamily: 'PoppinsSemiBold', color: '#111827', marginBottom: 4 },
-    locationAddress: { fontSize: 14, fontFamily: 'PoppinsRegular', color: '#6B7280', marginBottom: 4 },
-    locationLandmark: { fontSize: 12, fontFamily: 'PoppinsRegular', color: '#9CA3AF' }
+    locationDetails: {flex: 1},
+    locationType: {fontSize: 16, fontFamily: 'PoppinsSemiBold', color: '#111827', marginBottom: 4},
+    locationAddress: {fontSize: 14, fontFamily: 'PoppinsRegular', color: '#6B7280', marginBottom: 4},
+    locationLandmark: {fontSize: 12, fontFamily: 'PoppinsRegular', color: '#9CA3AF'}
 });
 
 export default LogisticMap;
