@@ -1,9 +1,13 @@
-import {Text} from "react-native";
+// app/(protected)/driver/discover/index.jsx
 import Discover from "/components/Driver/Discover/Discover"
+import {useSessionStore} from "../../../../store/useSessionStore";
 
 function DiscoverScreen() {
+    const userData = useSessionStore(state => state.user);
     return (
-        <Discover />
+        <Discover
+            userData={userData}
+        />
     );
 }
 

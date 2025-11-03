@@ -137,14 +137,13 @@ function LogisticMap() {
     // Zustand Store
     const {
         currentLocation: storeLocation,
-        availableOrders,
-        orderCount,
         fetchAvailableOrders,
-        startOrderPolling,
-        stopOrderPolling,
         updateLocation,
-        isOnActiveDelivery
+        isOnActiveDelivery,
+        tabOrders
     } = useLogisticStore();
+
+    const { availableOrders, orderCount, isFetchingOrders } = tabOrders.map;
 
     const [location, setLocation] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
@@ -155,6 +154,7 @@ function LogisticMap() {
 
     // SCAN STATE
     const [isScanning, setIsScanning] = useState(false);
+    const [recenterLoading, setRecenterLoading] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(30);
     const [scanCenter, setScanCenter] = useState(null); // { latitude, longitude, label? }
 
@@ -190,15 +190,10 @@ function LogisticMap() {
     const scanPulse = useSharedValue(0);
 
     useEffect(() => {
+        useLogisticStore.getState().setCurrentTabContext('map');
         initializeMap();
-
-        // Start background order polling
-        startOrderPolling();
-
-        return () => {
-            stopOrderPolling();
-        };
     }, []);
+
 
     // Start sonar animation when location is available
     useEffect(() => {
@@ -239,17 +234,6 @@ function LogisticMap() {
         };
     }, [location]);
 
-    // Fetch orders when location changes
-    useEffect(() => {
-        if (location && !isOnActiveDelivery) {
-            const locationForFetch = {
-                lat: location.latitude,
-                lng: location.longitude
-            };
-            fetchAvailableOrders(locationForFetch, true); // Silent fetch
-        }
-    }, [location?.latitude, location?.longitude]);
-
     const initializeMap = async () => {
         try {
             setErrorMsg(null);
@@ -268,7 +252,7 @@ function LogisticMap() {
             setLocation(currentLocation.coords);
 
             // Update store location
-            updateLocation(currentLocation.coords);
+            updateLocation(currentLocation.coords, 'map');
 
             setRegion({
                 latitude,
@@ -279,13 +263,13 @@ function LogisticMap() {
 
             const subscriber = await Location.watchPositionAsync(
                 {
-                    accuracy: Location.Accuracy.High,
+                    accuracy: Location.Accuracy.Balanced,
                     timeInterval: 5000,
                     distanceInterval: 10
                 },
                 (newLocation) => {
                     setLocation(newLocation.coords);
-                    updateLocation(newLocation.coords);
+                    updateLocation(newLocation.coords, 'map');
                 }
             );
 
@@ -447,27 +431,21 @@ function LogisticMap() {
         if (!details?.geometry?.location) return;
 
         const {lat, lng} = details.geometry.location;
-        const newRegion = {
-            latitude: lat,
-            longitude: lng,
-            latitudeDelta: 0.005,
-            longitudeDelta: 0.005
-        };
+        const newRegion = {latitude: lat, longitude: lng, latitudeDelta: 0.005, longitudeDelta: 0.005};
 
         setRegion(newRegion);
-        setManualLocation({
-            latitude: lat,
-            longitude: lng,
-            address: details.formatted_address || data.description
-        });
+        setManualLocation({latitude: lat, longitude: lng, address: details.formatted_address || data.description});
         setSelectedLocation(null);
+
+        // Update location in store (will trigger fetch automatically)
+        updateLocation({latitude: lat, longitude: lng}, 'map');
 
         if (mapRef.current) {
             mapRef.current.animateToRegion(newRegion, 1000);
         }
 
         Keyboard.dismiss();
-    }, []);
+    }, [updateLocation]);
 
     const handleSavedLocationSelect = useCallback((savedLocation) => {
         const {coordinates} = savedLocation;
@@ -486,7 +464,7 @@ function LogisticMap() {
         updateLocation({
             latitude: coordinates.lat,
             longitude: coordinates.lng,
-        });
+        }, 'map');
 
         if (mapRef.current) {
             mapRef.current.animateToRegion(newRegion, 1000);
@@ -494,6 +472,7 @@ function LogisticMap() {
     }, []);
 
     const handleRecenter = useCallback(async () => {
+        setRecenterLoading(true);
         try {
             const {status} = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') return;
@@ -501,7 +480,6 @@ function LogisticMap() {
             const currentLocation = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.Balanced
             });
-            console.log({currentLocation, pt: 'rec'})
 
             const userRegion = {
                 latitude: currentLocation.coords.latitude,
@@ -515,14 +493,20 @@ function LogisticMap() {
             setSelectedLocation(null);
             setManualLocation(null);
 
+            // Update location in store (will trigger fetch automatically)
+            updateLocation(currentLocation.coords, 'map');
+
             if (mapRef.current) {
                 mapRef.current.animateToRegion(userRegion, 1000);
             }
+            setRecenterLoading(false);
         } catch (error) {
+            setRecenterLoading(false);
             console.log('Recenter error:', error);
             toast.error('Location Error');
+            useLogisticStore.getState().clearTabOrders('map');
         }
-    }, []);
+    }, [updateLocation]);
 
     const getLocationIcon = (type) => {
         const icons = {
@@ -537,15 +521,23 @@ function LogisticMap() {
         return icons[type] || 'location';
     };
 
-    const handleScanComplete = useCallback(async (result) => {
-        if (result.success) {
-            toast.success(`Found ${result.orders?.length || 0} orders!`);
-            // Refresh available orders
-            await fetchAvailableOrders();
+    const handleScanComplete = useCallback((result) => {
+        // Close scan overlay
+        setShowScanOverlay(false);
+
+        if (result.success && result.count > 0) {
+            // Show success toast
+            toast.success(`Found ${result.count} order${result.count > 1 ? 's' : ''}!`);
+
+            // Immediately open OrdersListModal to show results
+            setTimeout(() => {
+                setShowOrdersModal(true);
+            }, 300); // Small delay for smooth transition
         } else {
-            toast.info('No orders found in this area');
+            // Show info toast - no need to open modal for empty results
+            toast.info(result.message || 'No orders found. Try adjusting your settings.');
         }
-    }, [fetchAvailableOrders]);
+    }, []);
 
     const getActiveCenter = useCallback(() => {
         if (manualLocation) {
@@ -670,7 +662,7 @@ function LogisticMap() {
     }
 
     // Create a wrapper component
-    const SafeMarker = ({ coordinate, children, ...props }) => {
+    const SafeMarker = ({coordinate, children, ...props}) => {
         if (!isValidCoordinate(coordinate)) {
             console.log('Invalid marker coordinate:', coordinate);
             toast.info('Invalid marker cordinates')
@@ -766,201 +758,238 @@ function LogisticMap() {
     });
 
     return (
-        <View style={styles.container}>
-            {/* Search */}
-            <View style={styles.searchContainer}>
-                {AutocompleteComponent}
-                {savedLocations.length > 0 && (
-                    <TouchableOpacity
-                        style={styles.savedLocationsButton}
-                        onPress={() => setSavedLocationsModal(true)}
-                    >
-                        <Ionicons name="bookmark" size={20} color="#6366F1"/>
-                        <Text style={styles.savedLocationsText}>Saved Locations</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+        <>
+            <View style={styles.container}>
+                {/* Search */}
+                <View style={styles.searchContainer}>
+                    {AutocompleteComponent}
+                    {savedLocations.length > 0 && (
+                        <TouchableOpacity
+                            style={styles.savedLocationsButton}
+                            onPress={() => setSavedLocationsModal(true)}
+                        >
+                            <Ionicons name="bookmark" size={20} color="#6366F1"/>
+                            <Text style={styles.savedLocationsText}>Saved Locations</Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
 
-            {/* Map */}
-            <MapErrorBoundary>
-                <View style={styles.mapContainer}>
-                    <MapView
-                        ref={mapRef}
-                        style={styles.map}
-                        provider={PROVIDER_GOOGLE}
-                        region={region}
-                        showsUserLocation={false}
-                        showsMyLocationButton={false}
-                        followsUserLocation={!manualLocation && !selectedLocation}
-                        zoomControlEnabled
-                        showsCompass
-                        mapType="standard"
-                        moveOnMarkerPress={false}
-                        pitchEnabled={false}
-                        rotateEnabled={false}
-                    >
-                        {/* ADD VALIDATION for all markers */}
-                        {location && location.latitude && location.longitude && (
-                            <>
-                                {/* Accuracy Circle */}
-                                <Circle
-                                    center={{latitude: location.latitude, longitude: location.longitude}}
-                                    radius={location.accuracy || 50}
-                                    strokeColor="rgba(99, 102, 241, 0.2)"
-                                    fillColor="rgba(99, 102, 241, 0.1)"
-                                />
-
-                                {/* Current Location Marker */}
-                                <PulsatingMarker
-                                    coordinate={{latitude: location.latitude, longitude: location.longitude}}
-                                    color="#6366F1"
-                                    icon="navigate"
-                                    size={20}
-                                />
-
-                                {/* Sonar Animation */}
-                                <Marker
-                                    coordinate={{latitude: location.latitude, longitude: location.longitude}}
-                                    anchor={{x: 0.5, y: 0.5}}
-                                >
-                                    <View style={styles.sonarContainer}>
-                                        <Animated.View style={[styles.sonarPulse, pulse1Style]}/>
-                                        <Animated.View style={[styles.sonarPulse, pulse2Style]}/>
-                                        <Animated.View style={[styles.sonarPulse, pulse3Style]}/>
-                                    </View>
-                                </Marker>
-                            </>
-                        )}
-
-                        {/* Manual / Saved Location - ADD VALIDATION */}
-                        {(manualLocation || selectedLocation) && (
-                            (() => {
-                                const coord = manualLocation || {
-                                    latitude: selectedLocation?.coordinates?.lat,
-                                    longitude: selectedLocation?.coordinates?.lng
-                                };
-
-                                // Validate coordinates exist
-                                if (!coord.latitude || !coord.longitude) return null;
-
-                                return (
-                                    <PulsatingMarker
-                                        coordinate={coord}
-                                        color="#EF4444"
-                                        icon={selectedLocation ? getLocationIcon(selectedLocation.locationType) : 'location'}
-                                        size={22}
+                {/* Map */}
+                <MapErrorBoundary>
+                    <View style={styles.mapContainer}>
+                        <MapView
+                            ref={mapRef}
+                            style={styles.map}
+                            provider={PROVIDER_GOOGLE}
+                            region={region}
+                            showsUserLocation={false}
+                            showsMyLocationButton={false}
+                            followsUserLocation={!manualLocation && !selectedLocation}
+                            zoomControlEnabled
+                            showsCompass
+                            mapType="standard"
+                            moveOnMarkerPress={false}
+                            pitchEnabled={false}
+                            rotateEnabled={false}
+                        >
+                            {/* ADD VALIDATION for all markers */}
+                            {location && location.latitude && location.longitude && (
+                                <>
+                                    {/* Accuracy Circle */}
+                                    <Circle
+                                        center={{latitude: location.latitude, longitude: location.longitude}}
+                                        radius={location.accuracy || 50}
+                                        strokeColor="rgba(99, 102, 241, 0.2)"
+                                        fillColor="rgba(99, 102, 241, 0.1)"
                                     />
-                                );
-                            })()
-                        )}
-                    </MapView>
+
+                                    {/* Current Location Marker */}
+                                    <PulsatingMarker
+                                        coordinate={{latitude: location.latitude, longitude: location.longitude}}
+                                        color="#6366F1"
+                                        icon="navigate"
+                                        size={20}
+                                    />
+
+                                    {/* Sonar Animation */}
+                                    <Marker
+                                        coordinate={{latitude: location.latitude, longitude: location.longitude}}
+                                        anchor={{x: 0.5, y: 0.5}}
+                                    >
+                                        <View style={styles.sonarContainer}>
+                                            <Animated.View style={[styles.sonarPulse, pulse1Style]}/>
+                                            <Animated.View style={[styles.sonarPulse, pulse2Style]}/>
+                                            <Animated.View style={[styles.sonarPulse, pulse3Style]}/>
+                                        </View>
+                                    </Marker>
+                                </>
+                            )}
+
+                            {/* Manual / Saved Location - ADD VALIDATION */}
+                            {(manualLocation || selectedLocation) && (
+                                (() => {
+                                    const coord = manualLocation || {
+                                        latitude: selectedLocation?.coordinates?.lat,
+                                        longitude: selectedLocation?.coordinates?.lng
+                                    };
+
+                                    // Validate coordinates exist
+                                    if (!coord.latitude || !coord.longitude) return null;
+
+                                    return (
+                                        <PulsatingMarker
+                                            coordinate={coord}
+                                            color="#EF4444"
+                                            icon={selectedLocation ? getLocationIcon(selectedLocation.locationType) : 'location'}
+                                            size={22}
+                                        />
+                                    );
+                                })()
+                            )}
+                        </MapView>
 
 
-                    {/* Draggable Recenter Button with Order Count Badge */}
-                    <GestureDetector gesture={recenterDragGesture}>
-                        <Animated.View style={[styles.recenterButton, recenterButtonStyle]}>
+                        {/* Draggable Recenter Button with Order Count Badge */}
+                        <GestureDetector gesture={recenterDragGesture}>
+                            <Animated.View style={[styles.recenterButton, recenterButtonStyle]}>
+                                    { recenterLoading ? <ActivityIndicator size="large" color="#6366F1"/> :
+                                        <TouchableOpacity
+                                            style={styles.recenterTouchable}
+                                            onPress={handleRecenter}
+                                            activeOpacity={0.8}
+                                            disabled={recenterLoading}
+                                        >
+                                            <Ionicons name="locate" size={24} color="#6366F1"/>
+                                        </TouchableOpacity>
+                                    }
+                            </Animated.View>
+                        </GestureDetector>
+                    </View>
+                </MapErrorBoundary>
+
+                {/* Draggable Action Panel */}
+                <GestureDetector gesture={actionDragGesture}>
+                    <Animated.View style={[styles.draggableActionPanel, actionPanelStyle]}>
+                        <BlurView intensity={85} tint="light" style={styles.glassActionPanel}>
+                            {/* Settings */}
                             <TouchableOpacity
-                                style={styles.recenterTouchable}
-                                onPress={handleRecenter}
+                                style={styles.glassActionButton}
+                                onPress={() => setShowSettingsModal(true)}
+                            >
+                                <Ionicons name="settings" size={20} color="#6366F1"/>
+                            </TouchableOpacity>
+
+                            {/* Scan */}
+                            <TouchableOpacity
+                                style={styles.glassActionButton}
+                                onPress={() => setShowScanOverlay(true)}
                                 activeOpacity={0.8}
                             >
-                                <Ionicons name="locate" size={24} color="#6366F1"/>
+                                <Ionicons name="radio-sharp" size={22} color="#6366F1"/>
                             </TouchableOpacity>
-                        </Animated.View>
-                    </GestureDetector>
-                </View>
-            </MapErrorBoundary>
 
-            {/* Draggable Action Panel */}
-            <GestureDetector gesture={actionDragGesture}>
-                <Animated.View style={[styles.draggableActionPanel, actionPanelStyle]}>
-                    <BlurView intensity={85} tint="light" style={styles.glassActionPanel}>
-                        {/* Settings */}
-                        <TouchableOpacity
-                            style={styles.glassActionButton}
-                            onPress={() => setShowSettingsModal(true)}
-                        >
-                            <Ionicons name="settings" size={20} color="#6366F1"/>
-                        </TouchableOpacity>
+                            {/* Orders List with Count */}
+                            {/*<TouchableOpacity*/}
+                            {/*    style={styles.ordersButton}*/}
+                            {/*    onPress={() => setShowOrdersModal(true)}*/}
+                            {/*>*/}
+                            {/*    <Ionicons name="cube" size={20} color="#6366F1"/>*/}
+                            {/*    {orderCount >= 0 && (*/}
+                            {/*        <View style={styles.orderCountBadge}>*/}
+                            {/*            <Text style={styles.orderCountText}>{orderCount}</Text>*/}
+                            {/*        </View>*/}
+                            {/*    )}*/}
+                            {/*</TouchableOpacity>*/}
 
-                        {/* Scan */}
-                        <TouchableOpacity
-                            style={styles.glassActionButton}
-                            onPress={() => setShowScanOverlay(true)}
-                            activeOpacity={0.8}
-                        >
-                            <Ionicons name="radio-sharp" size={22} color="#6366F1"/>
-                        </TouchableOpacity>
-
-                        {/* Orders List with Count */}
-                        <TouchableOpacity
-                            style={styles.ordersButton}
-                            onPress={() => setShowOrdersModal(true)}
-                        >
-                            <Ionicons name="cube" size={20} color="#6366F1"/>
-                            {orderCount > 0 && (
-                                <View style={styles.orderCountBadge}>
-                                    <Text style={styles.orderCountText}>{orderCount}</Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    </BlurView>
-                </Animated.View>
-            </GestureDetector>
-
-            {/* Saved Locations Modal */}
-            <Modal
-                visible={savedLocationsModal}
-                animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => setSavedLocationsModal(false)}
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Saved Locations</Text>
-                        <TouchableOpacity onPress={() => setSavedLocationsModal(false)}>
-                            <Ionicons name="close" size={24} color="#111827"/>
-                        </TouchableOpacity>
-                    </View>
-
-                    <ScrollView style={styles.modalContent}>
-                        {savedLocations.map((savedLocation) => (
+                            {/* Orders List with Count */}
                             <TouchableOpacity
-                                key={savedLocation._id}
-                                style={styles.savedLocationItem}
-                                onPress={() => handleSavedLocationSelect(savedLocation)}
+                                style={styles.ordersButton}
+                                onPress={() => setShowOrdersModal(true)}
+                                disabled={isFetchingOrders}
                             >
-                                <View style={styles.locationIcon}>
-                                    <Ionicons
-                                        name={getLocationIcon(savedLocation.locationType)}
-                                        size={20}
-                                        color="#6366F1"
-                                    />
-                                </View>
-                                <View style={styles.locationDetails}>
-                                    <Text style={styles.locationType}>
-                                        {savedLocation.locationType.charAt(0).toUpperCase() +
-                                            savedLocation.locationType.slice(1)}
-                                    </Text>
-                                    <Text style={styles.locationAddress} numberOfLines={2}>
-                                        {savedLocation.address}
-                                    </Text>
-                                    {savedLocation.landmark && (
-                                        <Text style={styles.locationLandmark}>📍 {savedLocation.landmark}</Text>
-                                    )}
-                                </View>
-                                <Ionicons name="chevron-forward" size={20} color="#9CA3AF"/>
+                                <Ionicons name="cube" size={20} color="#6366F1"/>
+                                {isFetchingOrders ? (
+                                    <ActivityIndicator size="small" color="#6366F1" style={styles.loadingIndicator}/>
+                                ) : orderCount > 0 ? (
+                                    <View style={styles.orderCountBadge}>
+                                        <Text style={styles.orderCountText}>{orderCount}</Text>
+                                    </View>
+                                ) : null}
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            </Modal>
-            <ScanOverlay
-                visible={showScanOverlay}
-                onClose={() => setShowScanOverlay(false)}
-                onScanComplete={handleScanComplete}
-            />
-        </View>
+                        </BlurView>
+                    </Animated.View>
+                </GestureDetector>
+
+                {/* Saved Locations Modal */}
+                <Modal
+                    visible={savedLocationsModal}
+                    animationType="slide"
+                    presentationStyle="pageSheet"
+                    onRequestClose={() => setSavedLocationsModal(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Saved Locations</Text>
+                            <TouchableOpacity onPress={() => setSavedLocationsModal(false)}>
+                                <Ionicons name="close" size={24} color="#111827"/>
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles.modalContent}>
+                            {savedLocations.map((savedLocation) => (
+                                <TouchableOpacity
+                                    key={savedLocation._id}
+                                    style={styles.savedLocationItem}
+                                    onPress={() => handleSavedLocationSelect(savedLocation)}
+                                >
+                                    <View style={styles.locationIcon}>
+                                        <Ionicons
+                                            name={getLocationIcon(savedLocation.locationType)}
+                                            size={20}
+                                            color="#6366F1"
+                                        />
+                                    </View>
+                                    <View style={styles.locationDetails}>
+                                        <Text style={styles.locationType}>
+                                            {savedLocation.locationType.charAt(0).toUpperCase() +
+                                                savedLocation.locationType.slice(1)}
+                                        </Text>
+                                        <Text style={styles.locationAddress} numberOfLines={2}>
+                                            {savedLocation.address}
+                                        </Text>
+                                        {savedLocation.landmark && (
+                                            <Text style={styles.locationLandmark}>📍 {savedLocation.landmark}</Text>
+                                        )}
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={20} color="#9CA3AF"/>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                </Modal>
+                {/* Scan Overlay */}
+                <ScanOverlay
+                    visible={showScanOverlay}
+                    onClose={() => setShowScanOverlay(false)}
+                    onScanComplete={handleScanComplete}
+                    targetTab="map"
+                />
+
+                {/* Settings Modal */}
+                <ScanSettingsModal
+                    visible={showSettingsModal}
+                    onClose={() => setShowSettingsModal(false)}
+                    targetTab="map"
+                />
+
+                {/* Orders List Modal */}
+                <OrdersListModal
+                    visible={showOrdersModal}
+                    onClose={() => setShowOrdersModal(false)}
+                    sourceTab="map"
+                />
+            </View>
+        </>
     );
 }
 
@@ -1108,7 +1137,7 @@ const styles = StyleSheet.create({
     orderCountBadge: {
         position: 'absolute',
         top: 8,
-        right: 20,
+        right: 12,
         backgroundColor: '#EF4444',
         borderRadius: 10,
         minWidth: 18,
@@ -1155,7 +1184,14 @@ const styles = StyleSheet.create({
     locationDetails: {flex: 1},
     locationType: {fontSize: 16, fontFamily: 'PoppinsSemiBold', color: '#111827', marginBottom: 4},
     locationAddress: {fontSize: 14, fontFamily: 'PoppinsRegular', color: '#6B7280', marginBottom: 4},
-    locationLandmark: {fontSize: 12, fontFamily: 'PoppinsRegular', color: '#9CA3AF'}
+    locationLandmark: {fontSize: 12, fontFamily: 'PoppinsRegular', color: '#9CA3AF'},
+    loadingIndicator: {
+        position: 'absolute',
+        top: 8,
+        right: 20,
+        width: 18,
+        height: 18,
+    },
 });
 
 export default LogisticMap;

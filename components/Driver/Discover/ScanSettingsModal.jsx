@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import Slider from '@react-native-community/slider';
+// import Slider from '@react-native-community/slider';
 import useLogisticStore from '../../../store/Driver/useLogisticStore';
 import * as Haptics from 'expo-haptics';
 import { toast } from 'sonner-native';
@@ -177,31 +177,57 @@ function ScanSettingsModal({ visible, onClose }) {
                     </View>
 
                     {/* Radius Slider (only for current location) */}
+
                     {area === 'current' && (
                         <View style={styles.section}>
-                            <View style={styles.sliderHeader}>
-                                <Text style={styles.sectionTitle}>Search Radius</Text>
-                                <View style={styles.radiusBadge}>
-                                    <Text style={styles.radiusText}>{radius}km</Text>
-                                </View>
-                            </View>
-                            <Slider
-                                style={styles.slider}
-                                minimumValue={1}
-                                maximumValue={50}
-                                step={1}
-                                value={radius}
-                                onValueChange={setRadius}
-                                minimumTrackTintColor="#6366F1"
-                                maximumTrackTintColor="#E5E7EB"
-                                thumbTintColor="#6366F1"
-                            />
-                            <View style={styles.sliderLabels}>
-                                <Text style={styles.sliderLabel}>1km</Text>
-                                <Text style={styles.sliderLabel}>50km</Text>
+                            <Text style={styles.sectionTitle}>Search Radius</Text>
+                            <View style={styles.presetContainer}>
+                                {[5, 10, 15, 25, 50].map(preset => (
+                                    <TouchableOpacity
+                                        key={preset}
+                                        style={[
+                                            styles.presetButton,
+                                            radius === preset && styles.presetButtonActive
+                                        ]}
+                                        onPress={() => setRadius(preset)}
+                                    >
+                                        <Text style={[
+                                            styles.presetText,
+                                            radius === preset && styles.presetTextActive
+                                        ]}>
+                                            {preset}km
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
                             </View>
                         </View>
                     )}
+
+                    {/*{area === 'current' && (*/}
+                    {/*    <View style={styles.section}>*/}
+                    {/*        <View style={styles.sliderHeader}>*/}
+                    {/*            <Text style={styles.sectionTitle}>Search Radius</Text>*/}
+                    {/*            <View style={styles.radiusBadge}>*/}
+                    {/*                <Text style={styles.radiusText}>{radius}km</Text>*/}
+                    {/*            </View>*/}
+                    {/*        </View>*/}
+                    {/*        <Slider*/}
+                    {/*            style={styles.slider}*/}
+                    {/*            minimumValue={1}*/}
+                    {/*            maximumValue={50}*/}
+                    {/*            step={1}*/}
+                    {/*            value={radius}*/}
+                    {/*            onValueChange={setRadius}*/}
+                    {/*            minimumTrackTintColor="#6366F1"*/}
+                    {/*            maximumTrackTintColor="#E5E7EB"*/}
+                    {/*            thumbTintColor="#6366F1"*/}
+                    {/*        />*/}
+                    {/*        <View style={styles.sliderLabels}>*/}
+                    {/*            <Text style={styles.sliderLabel}>1km</Text>*/}
+                    {/*            <Text style={styles.sliderLabel}>50km</Text>*/}
+                    {/*        </View>*/}
+                    {/*    </View>*/}
+                    {/*)}*/}
 
                     {/* Max Distance */}
                     <View style={styles.section}>
@@ -214,20 +240,27 @@ function ScanSettingsModal({ visible, onClose }) {
                         <Text style={styles.sectionDescription}>
                             Maximum distance you're willing to travel for pickup
                         </Text>
-                        <Slider
-                            style={styles.slider}
-                            minimumValue={1}
-                            maximumValue={100}
-                            step={1}
-                            value={maxDistance}
-                            onValueChange={setMaxDistance}
-                            minimumTrackTintColor="#6366F1"
-                            maximumTrackTintColor="#E5E7EB"
-                            thumbTintColor="#6366F1"
-                        />
-                        <View style={styles.sliderLabels}>
-                            <Text style={styles.sliderLabel}>1km</Text>
-                            <Text style={styles.sliderLabel}>100km</Text>
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Maximum Distance</Text>
+                            <View style={styles.presetContainer}>
+                                {[10, 25, 50, 75, 100].map(preset => (
+                                    <TouchableOpacity
+                                        key={preset}
+                                        style={[
+                                            styles.presetButton,
+                                            maxDistance === preset && styles.presetButtonActive
+                                        ]}
+                                        onPress={() => setMaxDistance(preset)}
+                                    >
+                                        <Text style={[
+                                            styles.presetText,
+                                            maxDistance === preset && styles.presetTextActive
+                                        ]}>
+                                            {preset}km
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         </View>
                     </View>
 
@@ -588,6 +621,32 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: 'PoppinsSemiBold',
         color: '#fff'
+    },
+
+    presetContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12
+    },
+    presetButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 8,
+        backgroundColor: '#fff',
+        borderWidth: 2,
+        borderColor: '#E5E7EB'
+    },
+    presetButtonActive: {
+        borderColor: '#6366F1',
+        backgroundColor: '#EEF2FF'
+    },
+    presetText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#6B7280'
+    },
+    presetTextActive: {
+        color: '#6366F1'
     }
 });
 

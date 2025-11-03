@@ -19,10 +19,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
+import useLogisticStore from '../../../store/Driver/useLogisticStore';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-function ScanOverlay ({ visible, onClose, onScanComplete }) {
+function ScanOverlay ({ visible, onClose, onScanComplete, targetTab }) {
+    const { fetchAvailableOrders, scanSettings } = useLogisticStore();
+
     const [isScanning, setIsScanning] = useState(false);
     const [timeLeft, setTimeLeft] = useState(30);
     const [scanResult, setScanResult] = useState(null);
@@ -33,42 +36,50 @@ function ScanOverlay ({ visible, onClose, onScanComplete }) {
     const pulse3 = useSharedValue(0);
     const progress = useSharedValue(0);
 
+    const getTabContextDisplay = () => {
+        switch (targetTab) {
+            case 'map': return 'Map View';
+            case 'orders': return 'Orders List';
+            default: return targetTab || 'Current View';
+        }
+    };
+
+    const getScanDescription = () => {
+        if (scanSettings.area === 'current') {
+            return `within ${scanSettings.radius}km radius`;
+        } else {
+            return 'state-wide area';
+        }
+    };
+
     // Start scanning
-    const startScanning = useCallback(() => {
-        console.log('Starting scan...');
+    const startScanning = useCallback(async () => {
+        console.log('Starting scan for tab:', targetTab, 'with settings:', scanSettings);
         setIsScanning(true);
         setTimeLeft(30);
         setScanResult(null);
         progress.value = 0;
 
-        // Start pulsating animations
-        pulse1.value = withRepeat(
-            withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }),
-            -1,
-            false
-        );
-
-        pulse2.value = withRepeat(
-            withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }),
-            -1,
-            false
-        );
-
-        pulse3.value = withRepeat(
-            withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }),
-            -1,
-            false
-        );
-
-        // Start progress animation
+        // Start animations
+        pulse1.value = withRepeat(withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }), -1, false);
+        pulse2.value = withRepeat(withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }), -1, false);
+        pulse3.value = withRepeat(withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) }), -1, false);
         progress.value = withTiming(1, { duration: 30000, easing: Easing.linear });
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }, []);
+
+        // Fetch orders using store (uses current settings)
+        const result = await fetchAvailableOrders(null, false, targetTab);
+
+        // Update scan result after animation
+        setTimeout(() => {
+            completeScan(result);
+        }, 3000); // Show animation for 3s minimum
+    }, [fetchAvailableOrders, targetTab]);
 
     // Stop scanning
     const stopScanning = useCallback(() => {
-        console.log('Stopping scan...');
+        console.log('Stopping scan for tab:', targetTab);
         setIsScanning(false);
 
         // Cancel all animations
@@ -83,7 +94,7 @@ function ScanOverlay ({ visible, onClose, onScanComplete }) {
         progress.value = 0;
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }, []);
+    }, [targetTab]);
 
     // Handle close with confirmation
     const handleClose = useCallback(() => {
@@ -128,40 +139,32 @@ function ScanOverlay ({ visible, onClose, onScanComplete }) {
     }, [isScanning, timeLeft]);
 
     // Complete scan
-    const completeScan = useCallback(() => {
-        console.log('Scan completed');
+    const completeScan = useCallback((result) => {
+        console.log('Scan completed for tab:', targetTab, 'Result:', result);
         stopScanning();
 
-        // Simulate results
-        setTimeout(() => {
-            const hasOrders = Math.random() > 0.4;
-            const result = hasOrders
-                ? {
-                    success: true,
-                    message: `Found ${Math.floor(Math.random() * 3) + 1} available orders nearby! 🎉`,
-                    orders: [
-                        { id: 1, distance: '0.8km', price: '₦2,500' },
-                        { id: 2, distance: '1.2km', price: '₦1,800' }
-                    ]
-                }
-                : {
-                    success: false,
-                    message: 'No orders found in your area. Try moving to a different location.',
-                    orders: []
-                };
+        const scanResult = {
+            success: result.success && result.count > 0,
+            message: result.success && result.count > 0
+                ? `Found ${result.count} available order${result.count > 1 ? 's' : ''} in ${getTabContextDisplay()}! 🎉`
+                : `No orders found in ${getTabContextDisplay()}. Try adjusting your location or scan settings.`,
+            orders: result.orders || [],
+            count: result.count || 0,
+            tabContext: targetTab
+        };
 
-            setScanResult(result);
-            Haptics.notificationAsync(
-                result.success
-                    ? Haptics.NotificationFeedbackType.Success
-                    : Haptics.NotificationFeedbackType.Warning
-            );
 
-            if (onScanComplete) {
-                onScanComplete(result);
-            }
-        }, 500);
-    }, [stopScanning, onScanComplete]);
+        setScanResult(scanResult);
+        Haptics.notificationAsync(
+            scanResult.success
+                ? Haptics.NotificationFeedbackType.Success
+                : Haptics.NotificationFeedbackType.Warning
+        );
+
+        if (onScanComplete) {
+            onScanComplete(scanResult);
+        }
+    }, [stopScanning, onScanComplete, targetTab]);
 
     // Reset when modal closes
     useEffect(() => {
@@ -216,6 +219,9 @@ function ScanOverlay ({ visible, onClose, onScanComplete }) {
                                 <Text style={styles.title}>
                                     {isScanning ? 'Scanning Area' : 'Area Scanner'}
                                 </Text>
+                                <Text style={styles.tabContext}>
+                                    for {getTabContextDisplay()}
+                                </Text>
                                 <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
                                     <Ionicons name="close" size={24} color="#9CA3AF" />
                                 </TouchableOpacity>
@@ -246,10 +252,10 @@ function ScanOverlay ({ visible, onClose, onScanComplete }) {
                                 {/* Status Text */}
                                 <Text style={styles.statusText}>
                                     {isScanning
-                                        ? `Scanning for available orders...`
+                                        ? `Scanning ${getScanDescription()}...`
                                         : scanResult
                                             ? scanResult.message
-                                            : 'Ready to scan your area for delivery orders'
+                                            : `Ready to scan ${getScanDescription()} for delivery orders`
                                     }
                                 </Text>
 
@@ -304,25 +310,19 @@ function ScanOverlay ({ visible, onClose, onScanComplete }) {
                                     </View>
                                 )}
                             </View>
-
-                            {/* Scan Results */}
-                            {scanResult?.success && scanResult.orders.length > 0 && (
-                                <View style={styles.resultsContainer}>
-                                    <Text style={styles.resultsTitle}>Available Orders:</Text>
-                                    {scanResult.orders.map(order => (
-                                        <View key={order.id} style={styles.orderItem}>
-                                            <Ionicons name="cube-outline" size={16} color="#10B981" />
-                                            <Text style={styles.orderText}>
-                                                Order #{order.id} • {order.distance} • {order.price}
-                                            </Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            )}
                         </View>
                     </BlurView>
                 </View>
             </View>
+
+            {scanResult && !scanResult.success && (
+                <View style={styles.noResultsContainer}>
+                    <Ionicons name="information-circle" size={20} color="#F59E0B" />
+                    <Text style={styles.noResultsText}>
+                        Try: Moving to a different location • Adjusting scan settings • Increasing search radius
+                    </Text>
+                </View>
+            )}
         </Modal>
     );
 };
@@ -514,6 +514,13 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsRegular',
         color: '#E5E7EB',
     },
+    tabContext: {
+        fontSize: 12,
+        fontFamily: 'PoppinsRegular',
+        color: '#9CA3AF',
+        marginTop: 2,
+    },
+
 });
 
 export default ScanOverlay;
