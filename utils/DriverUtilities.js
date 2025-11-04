@@ -683,8 +683,8 @@ class DriverUtils {
     static async acceptOrder(orderId, currentLocation) {
         try {
             const response = await axiosPrivate({
-                method: 'POST',
-                url: '/driver/accept-order',
+                method: 'PATCH',
+                url: '/driver/order/accept',
                 data: {
                     orderId,
                     currentLocation: {
@@ -697,6 +697,7 @@ class DriverUtils {
 
             return {
                 success: true,
+                user: response.data.user,
                 order: response.data.order,
                 message: response.data.message,
                 warning: response.data.warning || null
@@ -718,6 +719,13 @@ class DriverUtils {
                 return {
                     success: false,
                     message: 'Order not found or no longer available'
+                };
+            }
+
+            if (error.response?.status === 409) {
+                return {
+                    success: false,
+                    message: error.response.data.error || 'Order already taken'
                 };
             }
 
@@ -962,7 +970,6 @@ class DriverUtils {
             };
         }
     }
-
 
 
 }

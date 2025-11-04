@@ -408,8 +408,21 @@ const useLogisticStore = create((set, get) => ({
         const currentTab = state.currentTabContext || 'map';
 
         try {
+            const currentLocation = state.currentLocation;
+
+            if (!currentLocation) {
+                toast.error('Unable to get your current location');
+                return { success: false, message: 'Location unavailable' };
+            }
             // Call API to accept order
-            const result = await DriverUtils.acceptOrder(order._id);
+            const result = await DriverUtils.acceptOrder(
+                order._id,
+                {
+                    lat: currentLocation.lat,
+                    lng: currentLocation.lng,
+                    accuracy: currentLocation.accuracy || 0
+                }
+            );
 
             if (!result.success) {
                 toast.error(result.message || 'Failed to accept order');

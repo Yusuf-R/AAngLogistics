@@ -35,18 +35,24 @@ function Discover({ userData }) {
     } = useLogisticStore();
 
     // Check if driver has ongoing delivery using your store
-    const hasOngoingDelivery = isOnActiveDelivery &&
-        deliveryStage !== DELIVERY_STAGES.DISCOVERING &&
-        deliveryStage !== DELIVERY_STAGES.COMPLETED &&
-        deliveryStage !== DELIVERY_STAGES.CANCELLED;
+    const hasOngoingDelivery = useMemo(() => {
+        return (
+            isOnActiveDelivery &&
+            deliveryStage !== DELIVERY_STAGES.DISCOVERING &&
+            deliveryStage !== DELIVERY_STAGES.COMPLETED &&
+            deliveryStage !== DELIVERY_STAGES.CANCELLED
+        );
+    }, [isOnActiveDelivery, deliveryStage]);
 
     // Force active tab to 'live' when delivery starts
     useEffect(() => {
-        if (hasOngoingDelivery && activeTab !== 'live') {
-            setActiveTab('live');
+        if (hasOngoingDelivery) {
             setCurrentTabContext('live');
+            setActiveTab('live');
+        } else {
+            setCurrentTabContext(currentTabContext || 'map');
         }
-    }, [hasOngoingDelivery, activeTab]);
+    }, []);
 
     // Animation values
     const mapScale = useSharedValue(1);
