@@ -233,11 +233,9 @@ export default function DriverTabsLayout() {
         }
 
         const driverSegmentIndex = segments.findIndex(s => s === 'driver');
-        if (driverSegmentIndex !== -1 && segments.length > driverSegmentIndex + 2) {
-            return true;
-        }
+        return driverSegmentIndex !== -1 && segments.length > driverSegmentIndex + 2 && !pathname.startsWith('/driver/discover/');
 
-        return false;
+
     }, [pathname, segments, hideTabBarRoutes]);
 
     return (

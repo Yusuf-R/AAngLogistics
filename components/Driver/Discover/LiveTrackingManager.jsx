@@ -2,7 +2,7 @@
 import React, {useState, useMemo, useCallback, useEffect} from 'react';
 import {View, TouchableOpacity, StyleSheet, Platform, Dimensions} from 'react-native';
 import {BlurView} from 'expo-blur';
-import {Ionicons} from "@expo/vector-icons";
+import {Ionicons, Entypo, MaterialCommunityIcons} from "@expo/vector-icons";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -12,33 +12,25 @@ import Animated, {
 } from 'react-native-reanimated';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
-import LogisticMap from './LogisticMap';
-import OrdersList from './OrdersList';
-import useLogisticStore from "../../../store/Driver/useLogisticStore";
+import LiveTracking from "./LiveTracking";
+import LiveChat from "./LiveChat";
 
 const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
-const TAB_W = 160;
+const TAB_W = 140;
 const TAB_H = 70;
-const EDGE_MARGIN = 16;
-const TOP_DEFAULT = Platform.OS === 'ios' ? 60 : 10;
+const EDGE_MARGIN = 6;
+const TOP_DEFAULT = Platform.OS === 'ios' ? 40 : 10;
 
-function Discover({userData}) {
-    // ✅ Only 2 tabs now: 'map' and 'orders'
-    const [activeTab, setActiveTab] = useState('map');
+function LiveTrackingManager({userData}) {
+    // ✅ Only 2 tabs now: 'live' and 'chat'
+    const [activeTab, setActiveTab] = useState('live');
 
-    // ✅ Use store for tab context (map/orders only)
-    const { currentTabContext, setCurrentTabContext } = useLogisticStore();
 
-    // ✅ Set initial context
-    useEffect(() => {
-        setCurrentTabContext(currentTabContext || 'map');
-    }, []);
-
-    // Animation values (only for map and orders)
-    const mapScale = useSharedValue(1);
-    const ordersScale = useSharedValue(0.85);
-    const mapOpacity = useSharedValue(1);
-    const ordersOpacity = useSharedValue(0.6);
+    // Animation values (only for live and Chat)
+    const liveScale = useSharedValue(1);
+    const chatScale = useSharedValue(0.85);
+    const liveOpacity = useSharedValue(1);
+    const chatOpacity = useSharedValue(0.6);
 
     // Draggable tab bar values
     const tx = useSharedValue((SCREEN_W - TAB_W) / 2);
@@ -47,43 +39,59 @@ function Discover({userData}) {
     const glassScale = useSharedValue(1);
     const glassOpacity = useSharedValue(1);
 
-    // Memoized components (only map and orders)
-    const MapComponent = useMemo(() => <LogisticMap />, []);
-    const OrdersComponent = useMemo(() => <OrdersList />, []);
+    const switchToChatTab = useCallback(() => {
+        setActiveTab('chat');
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, []);
+
+    const switchToLiveTab = useCallback(() => {
+        setActiveTab('live');
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }, []);
+
+    // Memoized components (only live and Chat)
+    const LiveMapComponent = useMemo(() =>
+            <LiveTracking onNavigateToChat={switchToChatTab} />,
+        [switchToChatTab]
+    );
+
+    const ChatComponent = useMemo(() =>
+            <LiveChat onNavigateToLive={switchToLiveTab} />,
+        [switchToLiveTab]
+    );
 
     const handleTabPress = useCallback((tab) => {
         if (tab === activeTab) return;
 
-        setCurrentTabContext(tab);
         setActiveTab(tab);
 
         // Reset animations
-        mapScale.value = withSpring(0.85);
-        ordersScale.value = withSpring(0.85);
-        mapOpacity.value = withTiming(0.6);
-        ordersOpacity.value = withTiming(0.6);
+        liveScale.value = withSpring(0.85);
+        chatScale.value = withSpring(0.85);
+        liveOpacity.value = withTiming(0.6);
+        chatOpacity.value = withTiming(0.6);
 
         // Animate selected tab
-        if (tab === 'map') {
-            mapScale.value = withSpring(1, { damping: 15, stiffness: 150 });
-            mapOpacity.value = withTiming(1, { duration: 200 });
-        } else if (tab === 'orders') {
-            ordersScale.value = withSpring(1, { damping: 15, stiffness: 150 });
-            ordersOpacity.value = withTiming(1, { duration: 200 });
+        if (tab === 'live') {
+            liveScale.value = withSpring(1, { damping: 15, stiffness: 150 });
+            liveOpacity.value = withTiming(1, { duration: 200 });
+        } else if (tab === 'chat') {
+            chatScale.value = withSpring(1, { damping: 15, stiffness: 150 });
+            chatOpacity.value = withTiming(1, { duration: 200 });
         }
 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }, [activeTab]);
 
     // Animated styles
-    const mapAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: mapScale.value }],
-        opacity: mapOpacity.value,
+    const liveAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: liveScale.value }],
+        opacity: liveOpacity.value,
     }));
 
-    const ordersAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: ordersScale.value }],
-        opacity: ordersOpacity.value,
+    const chatAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: chatScale.value }],
+        opacity: chatOpacity.value,
     }));
 
 
@@ -161,47 +169,47 @@ function Discover({userData}) {
                     >
                         <View style={styles.glassOverlay} pointerEvents="none"/>
 
-                        {/* Map Tab */}
+                        {/* live Tab */}
                         <TouchableOpacity
                             style={styles.tabButton}
-                            onPress={() => handleTabPress('map')}
+                            onPress={() => handleTabPress('live')}
                             activeOpacity={0.7}
                         >
-                            <Animated.View style={[styles.tabIconContainer, mapAnimatedStyle]}>
+                            <Animated.View style={[styles.tabIconContainer, liveAnimatedStyle]}>
                                 <View style={[
                                     styles.tabIconBg,
-                                    activeTab === 'map' && styles.tabIconBgActive
+                                    activeTab === 'live' && styles.tabIconBgActive
                                 ]}>
-                                    <Ionicons
-                                        name="location"
-                                        size={24}
-                                        color={activeTab === 'map' ? '#4F46E5' : '#6B7280'}
+                                    <MaterialCommunityIcons
+                                        name="transit-connection-variant"
+                                        size={22}
+                                        color={activeTab === 'live' ? '#4F46E5' : '#6B7280'}
                                     />
                                 </View>
-                                {activeTab === 'map' && <View style={styles.activeDot}/>}
+                                {activeTab === 'live' && <View style={styles.activeDot}/>}
                             </Animated.View>
                         </TouchableOpacity>
 
                         <View style={styles.divider}/>
 
-                        {/* Orders Tab */}
+                        {/* Chat Tab */}
                         <TouchableOpacity
                             style={styles.tabButton}
-                            onPress={() => handleTabPress('orders')}
+                            onPress={() => handleTabPress('chat')}
                             activeOpacity={0.7}
                         >
-                            <Animated.View style={[styles.tabIconContainer, ordersAnimatedStyle]}>
+                            <Animated.View style={[styles.tabIconContainer, chatAnimatedStyle]}>
                                 <View style={[
                                     styles.tabIconBg,
-                                    activeTab === 'orders' && styles.tabIconBgActive
+                                    activeTab === 'chat' && styles.tabIconBgActive
                                 ]}>
                                     <Ionicons
-                                        name="cube"
+                                        name="chatbubbles-outline"
                                         size={24}
-                                        color={activeTab === 'orders' ? '#4F46E5' : '#6B7280'}
+                                        color={activeTab === 'chat' ? '#4F46E5' : '#6B7280'}
                                     />
                                 </View>
-                                {activeTab === 'orders' && <View style={styles.activeDot}/>}
+                                {activeTab === 'chat' && <View style={styles.activeDot}/>}
                             </Animated.View>
                         </TouchableOpacity>
                     </BlurView>
@@ -210,15 +218,17 @@ function Discover({userData}) {
         );
     };
 
+
+
     return (
         <View style={styles.container} pointerEvents="box-none">
             {/* Conditional Content Rendering */}
-            <View style={[styles.contentContainer, activeTab !== 'map' && styles.hidden]} pointerEvents="box-none">
-                {MapComponent}
+            <View style={[styles.contentContainer, activeTab !== 'live' && styles.hidden]} pointerEvents="box-none">
+                {LiveMapComponent}
             </View>
 
-            <View style={[styles.contentContainer, activeTab !== 'orders' && styles.hidden]} pointerEvents="box-none">
-                {OrdersComponent}
+            <View style={[styles.contentContainer, activeTab !== 'chat' && styles.hidden]} pointerEvents="box-none">
+                {ChatComponent}
             </View>
 
             {/* Dynamic Tab Bar */}
@@ -312,4 +322,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default Discover;
+export default LiveTrackingManager;

@@ -16,13 +16,19 @@ export default function DiscoverLayout() {
     return (
         <Stack
             screenOptions={{
-                headerShown: true,
+                headerShown: false,
                 headerBackTitleVisible: false,
                 headerShadowVisible: false,
             }}
         >
             <Stack.Screen
                 name="index"
+                options={{
+                    headerShown: false
+                }}
+            />
+            <Stack.Screen
+                name="live"
                 options={{
                     headerShown: false
                 }}

@@ -45,7 +45,7 @@ export default function DriverDashboard({userData}) {
 
     // Determine availability status display
     const getAvailabilityStatus = () => {
-        if (currentStatus === 'on-ride') {
+        if (currentStatus === 'on-delivery') {
             return {text: 'On Transit', color: '#F59E0B', icon: 'car-side'};
         }
         if (currentStatus === 'online') {
@@ -56,7 +56,7 @@ export default function DriverDashboard({userData}) {
     const availabilityStatus = getAvailabilityStatus();
     // Online Toggle
     const handleOnlineToggle = async (value) => {
-        if (currentStatus === 'on-ride') {
+        if (currentStatus === 'on-delivery') {
             toast.info('Cannot change status while on transit');
             return;
         }
@@ -286,7 +286,7 @@ export default function DriverDashboard({userData}) {
                                 <View style={[styles.statusIndicator, {backgroundColor: availabilityStatus.color}]}>
                                     <FontAwesome5 name={availabilityStatus.icon} size={16} color="#FFF"/>
                                 </View>
-                                {currentStatus !== 'on-ride' && (
+                                {currentStatus !== 'on-delivery' && (
                                     <View style={styles.availabilityRight}>
                                         {isUpdatingStatus ? (
                                             <View style={styles.loadingContainer}>

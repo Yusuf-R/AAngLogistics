@@ -1,5 +1,5 @@
 // components/Driver/Delivery/Panels/AcceptedPanel.jsx
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
     View,
     Text,
@@ -9,12 +9,14 @@ import {
     Linking,
     Platform
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {Ionicons} from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { toast } from 'sonner-native';
+import {toast} from 'sonner-native';
 import useLogisticStore from '../../../../store/Driver/useLogisticStore';
+import {navigate} from "expo-router/build/global-state/routing";
 
-function AcceptedPanel() {
+
+function AcceptedPanel({ onNavigateToChat }) {
     const {
         activeOrder,
         navigationData,
@@ -50,51 +52,58 @@ function AcceptedPanel() {
 
     // Handle WhatsApp
     const handleWhatsApp = () => {
-        if (!contact?.phone) {
-            toast.error('No contact number available');
-            return;
+        // navigate to chat tab
+        if (onNavigateToChat) {
+            onNavigateToChat();
         }
-
-        // Remove any non-numeric characters
-        const cleanPhone = contact.phone.replace(/\D/g, '');
-        const whatsappUrl = `whatsapp://send?phone=${cleanPhone}`;
-
-        Linking.canOpenURL(whatsappUrl).then((supported) => {
-            if (supported) {
-                Linking.openURL(whatsappUrl);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            } else {
-                toast.error('WhatsApp not installed');
-            }
-        });
+        else {
+            toast.error('Chat is Unavailable');
+        }
     };
 
     // Handle navigation start
     const handleStartNavigation = () => {
         startNavigation('pickup');
         sendAutomatedUpdate('on_way_to_pickup');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     };
 
     // Handle cancel
     const handleCancelRequest = () => {
         setShowCancelModal(true);
+        toast.info('Are you sure?');
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        /*
+         * TODO
+         * we set up an elegant modal for confirmation
+         * -- we present several checkboxes of reasons for cancellation
+         * we include a section for extra information
+         * highlight the negative rank it can cause for the driver profile upon investigation
+         * he accepts to cancel,
+         * we clear his useLogistics store -- hit the BE, revert back on the accepted order,
+         * -- send a notification to the client driver
+         * update the session manager, display a toast
+         *  we route him to the dashboard
+         *
+        */
+
     };
 
     return (
         <View style={styles.container}>
             {/* Handle Bar */}
-            <View style={styles.handleBar} />
+            <View style={styles.handleBar}/>
 
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="cube" size={24} color="#10B981" />
+                        <Ionicons name="cube" size={24} color="#10B981"/>
                     </View>
                     <View>
-                        <Text style={styles.headerTitle}>Heading to Pickup</Text>
+                        <Text style={styles.headerTitle}> Heading to Pickup</Text>
+                        <Text style={{color: '#8B5CF6', fontFamily: 'PoppinsSemiBold'}}>
+                            {activeOrder.orderRef}
+                        </Text>
                         <Text style={styles.headerSubtitle}>
                             Navigate to collect the package
                         </Text>
@@ -110,7 +119,7 @@ function AcceptedPanel() {
                 {/* Pickup Location Card */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="location" size={20} color="#10B981" />
+                        <Ionicons name="location" size={20} color="#10B981"/>
                         <Text style={styles.cardTitle}>Pickup Location</Text>
                     </View>
 
@@ -118,14 +127,14 @@ function AcceptedPanel() {
 
                     {pickupLocation.landmark && (
                         <View style={styles.landmarkRow}>
-                            <Ionicons name="flag" size={14} color="#6B7280" />
+                            <Ionicons name="flag" size={14} color="#6B7280"/>
                             <Text style={styles.landmark}>{pickupLocation.landmark}</Text>
                         </View>
                     )}
 
                     {pickupLocation.instructions && (
                         <View style={styles.instructionsBox}>
-                            <Ionicons name="information-circle" size={16} color="#F59E0B" />
+                            <Ionicons name="information-circle" size={16} color="#F59E0B"/>
                             <Text style={styles.instructions}>
                                 {pickupLocation.instructions}
                             </Text>
@@ -137,7 +146,7 @@ function AcceptedPanel() {
                 {contact && (
                     <View style={styles.card}>
                         <View style={styles.cardHeader}>
-                            <Ionicons name="person" size={20} color="#6366F1" />
+                            <Ionicons name="person" size={20} color="#6366F1"/>
                             <Text style={styles.cardTitle}>Contact Person</Text>
                         </View>
 
@@ -152,14 +161,14 @@ function AcceptedPanel() {
                                     style={styles.contactButton}
                                     onPress={handleCall}
                                 >
-                                    <Ionicons name="call" size={20} color="#10B981" />
+                                    <Ionicons name="call" size={20} color="#10B981"/>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
                                     style={styles.contactButton}
                                     onPress={handleWhatsApp}
                                 >
-                                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                                    <Ionicons name="logo-whatsapp" size={20} color="#25D366"/>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -169,7 +178,7 @@ function AcceptedPanel() {
                 {/* Package Summary */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="cube-outline" size={20} color="#8B5CF6" />
+                        <Ionicons name="cube-outline" size={20} color="#8B5CF6"/>
                         <Text style={styles.cardTitle}>Package Details</Text>
                     </View>
 
@@ -190,7 +199,7 @@ function AcceptedPanel() {
 
                         {activeOrder.package?.isFragile && (
                             <View style={[styles.packageItem, styles.fragileItem]}>
-                                <Ionicons name="warning" size={16} color="#F59E0B" />
+                                <Ionicons name="warning" size={16} color="#F59E0B"/>
                                 <Text style={styles.fragileText}>Fragile</Text>
                             </View>
                         )}
@@ -204,7 +213,7 @@ function AcceptedPanel() {
                             style={styles.primaryButton}
                             onPress={handleStartNavigation}
                         >
-                            <Ionicons name="navigate" size={20} color="#fff" />
+                            <Ionicons name="navigate" size={20} color="#fff"/>
                             <Text style={styles.primaryButtonText}>Start Navigation</Text>
                         </TouchableOpacity>
                     )}
@@ -213,7 +222,7 @@ function AcceptedPanel() {
                         style={styles.cancelButton}
                         onPress={handleCancelRequest}
                     >
-                        <Ionicons name="close-circle-outline" size={20} color="#EF4444" />
+                        <Ionicons name="close-circle-outline" size={20} color="#EF4444"/>
                         <Text style={styles.cancelButtonText}>Cancel Delivery</Text>
                     </TouchableOpacity>
                 </View>

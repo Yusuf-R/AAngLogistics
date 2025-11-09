@@ -43,8 +43,6 @@ export const ROUTES = {
     HOME: '/driver/dashboard',
     PROFILE: '/driver/account/profile',
     VERIFICATION: '/driver/account/verification',
-    WALLET: '/client/wallet',
-    NOTIFICATIONS: '/client/notifications',
     UTILITY: '/driver/account/utility',
     SUPPORT: '/driver/account/support',
     POLICY: '/driver/account/policy',

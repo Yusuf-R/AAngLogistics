@@ -16,6 +16,7 @@ import useLogisticStore from '../../../store/Driver/useLogisticStore';
 import * as Haptics from 'expo-haptics';
 import { toast } from 'sonner-native';
 import SessionManager from "../../../lib/SessionManager";
+import {router} from "expo-router";
 
 // Custom Confirmation Modal Component
 const ConfirmationModal = ({ visible, onClose, onConfirm, isProcessing }) => {
@@ -171,8 +172,12 @@ function OrdersListModal({ visible, onClose, sourceTab = null }) {
                 }
             });
 
-            // Simulate API call
+            // Accept order via store
             const result = await useLogisticStore.getState().acceptOrder(pendingOrder);
+            console.log({
+                result,
+                frm: 'modal'
+            })
 
             if (!result.success) {
                 toast.error(result.message || 'Failed to accept order');
@@ -180,20 +185,31 @@ function OrdersListModal({ visible, onClose, sourceTab = null }) {
                 return;
             }
 
+            // Update session
             await SessionManager.updateUser(result.user);
 
-            // Close modals
+            // ✅ NEW: Intelligent transition logic
             setShowConfirmModal(false);
             setPendingOrder(null);
-            onClose();
 
-            // Success feedback
+            // Show success with haptic feedback
             toast.success(`Order ${pendingOrder.orderRef} accepted!`);
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-            console.log('✅ Order accepted - switching to live tracking');
+            // ✅ Close modal immediately
+            onClose();
+
+            // ✅ Navigate to Live tab with smooth transition (no back navigation)
+            setTimeout(() => {
+                if (router) {
+                    router.replace('/driver/discover/live');
+                }
+            }, 300);
+
+            console.log('✅ Order accepted - transitioning to Live tab');
 
         } catch (error) {
+            console.log('Order acceptance error:', error);
             toast.error('Failed to accept order. Please try again.');
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         } finally {

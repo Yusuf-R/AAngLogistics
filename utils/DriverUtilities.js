@@ -697,7 +697,7 @@ class DriverUtils {
 
             return {
                 success: true,
-                user: response.data.user,
+                user: response.data.dashboard,
                 order: response.data.order,
                 message: response.data.message,
                 warning: response.data.warning || null
@@ -740,13 +740,14 @@ class DriverUtils {
      * Update driver location during active delivery
      * @param {string} orderId - Active order ID
      * @param {Object} location - Current location
+     * @param {string} deliveryStage - Current stage of the delivery (e.g., 'pickup', 'in_transit', 'delivery')
      * @returns {Promise<{success: boolean}>}
      */
-    static async updateCurrentLocation(orderId, location) {
+    static async updateCurrentLocation(orderId, location, deliveryStage) {
         try {
             const response = await axiosPrivate({
-                method: 'POST',
-                url: '/driver/update/current/location',
+                method: 'PATCH',
+                url: '/driver/order/location/update',
                 data: {
                     orderId,
                     location: {
@@ -754,7 +755,8 @@ class DriverUtils {
                         lng: location.lng,
                         accuracy: location.accuracy || 0,
                         speed: location.speed || 0
-                    }
+                    },
+                    deliveryStage,
                 }
             });
 
@@ -790,6 +792,30 @@ class DriverUtils {
                     lastKnownLocation,
                     failureCount
                 }
+            });
+
+            return {
+                success: true,
+                message: response.data.message,
+                action: response.data.action
+            };
+
+        } catch (error) {
+            console.log('Location loss notification error:', error);
+
+            return {
+                success: false,
+                message: 'Failed to notify location loss'
+            };
+        }
+    }
+
+    static async updateDeliveryStage(payload) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PATCH',
+                url: '/driver/order/arrived-pickup',
+                data: payload
             });
 
             return {
@@ -969,6 +995,10 @@ class DriverUtils {
                 message: error.response?.data?.error || 'Failed to report issue'
             };
         }
+    }
+
+    static async verifyDeliveryToken () {
+        return undefined;
     }
 
 
