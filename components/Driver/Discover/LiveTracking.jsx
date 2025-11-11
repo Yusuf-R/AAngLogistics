@@ -150,7 +150,7 @@ const isValidLatLng = (pt) => {
 const toRegion = (pt, deltas = {latitudeDelta: 0.05, longitudeDelta: 0.05}) =>
     isValidLatLng(pt) ? {...pt, ...deltas} : null;
 
-function LiveTracking({ onNavigateToChat }) {
+function LiveTracking({onNavigateToChat}) {
     const {
         currentLocation,
         activeOrder,
@@ -311,7 +311,10 @@ function LiveTracking({ onNavigateToChat }) {
         }
 
         if (deliveryStage === DELIVERY_STAGES.PICKED_UP || deliveryStage === DELIVERY_STAGES.ARRIVED_DROPOFF) {
-            dropoffPulse.value = withRepeat(withTiming(1, {duration: 2500, easing: Easing.out(Easing.ease)}), -1, false);
+            dropoffPulse.value = withRepeat(withTiming(1, {
+                duration: 2500,
+                easing: Easing.out(Easing.ease)
+            }), -1, false);
         } else {
             cancelAnimation(dropoffPulse);
             dropoffPulse.value = 0;
@@ -383,7 +386,9 @@ function LiveTracking({ onNavigateToChat }) {
     const handleArrivalConfirm = async () => {
         if (deliveryStage === DELIVERY_STAGES.ACCEPTED) {
             const result = await arriveAtPickup();
-            if (result.success) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            if (result.success) {
+                toast.success('PickUp confirmation successful')
+            }
         } else if (deliveryStage === DELIVERY_STAGES.PICKED_UP) {
             const result = await arriveAtDropoff();
             if (result.success) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -404,7 +409,7 @@ function LiveTracking({ onNavigateToChat }) {
         [here, targetLocation]
     );
 
-    console.log({ deliveryStage, isInPickupGeofence, here, pickupPt, GEOFENCE_RADIUS });
+    console.log({deliveryStage, isInPickupGeofence, here, pickupPt, GEOFENCE_RADIUS});
 
 
     return (
@@ -558,7 +563,7 @@ function LiveTracking({ onNavigateToChat }) {
                 {navigationData.isNavigating && (
                     <View style={styles.etaCard}>
                         <BlurView intensity={80} tint="light" style={styles.etaBlur}>
-                            <Ionicons name="time-outline" size={20} color="#6366F1" />
+                            <Ionicons name="time-outline" size={20} color="#6366F1"/>
                             <View style={styles.etaInfo}>
                                 <Text style={styles.etaTime}>
                                     {navigationData.estimatedDuration || '--'} min
@@ -579,7 +584,9 @@ function LiveTracking({ onNavigateToChat }) {
 
                 <TouchableOpacity
                     style={styles.sosButton}
-                    onPress={() => { /* modal soon */ toast.info('Coming soon!!')}}
+                    onPress={() => { /* modal soon */
+                        toast.info('Coming soon!!')
+                    }}
                     onLongPress={() => {
                         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
                         toast.info('Coming soon!!')
@@ -604,7 +611,7 @@ function LiveTracking({ onNavigateToChat }) {
                 {(() => {
                     switch (deliveryStage) {
                         case DELIVERY_STAGES.ACCEPTED:
-                            return <AcceptedPanel onNavigateToChat={onNavigateToChat} />;
+                            return <AcceptedPanel onNavigateToChat={onNavigateToChat}/>;
                         case DELIVERY_STAGES.ARRIVED_PICKUP:
                             return <ArrivedPickupPanel/>;
                         case DELIVERY_STAGES.PICKED_UP:
@@ -616,6 +623,8 @@ function LiveTracking({ onNavigateToChat }) {
                     }
                 })()}
             </View>
+        {/*    bottom space */}
+            <View style={styles.bottomSpace}/>
         </View>
     );
 }
@@ -960,6 +969,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 8
+    },
+    bottomSpace: {
+        height: 120
     }
 });
 

@@ -73,13 +73,11 @@ function PickedUpPanel() {
     const handleStartNavigation = () => {
         startNavigation('dropoff');
         sendAutomatedUpdate('on_way_to_delivery');
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     };
 
     // Handle issue report
     const handleReportIssue = () => {
         setShowIssueModal(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     };
 
     // Get delivery token display
@@ -302,6 +300,8 @@ function PickedUpPanel() {
                         </View>
                     </View>
                 )}
+
+                <View style={styles.bottomSpacing}/>
             </ScrollView>
         </View>
     );
@@ -689,6 +689,9 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontFamily: 'PoppinsSemiBold',
         color: '#312E81'
+    },
+    bottomSpacing: {
+        height: 120
     }
 });
 

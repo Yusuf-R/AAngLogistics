@@ -810,6 +810,30 @@ class DriverUtils {
         }
     }
 
+    static async arrivePickUp (payload) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PATCH',
+                url: '/driver/order/arrived-pickup',
+                data: payload
+            });
+
+            return {
+                success: true,
+                message: response.data.message,
+            };
+
+        } catch (error) {
+            console.log('Location loss notification error:', error);
+
+            return {
+                success: false,
+                message: 'Failed to notify location loss'
+            };
+        }
+
+    }
+
     static async updateDeliveryStage(payload) {
         try {
             const response = await axiosPrivate({
@@ -821,7 +845,6 @@ class DriverUtils {
             return {
                 success: true,
                 message: response.data.message,
-                action: response.data.action
             };
 
         } catch (error) {
@@ -841,16 +864,12 @@ class DriverUtils {
      * @param {Array<string>} photos - Photo URLs/paths
      * @returns {Promise<{success: boolean, penalty?: Object}>}
      */
-    static async confirmPickup(orderId, location, photos = []) {
+    static async confirmPickup(payload) {
         try {
             const response = await axiosPrivate({
-                method: 'POST',
-                url: '/driver/confirm-pickup',
-                data: {
-                    orderId,
-                    location,
-                    photos
-                }
+                method: 'PATCH',
+                url: '/driver/order/confirm-pickup',
+                data: payload
             });
 
             return {
@@ -999,6 +1018,28 @@ class DriverUtils {
 
     static async verifyDeliveryToken () {
         return undefined;
+    }
+
+    static async GetPresignedUrlPickup(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/s3/driver/confirmation-presigned-url',
+                data: obj,
+            });
+            if (response.data.success) {
+                return {
+                    uploadURL: response.data.uploadURL,
+                    fileURL: response.data.fileURL,
+                    key: response.data.key
+                };
+            } else {
+                throw new Error(response.data.error || 'Failed to get presigned URL');
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
     }
 
 

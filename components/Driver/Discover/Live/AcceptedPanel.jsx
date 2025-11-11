@@ -237,6 +237,10 @@ function AcceptedPanel({ onNavigateToChat }) {
                         <Text style={styles.tipItem}>• Confirm contact person identity</Text>
                     </View>
                 </View>
+            {/*    bottom space */}
+                <View
+                    style={styles.bottomSpace}
+                />
             </ScrollView>
         </View>
     );
@@ -490,6 +494,9 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsRegular',
         color: '#075985',
         lineHeight: 18
+    },
+    bottomSpace: {
+        height: 20
     }
 });
 

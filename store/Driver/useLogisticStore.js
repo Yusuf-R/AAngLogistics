@@ -107,7 +107,8 @@ const useLogisticStore = create(
             pickupVerification: {
                 isVerified: false,
                 timestamp: null,
-                photos: [], // Array of photo URIs
+                photos: [],
+                video: null,
                 packageCondition: null, // 'good' | 'damaged' | 'tampered'
                 weight: null,
                 notes: '',
@@ -654,7 +655,7 @@ const useLogisticStore = create(
                         locationDetails: state.currentLocation
                     }
 
-                    const result = await DriverUtils.updateDeliveryStage(payload);
+                    const result = await DriverUtils.arrivePickUp(payload);
 
                     if (!result.success) {
                         toast.error(result.message || 'Failed to update status');
@@ -679,6 +680,7 @@ const useLogisticStore = create(
              */
             confirmPickup: async (verificationData) => {
                 const state = get();
+                const currentLocation = state.currentLocation;
 
                 if (state.deliveryStage !== DELIVERY_STAGES.ARRIVED_PICKUP) {
                     console.log('❌ Cannot confirm pickup from current stage:', state.deliveryStage);
@@ -686,11 +688,13 @@ const useLogisticStore = create(
                 }
 
                 try {
-                    const result = await DriverUtils.confirmPickup(
-                        state.activeOrderId,
+                    const payload = {
+                        orderId: state.activeOrderId,
+                        stage: DELIVERY_STAGES.ARRIVED_PICKUP,
                         verificationData,
-                        state.currentLocation
-                    );
+                        currentLocation
+                    }
+                    const result = await DriverUtils.confirmPickup(payload);
 
                     if (!result.success) {
                         toast.error(result.message || 'Failed to confirm pickup');
@@ -844,6 +848,7 @@ const useLogisticStore = create(
                         isVerified: false,
                         timestamp: null,
                         photos: [],
+                        video: null,
                         packageCondition: null,
                         weight: null,
                         notes: '',

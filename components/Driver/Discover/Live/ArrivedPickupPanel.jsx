@@ -11,10 +11,10 @@ import {
     Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { toast } from 'sonner-native';
 import useLogisticStore from '../../../../store/Driver/useLogisticStore';
+import DriverMediaUploader from '../../DriverMediaUploader';
 
 function ArrivedPickupPanel() {
     const {
@@ -25,56 +25,37 @@ function ArrivedPickupPanel() {
     } = useLogisticStore();
 
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [mediaData, setMediaData] = useState({
+        images: [],
+        video: null
+    });
 
     if (!activeOrder) return null;
 
     const pickupLocation = activeOrder.location.pickUp;
 
-    // Handle photo capture
-    const handleTakePhoto = async () => {
-        try {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-            if (status !== 'granted') {
-                toast.error('Camera permission required');
-                return;
-            }
-
-            const result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [4, 3],
-                quality: 0.8
-            });
-
-            if (!result.canceled && result.assets[0]) {
-                const newPhotos = [...pickupVerification.photos, result.assets[0].uri];
-                updatePickupVerification('photos', newPhotos);
-                toast.success('Photo added');
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-        } catch (error) {
-            console.log('Photo capture error:', error);
-            toast.error('Failed to capture photo');
-        }
-    };
-
     // Handle package condition selection
     const handleConditionSelect = (condition) => {
         updatePickupVerification('packageCondition', condition);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     };
 
     // Handle contact verification
     const handleContactVerified = () => {
         updatePickupVerification('contactPersonVerified', !pickupVerification.contactPersonVerified);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    };
+
+    // Callback when media changes
+    const handleMediaChange = (images, video) => {
+        setMediaData({ images, video });
+        // Update verification with media URLs
+        updatePickupVerification('photos', images.map(img => img.url));
+        updatePickupVerification('videoUrl', video?.url || null);
     };
 
     // Validate verification data
     const isVerificationComplete = () => {
         return (
-            pickupVerification.photos.length > 0 &&
+            mediaData.images.length >= 2 && // Minimum 2 images required
             pickupVerification.packageCondition !== null &&
             pickupVerification.contactPersonVerified
         );
@@ -83,18 +64,37 @@ function ArrivedPickupPanel() {
     // Handle confirm pickup
     const handleConfirmPickup = async () => {
         if (!isVerificationComplete()) {
-            toast.error('Please complete all verification steps');
+            if (mediaData.images.length < 2) {
+                toast.error('Please upload at least 2 images of the package');
+            } else {
+                toast.error('Please complete all verification steps');
+            }
             return;
         }
 
         setIsSubmitting(true);
 
         try {
-            const result = await confirmPickup(pickupVerification);
+            // Prepare verification data with media
+            const verificationData = {
+                ...pickupVerification,
+                photos: mediaData.images.map(img => ({
+                    key: img.key,
+                    url: img.url,
+                    fileName: img.fileName
+                })),
+                video: mediaData.video ? {
+                    key: mediaData.video.key,
+                    url: mediaData.video.url,
+                    fileName: mediaData.video.fileName,
+                    duration: mediaData.video.duration
+                } : null
+            };
+
+            const result = await confirmPickup(verificationData);
 
             if (result.success) {
                 toast.success('Pickup confirmed! Heading to delivery');
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } else {
                 toast.error(result.message || 'Failed to confirm pickup');
             }
@@ -107,7 +107,7 @@ function ArrivedPickupPanel() {
     };
 
     const conditions = [
-        { id: 'good', label: 'Good Condition', icon: 'checkmark-circle', color: '#10B981' },
+        { id: 'good', label: 'Good', icon: 'checkmark-circle', color: '#10B981' },
         { id: 'damaged', label: 'Damaged', icon: 'warning', color: '#F59E0B' },
         { id: 'tampered', label: 'Tampered', icon: 'alert-circle', color: '#EF4444' }
     ];
@@ -202,12 +202,12 @@ function ArrivedPickupPanel() {
                     </View>
                 </View>
 
-                {/* Photo Documentation */}
+                {/* Media Documentation (Images & Video) */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
                         <Ionicons name="camera" size={20} color="#8B5CF6" />
-                        <Text style={styles.cardTitle}>Photo Documentation</Text>
-                        {pickupVerification.photos.length > 0 && (
+                        <Text style={styles.cardTitle}>Package Documentation</Text>
+                        {mediaData.images.length >= 3 && (
                             <View style={styles.completedBadge}>
                                 <Ionicons name="checkmark" size={12} color="#10B981" />
                             </View>
@@ -215,36 +215,18 @@ function ArrivedPickupPanel() {
                     </View>
 
                     <Text style={styles.sectionDescription}>
-                        Take clear photos of the package (minimum 1 required)
+                        Take clear photos and optional video of the package
                     </Text>
 
-                    {pickupVerification.photos.length > 0 && (
-                        <View style={styles.photosGrid}>
-                            {pickupVerification.photos.map((photo, index) => (
-                                <View key={index} style={styles.photoThumb}>
-                                    <View style={styles.photoPlaceholder}>
-                                        <Ionicons name="image" size={32} color="#9CA3AF" />
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.photoRemove}
-                                        onPress={() => {
-                                            const newPhotos = pickupVerification.photos.filter((_, i) => i !== index);
-                                            updatePickupVerification('photos', newPhotos);
-                                        }}
-                                    >
-                                        <Ionicons name="close" size={16} color="#fff" />
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-                        </View>
-                    )}
-
-                    <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
-                        <Ionicons name="camera-outline" size={20} color="#6366F1" />
-                        <Text style={styles.photoButtonText}>
-                            {pickupVerification.photos.length > 0 ? 'Add Another Photo' : 'Take Photo'}
-                        </Text>
-                    </TouchableOpacity>
+                    <DriverMediaUploader
+                        orderId={activeOrder._id}
+                        clientId={activeOrder.clientId}
+                        onMediaChange={handleMediaChange}
+                        minImages={2}
+                        maxImages={6}
+                        videoOptional={true}
+                        videoMaxDuration={20}
+                    />
                 </View>
 
                 {/* Weight Verification (Optional) */}
@@ -366,11 +348,23 @@ function ArrivedPickupPanel() {
                         </View>
                         <View style={styles.progressItem}>
                             <Ionicons
-                                name={pickupVerification.photos.length > 0 ? 'checkmark-circle' : 'ellipse-outline'}
+                                name={mediaData.images.length >= 2 ? 'checkmark-circle' : 'ellipse-outline'}
                                 size={20}
-                                color={pickupVerification.photos.length > 0 ? '#10B981' : '#D1D5DB'}
+                                color={mediaData.images.length >= 2 ? '#10B981' : '#D1D5DB'}
                             />
-                            <Text style={styles.progressText}>Photos captured</Text>
+                            <Text style={styles.progressText}>
+                                Photos captured ({mediaData.images.length}/2 minimum)
+                            </Text>
+                        </View>
+                        <View style={styles.progressItem}>
+                            <Ionicons
+                                name={mediaData.video ? 'checkmark-circle' : 'ellipse-outline'}
+                                size={20}
+                                color={mediaData.video ? '#10B981' : '#D1D5DB'}
+                            />
+                            <Text style={styles.progressText}>
+                                Video evidence (optional {mediaData.video ? '✓' : ''})
+                            </Text>
                         </View>
                         <View style={styles.progressItem}>
                             <Ionicons
@@ -382,6 +376,10 @@ function ArrivedPickupPanel() {
                         </View>
                     </View>
                 </View>
+
+                <View style={styles.bottomSpace}/>
+
+
             </ScrollView>
         </View>
     );
@@ -392,7 +390,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff'
     },
-
     handleBar: {
         width: 40,
         height: 4,
@@ -402,7 +399,6 @@ const styles = StyleSheet.create({
         marginTop: 12,
         marginBottom: 16
     },
-
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -433,7 +429,6 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsRegular',
         color: '#6B7280'
     },
-
     scrollView: {
         flex: 1
     },
@@ -442,7 +437,6 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         paddingBottom: 40
     },
-
     card: {
         backgroundColor: '#F9FAFB',
         borderRadius: 16,
@@ -498,8 +492,6 @@ const styles = StyleSheet.create({
         color: '#374151',
         lineHeight: 20
     },
-
-    // Condition Selection
     conditionsGrid: {
         flexDirection: 'row',
         gap: 10
@@ -523,60 +515,6 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         textAlign: 'center'
     },
-
-    // Photos
-    photosGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-        marginBottom: 12
-    },
-    photoThumb: {
-        width: 80,
-        height: 80,
-        borderRadius: 8,
-        position: 'relative'
-    },
-    photoPlaceholder: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#F3F4F6',
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#E5E7EB'
-    },
-    photoRemove: {
-        position: 'absolute',
-        top: -6,
-        right: -6,
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: '#EF4444',
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    photoButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        backgroundColor: '#fff',
-        paddingVertical: 12,
-        borderRadius: 10,
-        borderWidth: 1.5,
-        borderColor: '#6366F1',
-        borderStyle: 'dashed'
-    },
-    photoButtonText: {
-        fontSize: 14,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#6366F1'
-    },
-
-    // Weight
     weightRow: {
         flexDirection: 'row',
         gap: 12,
@@ -610,8 +548,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E7EB'
     },
-
-    // Contact Verification
     contactVerifyRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -652,8 +588,6 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         fontStyle: 'italic'
     },
-
-    // Notes
     notesInput: {
         backgroundColor: '#fff',
         padding: 12,
@@ -665,8 +599,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E7EB'
     },
-
-    // Confirm Button
     confirmButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -685,8 +617,6 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsSemiBold',
         color: '#fff'
     },
-
-    // Progress
     progressCard: {
         backgroundColor: '#F0F9FF',
         borderRadius: 12,
@@ -712,6 +642,9 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontFamily: 'PoppinsRegular',
         color: '#075985'
+    },
+    bottomSpace: {
+        height: 120
     }
 });
 
