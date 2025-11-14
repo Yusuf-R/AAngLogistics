@@ -91,7 +91,7 @@ function OrdersScreen() {
                 userData={userData}
                 allOrderData={allOrderData}
                 orderStatistics={orderStatistics}
-                onRefresh={handleManualRefresh}
+                onRefreshData={handleManualRefresh}
                 isRefreshing={isLoading && !!allOrderData}
             />
         </>

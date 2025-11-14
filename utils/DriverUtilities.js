@@ -890,39 +890,6 @@ class DriverUtils {
     }
 
     /**
-     * Confirm delivery completion
-     * @param {string} orderId - Order ID
-     * @param {Object} params - Delivery confirmation params
-     * @returns {Promise<{success: boolean}>}
-     */
-    static async confirmDelivery(orderId, params) {
-        try {
-            const response = await axiosPrivate({
-                method: 'POST',
-                url: '/driver/confirm-delivery',
-                data: {
-                    orderId,
-                    ...params
-                }
-            });
-
-            return {
-                success: true,
-                message: response.data.message,
-                earnings: response.data.earnings
-            };
-
-        } catch (error) {
-            console.log('Confirm delivery error:', error);
-
-            return {
-                success: false,
-                message: error.response?.data?.error || 'Failed to confirm delivery'
-            };
-        }
-    }
-
-    /**
      * Cancel order (driver-initiated)
      * @param {string} orderId - Order ID
      * @param {string} reason - Cancellation reason
@@ -1016,8 +983,27 @@ class DriverUtils {
         }
     }
 
-    static async verifyDeliveryToken () {
-        return undefined;
+    static async verifyDeliveryToken (payload) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PATCH',
+                url: '/driver/order/verify/delivery-token',
+                data: payload
+            });
+
+            return {
+                success: true,
+                message: response.data.message,
+            };
+
+        } catch (error) {
+            console.log('Location loss notification error:', error);
+
+            return {
+                success: false,
+                message: 'Failed to notify location loss'
+            };
+        }
     }
 
     static async GetPresignedUrlPickup(obj) {
@@ -1042,6 +1028,98 @@ class DriverUtils {
         }
     }
 
+    static async GetPickupPresignedUrl(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/s3/driver/pickup-presigned-url',
+                data: obj,
+            });
+            if (response.data.success) {
+                return {
+                    uploadURL: response.data.uploadURL,
+                    fileURL: response.data.fileURL,
+                    key: response.data.key
+                };
+            } else {
+                throw new Error(response.data.error || 'Failed to get presigned URL');
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async GetDropoffPresignedUrl(obj) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/s3/driver/dropoff-presigned-url',
+                data: obj,
+            });
+            if (response.data.success) {
+                return {
+                    uploadURL: response.data.uploadURL,
+                    fileURL: response.data.fileURL,
+                    key: response.data.key
+                };
+            } else {
+                throw new Error(response.data.error || 'Failed to get presigned URL');
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async arriveDropOff (payload) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PATCH',
+                url: '/driver/order/arrived-dropoff',
+                data: payload
+            });
+
+            return {
+                success: true,
+                message: response.data.message,
+            };
+
+        } catch (error) {
+            console.log('Location loss notification error:', error);
+
+            return {
+                success: false,
+                message: 'Failed to notify location loss'
+            };
+        }
+
+    }
+
+    static async completeDelivery (payload) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PATCH',
+                url: '/driver/order/complete-delivery',
+                data: payload
+            });
+
+            return {
+                success: true,
+                message: response.data.message,
+                requiresRating: response.data.requiresRating,
+                nextAction: response.data.nextAction,
+            };
+
+        } catch (error) {
+            console.log('Location loss notification error:', error);
+
+            return {
+                success: false,
+                message: 'Failed to notify location loss'
+            };
+        }
+    }
 
 }
 

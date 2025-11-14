@@ -122,6 +122,7 @@ const useLogisticStore = create(
                 deliveryToken: null, // 6-digit token
                 tokenVerified: false,
                 photos: [], // Optional delivery photos
+                video: null,
                 recipientName: '',
                 recipientSignature: null,
                 notes: ''
@@ -740,11 +741,12 @@ const useLogisticStore = create(
                 }
 
                 try {
-                    const result = await DriverUtils.updateDeliveryStage(
-                        state.activeOrderId,
-                        DELIVERY_STAGES.ARRIVED_DROPOFF,
-                        state.currentLocation
-                    );
+                    const payload = {
+                        orderId: state.activeOrderId,
+                        stage: DELIVERY_STAGES.ARRIVED_DROPOFF,
+                        locationDetails: state.currentLocation
+                    }
+                    const result = await DriverUtils.arriveDropOff(payload);
 
                     if (!result.success) {
                         toast.error(result.message || 'Failed to update status');
@@ -782,14 +784,18 @@ const useLogisticStore = create(
                 }
 
                 try {
-                    const result = await DriverUtils.completeDelivery(
-                        state.activeOrderId,
+                    const payload = {
+                        orderId: state.activeOrderId,
+                        stage: DELIVERY_STAGES.ARRIVED_DROPOFF,
                         verificationData,
-                        state.currentLocation
-                    );
+                        locationDetails: state.currentLocation
+                    }
+                    console.log({
+                        payload
+                    })
+                    const result = await DriverUtils.completeDelivery(payload);
 
                     if (!result.success) {
-                        toast.error(result.message || 'Failed to complete delivery');
                         return { success: false, message: result.message };
                     }
 
@@ -811,7 +817,7 @@ const useLogisticStore = create(
                         get().finalizeDelivery();
                     }, 2000);
 
-                    return { success: true };
+                    return { success: true, requiresRating: result.requiresRating, nextAction: result.nextAction };
 
                 } catch (error) {
                     console.log('Failed to complete delivery:', error);
@@ -860,6 +866,7 @@ const useLogisticStore = create(
                         deliveryToken: null,
                         tokenVerified: false,
                         photos: [],
+                        video: null,
                         recipientName: '',
                         recipientSignature: null,
                         notes: ''
@@ -1074,7 +1081,7 @@ const useLogisticStore = create(
                     });
 
                 } catch (error) {
-                    console.error('❌ Failed to update ETA:', error);
+                    console.log('❌ Failed to update ETA:', error);
                 }
             },
 
@@ -1449,10 +1456,15 @@ const useLogisticStore = create(
                 }
 
                 try {
-                    const result = await DriverUtils.verifyDeliveryToken(
-                        state.activeOrderId,
-                        inputToken
-                    );
+                    const payload = {
+                        orderId : state.activeOrderId,
+                        deliveryToken: inputToken,
+                        stage: state.deliveryStage
+                    }
+                    console.log({
+                        payload,
+                    })
+                    const result = await DriverUtils.verifyDeliveryToken(payload);
 
                     if (result.success) {
                         set({

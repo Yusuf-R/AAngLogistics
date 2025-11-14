@@ -1,5 +1,5 @@
 // components/Driver/Delivery/Panels/ArrivedDropoffPanel.jsx
-import React, { useState, useRef } from 'react';
+import React, {useState, useRef} from 'react';
 import {
     View,
     Text,
@@ -10,13 +10,14 @@ import {
     ActivityIndicator,
     Animated as RNAnimated
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
+import {Ionicons} from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { toast } from 'sonner-native';
+import {toast} from 'sonner-native';
 import useLogisticStore from '../../../../store/Driver/useLogisticStore';
+import DriverMediaUploader from '../../DriverMediaUploader';
+import {router} from "expo-router";
 
-function ArrivedDropoffPanel() {
+function DropoffConfirmationPanel() {
     const {
         activeOrder,
         deliveryVerification,
@@ -28,6 +29,10 @@ function ArrivedDropoffPanel() {
     const [tokenInput, setTokenInput] = useState('');
     const [isVerifyingToken, setIsVerifyingToken] = useState(false);
     const [isCompletingDelivery, setIsCompletingDelivery] = useState(false);
+    const [mediaData, setMediaData] = useState({
+        images: [],
+        video: null
+    });
 
     // Animation for token verification
     const shakeAnimation = useRef(new RNAnimated.Value(0)).current;
@@ -46,7 +51,6 @@ function ArrivedDropoffPanel() {
         }
 
         setIsVerifyingToken(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
             const result = await verifyDeliveryToken(tokenInput);
@@ -71,69 +75,77 @@ function ArrivedDropoffPanel() {
     const triggerShakeAnimation = () => {
         shakeAnimation.setValue(0);
         RNAnimated.sequence([
-            RNAnimated.timing(shakeAnimation, { toValue: 10, duration: 50, useNativeDriver: true }),
-            RNAnimated.timing(shakeAnimation, { toValue: -10, duration: 50, useNativeDriver: true }),
-            RNAnimated.timing(shakeAnimation, { toValue: 10, duration: 50, useNativeDriver: true }),
-            RNAnimated.timing(shakeAnimation, { toValue: 0, duration: 50, useNativeDriver: true })
+            RNAnimated.timing(shakeAnimation, {toValue: 10, duration: 50, useNativeDriver: true}),
+            RNAnimated.timing(shakeAnimation, {toValue: -10, duration: 50, useNativeDriver: true}),
+            RNAnimated.timing(shakeAnimation, {toValue: 10, duration: 50, useNativeDriver: true}),
+            RNAnimated.timing(shakeAnimation, {toValue: 0, duration: 50, useNativeDriver: true})
         ]).start();
     };
 
-    // Handle photo capture (optional)
-    const handleTakePhoto = async () => {
-        try {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
-            if (status !== 'granted') {
-                toast.error('Camera permission required');
-                return;
-            }
-
-            const result = await ImagePicker.launchCameraAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [4, 3],
-                quality: 0.8
-            });
-
-            if (!result.canceled && result.assets[0]) {
-                const newPhotos = [...deliveryVerification.photos, result.assets[0].uri];
-                updateDeliveryVerification('photos', newPhotos);
-                toast.success('Photo added');
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }
-        } catch (error) {
-            console.log('Photo capture error:', error);
-            toast.error('Failed to capture photo');
-        }
+    // Callback when media changes
+    const handleMediaChange = (images, video) => {
+        setMediaData({images, video});
+        // Update verification with media URLs
+        updateDeliveryVerification('photos', images.map(img => img.url));
+        updateDeliveryVerification('videoUrl', video?.url || null);
     };
 
     // Check if ready to complete
     const isReadyToComplete = () => {
         return (
             deliveryVerification.tokenVerified &&
-            deliveryVerification.recipientName.trim().length > 0
+            deliveryVerification.recipientName.trim().length > 0 &&
+            mediaData.images.length >= 2 // Minimum 2 delivery photos required
         );
     };
 
     // Handle delivery completion
     const handleCompleteDelivery = async () => {
         if (!isReadyToComplete()) {
-            toast.error('Please complete all required fields');
+            if (!deliveryVerification.tokenVerified) {
+                toast.error('Please verify delivery token first');
+            } else if (deliveryVerification.recipientName.trim().length === 0) {
+                toast.error('Please enter recipient name');
+            } else if (mediaData.images.length < 2) {
+                toast.error('Please upload at least 2 delivery photos');
+            } else {
+                toast.error('Please complete all required fields');
+            }
             return;
         }
 
         setIsCompletingDelivery(true);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
         try {
-            const result = await completeDelivery(deliveryVerification);
+            // Prepare verification data with media
+            const verificationData = {
+                ...deliveryVerification,
+                photos: mediaData.images.map(img => ({
+                    key: img.key,
+                    url: img.url,
+                    fileName: img.fileName
+                })),
+                video: mediaData.video ? {
+                    key: mediaData.video.key,
+                    url: mediaData.video.url,
+                    fileName: mediaData.video.fileName,
+                    duration: mediaData.video.duration
+                } : null
+            };
 
-            if (result.success) {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                // Navigation back to discovery will happen automatically
-            } else {
-                toast.error(result.message || 'Failed to complete delivery');
+            const result = await completeDelivery(verificationData);
+            if (!result.success) {
+                toast.error('Try again : Failed to complete delivery');
+                return
             }
+
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setTimeout(() => {
+                router.push({
+                    pathname: result.nextAction.route,
+                    params: result.nextAction.params
+                });
+            }, 1000);
         } catch (error) {
             console.log('Delivery completion error:', error);
             toast.error('Failed to complete delivery');
@@ -145,13 +157,13 @@ function ArrivedDropoffPanel() {
     return (
         <View style={styles.container}>
             {/* Handle Bar */}
-            <View style={styles.handleBar} />
+            <View style={styles.handleBar}/>
 
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <View style={styles.iconContainer}>
-                        <Ionicons name="checkmark-done" size={24} color="#EF4444" />
+                        <Ionicons name="checkmark-done" size={24} color="#EF4444"/>
                     </View>
                     <View>
                         <Text style={styles.headerTitle}>Complete Delivery</Text>
@@ -170,10 +182,10 @@ function ArrivedDropoffPanel() {
                 {/* Location Confirmation */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="location" size={20} color="#EF4444" />
+                        <Ionicons name="location" size={20} color="#EF4444"/>
                         <Text style={styles.cardTitle}>Delivery Location</Text>
                         <View style={styles.verifiedBadge}>
-                            <Ionicons name="checkmark" size={14} color="#10B981" />
+                            <Ionicons name="checkmark" size={14} color="#10B981"/>
                             <Text style={styles.verifiedText}>Verified</Text>
                         </View>
                     </View>
@@ -183,11 +195,11 @@ function ArrivedDropoffPanel() {
                 {/* Token Verification */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="key" size={20} color="#F59E0B" />
+                        <Ionicons name="key" size={20} color="#F59E0B"/>
                         <Text style={styles.cardTitle}>Verify Delivery Token</Text>
                         {deliveryVerification.tokenVerified && (
                             <View style={styles.completedBadge}>
-                                <Ionicons name="checkmark" size={12} color="#10B981" />
+                                <Ionicons name="checkmark" size={12} color="#10B981"/>
                             </View>
                         )}
                     </View>
@@ -198,7 +210,7 @@ function ArrivedDropoffPanel() {
                                 Ask the recipient for their 6-digit delivery code
                             </Text>
 
-                            <RNAnimated.View style={{ transform: [{ translateX: shakeAnimation }] }}>
+                            <RNAnimated.View style={{transform: [{translateX: shakeAnimation}]}}>
                                 <View style={styles.tokenInputContainer}>
                                     <TextInput
                                         style={styles.tokenInput}
@@ -220,16 +232,16 @@ function ArrivedDropoffPanel() {
                                         disabled={tokenInput.length !== 6 || isVerifyingToken}
                                     >
                                         {isVerifyingToken ? (
-                                            <ActivityIndicator size="small" color="#fff" />
+                                            <ActivityIndicator size="small" color="#fff"/>
                                         ) : (
-                                            <Ionicons name="checkmark" size={20} color="#fff" />
+                                            <Ionicons name="checkmark" size={20} color="#fff"/>
                                         )}
                                     </TouchableOpacity>
                                 </View>
                             </RNAnimated.View>
 
                             <View style={styles.tokenHint}>
-                                <Ionicons name="information-circle" size={16} color="#6B7280" />
+                                <Ionicons name="information-circle" size={16} color="#6B7280"/>
                                 <Text style={styles.tokenHintText}>
                                     The token is case-sensitive (e.g., A3X9K2)
                                 </Text>
@@ -237,7 +249,7 @@ function ArrivedDropoffPanel() {
                         </>
                     ) : (
                         <View style={styles.tokenVerifiedBox}>
-                            <Ionicons name="checkmark-circle" size={48} color="#10B981" />
+                            <Ionicons name="checkmark-circle" size={48} color="#10B981"/>
                             <Text style={styles.tokenVerifiedTitle}>Token Verified! ✓</Text>
                             <Text style={styles.tokenVerifiedText}>
                                 Package is ready to be handed over
@@ -249,11 +261,11 @@ function ArrivedDropoffPanel() {
                 {/* Recipient Information */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="person" size={20} color="#6366F1" />
+                        <Ionicons name="person" size={20} color="#6366F1"/>
                         <Text style={styles.cardTitle}>Recipient Details</Text>
                         {deliveryVerification.recipientName.trim().length > 0 && (
                             <View style={styles.completedBadge}>
-                                <Ionicons name="checkmark" size={12} color="#10B981" />
+                                <Ionicons name="checkmark" size={12} color="#10B981"/>
                             </View>
                         )}
                     </View>
@@ -263,6 +275,13 @@ function ArrivedDropoffPanel() {
                             <Text style={styles.expectedLabel}>Expected Recipient:</Text>
                             <Text style={styles.expectedValue}>
                                 {recipientContact?.name || 'Not specified'}
+                            </Text>
+                        </View>
+
+                        <View style={styles.expectedRecipient}>
+                            <Text style={styles.expectedLabel}>Contact</Text>
+                            <Text style={styles.expectedValue}>
+                                {recipientContact?.phone || 'Not specified'}
                             </Text>
                         </View>
 
@@ -281,50 +300,45 @@ function ArrivedDropoffPanel() {
                     </View>
                 </View>
 
-                {/* Photo Documentation (Optional) */}
+                {/* Media Documentation (Images & Video) - ENHANCED */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="camera" size={20} color="#8B5CF6" />
-                        <Text style={styles.cardTitle}>Delivery Photo (Optional)</Text>
+                        <Ionicons name="camera" size={20} color="#8B5CF6"/>
+                        <Text style={styles.cardTitle}>Delivery Proof Documentation</Text>
+                        {mediaData.images.length >= 2 && (
+                            <View style={styles.completedBadge}>
+                                <Ionicons name="checkmark" size={12} color="#10B981"/>
+                            </View>
+                        )}
                     </View>
 
                     <Text style={styles.sectionDescription}>
-                        Capture proof of delivery handover
+                        Capture proof of delivery handover (min 2 photos required)
                     </Text>
 
-                    {deliveryVerification.photos.length > 0 && (
-                        <View style={styles.photosGrid}>
-                            {deliveryVerification.photos.map((photo, index) => (
-                                <View key={index} style={styles.photoThumb}>
-                                    <View style={styles.photoPlaceholder}>
-                                        <Ionicons name="image" size={32} color="#9CA3AF" />
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.photoRemove}
-                                        onPress={() => {
-                                            const newPhotos = deliveryVerification.photos.filter((_, i) => i !== index);
-                                            updateDeliveryVerification('photos', newPhotos);
-                                        }}
-                                    >
-                                        <Ionicons name="close" size={16} color="#fff" />
-                                    </TouchableOpacity>
-                                </View>
-                            ))}
-                        </View>
-                    )}
+                    <DriverMediaUploader
+                        orderId={activeOrder._id}
+                        clientId={activeOrder.clientId}
+                        onMediaChange={handleMediaChange}
+                        minImages={2}
+                        maxImages={5}
+                        videoOptional={true}
+                        videoMaxDuration={15}
+                        stage="dropoff"
+                    />
 
-                    <TouchableOpacity style={styles.photoButton} onPress={handleTakePhoto}>
-                        <Ionicons name="camera-outline" size={20} color="#6366F1" />
-                        <Text style={styles.photoButtonText}>
-                            {deliveryVerification.photos.length > 0 ? 'Add Another Photo' : 'Take Photo'}
+                    <View style={styles.photoHint}>
+                        <Ionicons name="information-circle" size={16} color="#8B5CF6"/>
+                        <Text style={styles.photoHintText}>
+                            💡 Capture: recipient receiving package, package condition, and handover moment
                         </Text>
-                    </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Additional Notes */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
-                        <Ionicons name="document-text" size={20} color="#6B7280" />
+                        <Ionicons name="document-text" size={20} color="#6B7280"/>
                         <Text style={styles.cardTitle}>Delivery Notes (Optional)</Text>
                     </View>
 
@@ -351,10 +365,10 @@ function ArrivedDropoffPanel() {
                     disabled={!isReadyToComplete() || isCompletingDelivery}
                 >
                     {isCompletingDelivery ? (
-                        <ActivityIndicator size="small" color="#fff" />
+                        <ActivityIndicator size="small" color="#fff"/>
                     ) : (
                         <>
-                            <Ionicons name="checkmark-done-circle" size={24} color="#fff" />
+                            <Ionicons name="checkmark-done-circle" size={24} color="#fff"/>
                             <Text style={styles.completeButtonText}>Complete Delivery</Text>
                         </>
                     )}
@@ -382,12 +396,32 @@ function ArrivedDropoffPanel() {
                         </View>
                         <View style={styles.progressItem}>
                             <Ionicons
+                                name={mediaData.images.length >= 2 ? 'checkmark-circle' : 'ellipse-outline'}
+                                size={20}
+                                color={mediaData.images.length >= 2 ? '#10B981' : '#D1D5DB'}
+                            />
+                            <Text style={styles.progressText}>
+                                Delivery photos captured ({mediaData.images.length}/2 minimum)
+                            </Text>
+                        </View>
+                        <View style={styles.progressItem}>
+                            <Ionicons
+                                name={mediaData.video ? 'checkmark-circle' : 'ellipse-outline'}
+                                size={20}
+                                color={mediaData.video ? '#10B981' : '#D1D5DB'}
+                            />
+                            <Text style={styles.progressText}>
+                                Video evidence (optional {mediaData.video ? '✓' : ''})
+                            </Text>
+                        </View>
+                        <View style={styles.progressItem}>
+                            <Ionicons
                                 name="information-circle-outline"
                                 size={20}
                                 color="#6B7280"
                             />
-                            <Text style={[styles.progressText, { color: '#6B7280' }]}>
-                                Photo & notes are optional
+                            <Text style={[styles.progressText, {color: '#6B7280'}]}>
+                                Notes are optional
                             </Text>
                         </View>
                     </View>
@@ -403,6 +437,8 @@ function ArrivedDropoffPanel() {
                         <Text style={styles.tipItem}>• Be professional and courteous</Text>
                     </View>
                 </View>
+
+                <View style={styles.bottomSpace}/>
             </ScrollView>
         </View>
     );
@@ -413,7 +449,6 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff'
     },
-
     handleBar: {
         width: 40,
         height: 4,
@@ -423,7 +458,6 @@ const styles = StyleSheet.create({
         marginTop: 12,
         marginBottom: 16
     },
-
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -454,7 +488,6 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsRegular',
         color: '#6B7280'
     },
-
     scrollView: {
         flex: 1
     },
@@ -463,7 +496,6 @@ const styles = StyleSheet.create({
         paddingTop: 0,
         paddingBottom: 40
     },
-
     card: {
         backgroundColor: '#F9FAFB',
         borderRadius: 16,
@@ -519,8 +551,6 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         lineHeight: 18
     },
-
-    // Token Verification
     tokenDescription: {
         fontSize: 13,
         fontFamily: 'PoppinsRegular',
@@ -594,8 +624,6 @@ const styles = StyleSheet.create({
         color: '#15803D',
         textAlign: 'center'
     },
-
-    // Recipient
     recipientInfo: {
         gap: 12
     },
@@ -631,60 +659,22 @@ const styles = StyleSheet.create({
         color: '#6B7280',
         fontStyle: 'italic'
     },
-
-    // Photos
-    photosGrid: {
+    photoHint: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-        marginBottom: 12
-    },
-    photoThumb: {
-        width: 80,
-        height: 80,
+        alignItems: 'flex-start',
+        gap: 6,
+        backgroundColor: '#F5F3FF',
+        padding: 10,
         borderRadius: 8,
-        position: 'relative'
+        marginTop: 8
     },
-    photoPlaceholder: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#F3F4F6',
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#E5E7EB'
+    photoHintText: {
+        flex: 1,
+        fontSize: 12,
+        fontFamily: 'PoppinsRegular',
+        color: '#6D28D9',
+        lineHeight: 16
     },
-    photoRemove: {
-        position: 'absolute',
-        top: -6,
-        right: -6,
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: '#EF4444',
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    photoButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        backgroundColor: '#fff',
-        paddingVertical: 12,
-        borderRadius: 10,
-        borderWidth: 1.5,
-        borderColor: '#6366F1',
-        borderStyle: 'dashed'
-    },
-    photoButtonText: {
-        fontSize: 14,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#6366F1'
-    },
-
-    // Notes
     notesInput: {
         backgroundColor: '#fff',
         padding: 12,
@@ -696,8 +686,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E5E7EB'
     },
-
-    // Complete Button
     completeButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -708,7 +696,7 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         marginBottom: 16,
         shadowColor: '#10B981',
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: {width: 0, height: 4},
         shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 6
@@ -721,8 +709,6 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsBold',
         color: '#fff'
     },
-
-    // Progress
     progressCard: {
         backgroundColor: '#F0F9FF',
         borderRadius: 12,
@@ -748,10 +734,9 @@ const styles = StyleSheet.create({
     progressText: {
         fontSize: 13,
         fontFamily: 'PoppinsRegular',
-        color: '#075985'
+        color: '#075985',
+        flex: 1
     },
-
-    // Tips
     tipsCard: {
         backgroundColor: '#FEF3C7',
         borderRadius: 12,
@@ -773,7 +758,10 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsRegular',
         color: '#92400E',
         lineHeight: 18
+    },
+    bottomSpace: {
+        height: 120
     }
 });
 
-export default ArrivedDropoffPanel;
+export default DropoffConfirmationPanel;

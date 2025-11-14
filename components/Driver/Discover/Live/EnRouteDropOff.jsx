@@ -14,7 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { toast } from 'sonner-native';
 import useLogisticStore from '../../../../store/Driver/useLogisticStore';
 
-function PickedUpPanel() {
+function EnRouteDropOff() {
     const {
         activeOrder,
         navigationData,
@@ -23,6 +23,13 @@ function PickedUpPanel() {
         sendAutomatedUpdate,
         reportIssue
     } = useLogisticStore();
+
+    console.log({
+        activeOrder,
+        pickupVerification,
+        dy: "e"
+
+    })
 
     const [showIssueModal, setShowIssueModal] = useState(false);
 
@@ -117,7 +124,7 @@ function PickedUpPanel() {
                 <View style={styles.successBanner}>
                     <Ionicons name="checkmark-circle" size={24} color="#10B981" />
                     <View style={styles.successInfo}>
-                        <Text style={styles.successTitle}>Package Collected</Text>
+                        <Text style={styles.successTitle}>Package Collected by Driver</Text>
                         <Text style={styles.successText}>
                             Condition: {pickupVerification.packageCondition === 'good' ? 'Good ✓' :
                             pickupVerification.packageCondition === 'damaged' ? 'Damaged ⚠️' :
@@ -174,12 +181,12 @@ function PickedUpPanel() {
                                     <Ionicons name="call" size={20} color="#10B981" />
                                 </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    style={styles.contactButton}
-                                    onPress={handleWhatsAppRecipient}
-                                >
-                                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
-                                </TouchableOpacity>
+                                {/*<TouchableOpacity*/}
+                                {/*    style={styles.contactButton}*/}
+                                {/*    onPress={handleWhatsAppRecipient}*/}
+                                {/*>*/}
+                                {/*    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />*/}
+                                {/*</TouchableOpacity>*/}
                             </View>
                         </View>
 
@@ -695,4 +702,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default PickedUpPanel;
+export default EnRouteDropOff;

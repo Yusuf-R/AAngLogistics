@@ -33,6 +33,7 @@ const MEDIA_CONFIG = {
 
 const DriverMediaUploader = ({
                                  orderId,
+                                 stage,
                                  clientId,
                                  onMediaChange,
                                  minImages = MEDIA_CONFIG.MIN_IMAGES,
@@ -127,7 +128,7 @@ const DriverMediaUploader = ({
                 setShowPreviewModal(true);
             }
         } catch (error) {
-            console.error('Image picker error:', error);
+            console.log('Image picker error:', error);
             Alert.alert('Selection Failed', 'Failed to select image');
         }
     }, [canAddMoreImages, maxImages, requestPermission]);
@@ -174,7 +175,7 @@ const DriverMediaUploader = ({
                 setShowPreviewModal(true);
             }
         } catch (error) {
-            console.error('Video picker error:', error);
+            console.log('Video picker error:', error);
             Alert.alert('Selection Failed', 'Failed to select video');
         }
     }, [requestPermission, videoMaxDuration]);
@@ -196,14 +197,17 @@ const DriverMediaUploader = ({
             // Get presigned URL with proper structure
             const fileCategory = isVideo ? 'videos' : 'images';
 
-            // Get presigned URL (backend will handle path structure)
-            const presignedData = await DriverUtils.GetPresignedUrlPickup({
+            // Get presigned URL based on stage (pickup or delivery)
+            const getPresignedUrl = stage === 'dropoff'
+                ? DriverUtils.GetDropoffPresignedUrl
+                : DriverUtils.GetPickupPresignedUrl;
+
+            const presignedData = await getPresignedUrl({
                 orderId,
                 clientId,
                 fileType,
                 fileName,
-                fileCategory,
-                stage: 'pickup'
+                fileCategory
             });
 
             // Read file
@@ -257,7 +261,7 @@ const DriverMediaUploader = ({
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         } catch (error) {
-            console.error('Upload error:', error);
+            console.log('Upload error:', error);
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             Alert.alert(
                 'Upload Failed',
@@ -293,7 +297,7 @@ const DriverMediaUploader = ({
                             }
                             toast.success('Image deleted');
                         } catch (error) {
-                            console.error('Delete error:', error);
+                            console.log('Delete error:', error);
                             Alert.alert('Delete Failed', 'Failed to delete image. Please try again.');
                         } finally {
                             setDeleting(null);
@@ -325,7 +329,7 @@ const DriverMediaUploader = ({
                             if (modalVisible) setModalVisible(false);
                             toast.success('Video deleted');
                         } catch (error) {
-                            console.error('Delete error:', error);
+                            console.log('Delete error:', error);
                             Alert.alert('Delete Failed', 'Failed to delete video. Please try again.');
                         } finally {
                             setDeleting(null);

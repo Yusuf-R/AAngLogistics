@@ -16,7 +16,7 @@ import useLogisticStore from '../../../../store/Driver/useLogisticStore';
 import {navigate} from "expo-router/build/global-state/routing";
 
 
-function AcceptedPanel({ onNavigateToChat }) {
+function EnRoutePickUp({ onNavigateToChat }) {
     const {
         activeOrder,
         navigationData,
@@ -500,4 +500,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default AcceptedPanel;
+export default EnRoutePickUp;

@@ -16,13 +16,18 @@ import { toast } from 'sonner-native';
 import useLogisticStore from '../../../../store/Driver/useLogisticStore';
 import DriverMediaUploader from '../../DriverMediaUploader';
 
-function ArrivedPickupPanel() {
+function PickupConfirmationPanel() {
     const {
         activeOrder,
         pickupVerification,
         updatePickupVerification,
         confirmPickup
     } = useLogisticStore();
+    console.log({
+        activeOrder,
+        pickupVerification,
+
+    })
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [mediaData, setMediaData] = useState({
@@ -226,6 +231,7 @@ function ArrivedPickupPanel() {
                         maxImages={6}
                         videoOptional={true}
                         videoMaxDuration={20}
+                        stage="pickup"
                     />
                 </View>
 
@@ -648,4 +654,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default ArrivedPickupPanel;
+export default PickupConfirmationPanel;

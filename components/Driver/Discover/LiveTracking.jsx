@@ -27,10 +27,10 @@ import useLogisticStore, {DELIVERY_STAGES, GEOFENCE_RADIUS} from '../../../store
 import {useFocusEffect} from "@react-navigation/native";
 
 // Stage-specific panel components
-import AcceptedPanel from './Live/AcceptedPanel';
-import ArrivedPickupPanel from './Live/ArrivedPickupPanel';
-import PickedUpPanel from './Live/PickedUpPanel';
-import ArrivedDropoffPanel from './Live/ArrivedDropoffPanel';
+import EnRoutePickUp from './Live/EnRoutePickUp';
+import PickupConfirmationPanel from './Live/PickupConfirmationPanel';
+import EnRouteDropOff from './Live/EnRouteDropOff';
+import DropoffConfirmationPanel from './Live/DropoffConfirmationPanel';
 
 const {height: SCREEN_H} = Dimensions.get('window');
 const MAP_HEIGHT = SCREEN_H * 0.6;
@@ -513,20 +513,6 @@ function LiveTracking({onNavigateToChat}) {
                             )}
 
                         {/* Route polyline */}
-                        {/*{navigationData.isNavigating &&*/}
-                        {/*    Array.isArray(navigationData.routePolyline) &&*/}
-                        {/*    navigationData.routePolyline.length > 1 && (*/}
-                        {/*        <Polyline*/}
-                        {/*            coordinates={navigationData.routePolyline*/}
-                        {/*                .map((p) => normalizePoint(p) || p)*/}
-                        {/*                .filter(isValidLatLng)}*/}
-                        {/*            strokeColor="#6366F1"*/}
-                        {/*            strokeWidth={4}*/}
-                        {/*            lineDashPattern={[1]}*/}
-                        {/*        />*/}
-                        {/*    )}*/}
-
-                        {/* Route polyline */}
                         {canDrawStraightLine && (
                             <Polyline
                                 coordinates={[here, targetLocation]}
@@ -611,13 +597,13 @@ function LiveTracking({onNavigateToChat}) {
                 {(() => {
                     switch (deliveryStage) {
                         case DELIVERY_STAGES.ACCEPTED:
-                            return <AcceptedPanel onNavigateToChat={onNavigateToChat}/>;
+                            return <EnRoutePickUp onNavigateToChat={onNavigateToChat}/>;
                         case DELIVERY_STAGES.ARRIVED_PICKUP:
-                            return <ArrivedPickupPanel/>;
+                            return <PickupConfirmationPanel/>;
                         case DELIVERY_STAGES.PICKED_UP:
-                            return <PickedUpPanel/>;
+                            return <EnRouteDropOff/>;
                         case DELIVERY_STAGES.ARRIVED_DROPOFF:
-                            return <ArrivedDropoffPanel/>;
+                            return <DropoffConfirmationPanel/>;
                         default:
                             return null;
                     }
