@@ -626,10 +626,13 @@ class DriverUtils {
                 lat: params.lat,
                 lng: params.lng,
                 area: params.area || 'current',
-                radius: params.radius || 5,
-                maxDistance: params.maxDistance || 10,
+                radius: params.radius || 15,
+                maxDistance: params.maxDistance || 20,
                 priorityFilter: params.priorityFilter || 'all'
             };
+            console.log({
+                queryParams
+            })
 
             // Add vehicle filter if provided
             if (params.vehicleFilter && params.vehicleFilter.length > 0) {
@@ -801,7 +804,7 @@ class DriverUtils {
             };
 
         } catch (error) {
-            console.log('Location loss notification error:', error);
+            console.log('Something went wrong:', error);
 
             return {
                 success: false,
@@ -824,11 +827,11 @@ class DriverUtils {
             };
 
         } catch (error) {
-            console.log('Location loss notification error:', error);
+            console.log('Something went wrong:', error);
 
             return {
                 success: false,
-                message: 'Failed to notify location loss'
+                message: 'Something went wrong: Try again'
             };
         }
 
@@ -848,11 +851,11 @@ class DriverUtils {
             };
 
         } catch (error) {
-            console.log('Location loss notification error:', error);
+            console.log('Something went wrong:', error);
 
             return {
                 success: false,
-                message: 'Failed to notify location loss'
+                message: 'Location update faied: Try again'
             };
         }
     }
@@ -997,11 +1000,11 @@ class DriverUtils {
             };
 
         } catch (error) {
-            console.log('Location loss notification error:', error);
+            console.log('Something went wrong:', error);
 
             return {
                 success: false,
-                message: 'Failed to notify location loss'
+                message: 'Verification Failed: Try again'
             };
         }
     }
@@ -1086,11 +1089,11 @@ class DriverUtils {
             };
 
         } catch (error) {
-            console.log('Location loss notification error:', error);
+            console.log('Something went wrong:', error);
 
             return {
                 success: false,
-                message: 'Failed to notify location loss'
+                message: 'Something went wroing: Try again'
             };
         }
 
@@ -1106,18 +1109,53 @@ class DriverUtils {
 
             return {
                 success: true,
-                message: response.data.message,
-                requiresRating: response.data.requiresRating,
+                user: response.data.userData,
+                earnings: response.data.earnings,
                 nextAction: response.data.nextAction,
             };
 
         } catch (error) {
-            console.log('Location loss notification error:', error);
+            console.log('Something went wrong:', error);
 
             return {
                 success: false,
-                message: 'Failed to notify location loss'
+                message: 'Error: Try again'
             };
+        }
+    }
+
+    static async submitClientRating (payload) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PATCH',
+                url: '/driver/order/submit/review',
+                data: payload
+            });
+
+            return {
+                success: response.data.success,
+            };
+
+        } catch (error) {
+            console.log('Something went wrong:', error);
+
+            return {
+                success: false,
+                message: 'Review Failed'
+            };
+        }
+    }
+
+    static async getData() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/driver/dashboard/data'
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Something went wrong:', error);
+            throw new Error(error);
         }
     }
 

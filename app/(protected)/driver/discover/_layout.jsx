@@ -33,6 +33,13 @@ export default function DiscoverLayout() {
                     headerShown: false
                 }}
             />
+
+            <Stack.Screen
+                name="review"
+                options={{
+                    headerShown: false
+                }}
+            />
         </Stack>
     );
 }

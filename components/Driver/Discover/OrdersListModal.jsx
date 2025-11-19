@@ -163,21 +163,8 @@ function OrdersListModal({ visible, onClose, sourceTab = null }) {
                 return;
             }
 
-            console.log('Accepting order with location:', {
-                orderId: pendingOrder._id,
-                currentLocation: {
-                    lat: currentLocation.lat,
-                    lng: currentLocation.lng,
-                    accuracy: currentLocation.accuracy
-                }
-            });
-
             // Accept order via store
             const result = await useLogisticStore.getState().acceptOrder(pendingOrder);
-            console.log({
-                result,
-                frm: 'modal'
-            })
 
             if (!result.success) {
                 toast.error(result.message || 'Failed to accept order');

@@ -1,4 +1,4 @@
-// store/useLogisticStore.js
+// store/Driver/useLogisticStore.js
 import { create } from 'zustand';
 import { createJSONStorage, persist } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -6,19 +6,11 @@ import * as Location from 'expo-location';
 import { toast } from 'sonner-native';
 import DriverUtils from '../../utils/DriverUtilities';
 import * as Haptics from "expo-haptics";
+import SessionManager from "../../lib/SessionManager";
 
 /**
- * DELIVERY STAGE DEFINITIONS:
- * - 'discovering': Driver is browsing available orders (default state)
- * - 'accepted': Order accepted, en route to pickup location
- * - 'arrived_pickup': Driver has arrived at pickup location (within geofence)
- * - 'picked_up': Package collected, en route to delivery location
- * - 'arrived_dropoff': Driver has arrived at delivery location (within geofence)
- * - 'delivered': Package delivered successfully
- * - 'completed': Delivery completed, ready to return to discovering
- * - 'cancelled': Delivery cancelled (with reason)
+ * DELIVERY STAGE DEFINITIONS
  */
-
 const DELIVERY_STAGES = {
     DISCOVERING: 'discovering',
     ACCEPTED: 'accepted',
@@ -32,29 +24,23 @@ const DELIVERY_STAGES = {
 
 const GEOFENCE_RADIUS = 500; // meters
 
-/*
-*
-* Safely extract coordinates from various formats
-* Handles both Driver format {lat, lng} and Order GeoJSON format
-*/
+/**
+ * Safely extract coordinates from various formats
+ */
 const extractCoordinates = (location) => {
     if (!location) return null;
 
-    // Format 1: Direct {lat, lng}
     if (typeof location.lat === 'number' && typeof location.lng === 'number') {
         return { lat: location.lat, lng: location.lng };
     }
 
-    // Format 2: Nested coordinates.lat / coordinates.lng
     if (location.coordinates) {
         const coords = location.coordinates;
 
-        // Format 2a: {coordinates: {lat, lng}}
         if (typeof coords.lat === 'number' && typeof coords.lng === 'number') {
             return { lat: coords.lat, lng: coords.lng };
         }
 
-        // Format 2b: GeoJSON {coordinates: {type: "Point", coordinates: [lng, lat]}}
         if (coords.type === 'Point' && Array.isArray(coords.coordinates) && coords.coordinates.length === 2) {
             const [lng, lat] = coords.coordinates;
             if (typeof lat === 'number' && typeof lng === 'number') {
@@ -62,7 +48,6 @@ const extractCoordinates = (location) => {
             }
         }
 
-        // Format 2c: Direct array in coordinates [lng, lat]
         if (Array.isArray(coords.coordinates) && coords.coordinates.length === 2) {
             const [lng, lat] = coords.coordinates;
             if (typeof lat === 'number' && typeof lng === 'number') {
@@ -75,13 +60,12 @@ const extractCoordinates = (location) => {
     return null;
 };
 
-
 const useLogisticStore = create(
     persist(
         (set, get) => ({
             // ========== DRIVER LOCATION STATE ==========
-            currentLocation: null, // { lat, lng, accuracy, timestamp }
-            locationHistory: [], // Last 50 location points
+            currentLocation: null,
+            locationHistory: [],
             isTrackingLocation: false,
             locationFailureCount: 0,
             lastLocationUpdate: null,
@@ -90,7 +74,7 @@ const useLogisticStore = create(
             // ========== ACTIVE DELIVERY STATE ==========
             isOnActiveDelivery: false,
             activeOrderId: null,
-            activeOrder: null, // Full order object when on delivery
+            activeOrder: null,
 
             // ========== DELIVERY STATE MACHINE ==========
             deliveryStage: DELIVERY_STAGES.DISCOVERING,
@@ -109,7 +93,7 @@ const useLogisticStore = create(
                 timestamp: null,
                 photos: [],
                 video: null,
-                packageCondition: null, // 'good' | 'damaged' | 'tampered'
+                packageCondition: null,
                 weight: null,
                 notes: '',
                 contactPersonVerified: false
@@ -119,9 +103,9 @@ const useLogisticStore = create(
             deliveryVerification: {
                 isVerified: false,
                 timestamp: null,
-                deliveryToken: null, // 6-digit token
+                deliveryToken: null,
                 tokenVerified: false,
-                photos: [], // Optional delivery photos
+                photos: [],
                 video: null,
                 recipientName: '',
                 recipientSignature: null,
@@ -131,15 +115,15 @@ const useLogisticStore = create(
             // Navigation data
             navigationData: {
                 isNavigating: false,
-                targetLocation: null, // 'pickup' | 'dropoff'
+                targetLocation: null,
                 routePolyline: null,
-                estimatedDistance: null, // in km
-                estimatedDuration: null, // in minutes
+                estimatedDistance: null,
+                estimatedDuration: null,
                 lastETAUpdate: null
             },
 
             // Communication
-            messages: [], // In-app messages between driver and client
+            messages: [],
             lastMessageTimestamp: null,
 
             // Emergency & Issues
@@ -156,18 +140,9 @@ const useLogisticStore = create(
                 maxDistance: 40
             },
 
-            // ========== TAB CONTEXT ==========
-            currentTabContext: 'map',
-
-            // ========== TAB-SPECIFIC ORDERS STATE ==========
+            // ========== MAP ORDERS STATE (Simplified - No tabs) ==========
             tabOrders: {
                 map: {
-                    availableOrders: [],
-                    orderCount: 0,
-                    lastFetchTimestamp: null,
-                    isFetchingOrders: false
-                },
-                orders: {
                     availableOrders: [],
                     orderCount: 0,
                     lastFetchTimestamp: null,
@@ -178,16 +153,11 @@ const useLogisticStore = create(
             locationSubscription: null,
             offlineQueue: [],
 
-            // ========== ACTIONS: TAB MANAGEMENT ==========
-
-            setCurrentTabContext: (tab) => set({ currentTabContext: tab }),
-
             // ========== ACTIONS: LOCATION TRACKING ==========
 
             startLocationTracking: async () => {
                 const state = get();
                 if (state.isTrackingLocation) {
-                if (state.isTrackingLocation)
                     console.log('Location tracking already active');
                     return;
                 }
@@ -201,15 +171,11 @@ const useLogisticStore = create(
 
                     set({ isTrackingLocation: true, locationFailureCount: 0 });
 
-                    // Adaptive tracking based on delivery stage
                     const trackingConfig = get().getLocationTrackingConfig();
 
                     const subscription = await Location.watchPositionAsync(
                         trackingConfig,
                         (location) => {
-                            console.log({
-                                location,
-                            })
                             get().updateLocation(location.coords);
                         }
                     );
@@ -219,49 +185,41 @@ const useLogisticStore = create(
                 } catch (error) {
                     console.log('Failed to start location tracking:', error);
                     toast.error('Failed to start location tracking');
-                    // set({ isTrackingLocation: false });
                     set({ isTrackingLocation: false, locationFailureCount: state.locationFailureCount + 1 });
                 }
             },
 
-            /**
-             * Get adaptive location tracking configuration based on delivery stage
-             */
             getLocationTrackingConfig: () => {
                 const state = get();
                 const { deliveryStage, navigationData } = state;
 
-                // High frequency during active navigation
                 if (navigationData.isNavigating) {
                     return {
                         accuracy: Location.Accuracy.High,
-                        timeInterval: 5000, // 5 seconds
+                        timeInterval: 5000,
                         distanceInterval: 10
                     };
                 }
 
-                // Medium frequency during active delivery
                 if (deliveryStage === DELIVERY_STAGES.ACCEPTED || deliveryStage === DELIVERY_STAGES.PICKED_UP) {
                     return {
                         accuracy: Location.Accuracy.Balanced,
-                        timeInterval: 30000, // 30 seconds
+                        timeInterval: 30000,
                         distanceInterval: 20
                     };
                 }
 
-                // Low frequency when at pickup/dropoff
                 if (deliveryStage === DELIVERY_STAGES.ARRIVED_PICKUP || deliveryStage === DELIVERY_STAGES.ARRIVED_DROPOFF) {
                     return {
                         accuracy: Location.Accuracy.Balanced,
-                        timeInterval: 120000, // 2 minutes
+                        timeInterval: 120000,
                         distanceInterval: 50
                     };
                 }
 
-                // Default for discovering
                 return {
                     accuracy: Location.Accuracy.Balanced,
-                    timeInterval: 60000, // 1 minute
+                    timeInterval: 60000,
                     distanceInterval: 50
                 };
             },
@@ -283,17 +241,15 @@ const useLogisticStore = create(
                     set({ locationWatch: null });
                 }
 
-                // Stop geofence checking
                 if (state.geofenceCheckInterval) {
                     clearInterval(state.geofenceCheckInterval);
                     set({ geofenceCheckInterval: null });
                 }
             },
 
-            updateLocation: (coords, sourceTab = null) => {
+            updateLocation: (coords) => {
                 const state = get();
 
-                // ✅ Validate coordinates first
                 if (!coords?.latitude || !coords?.longitude) {
                     console.warn('⚠️ Invalid location coords:', coords);
                     get().handleLocationFailure();
@@ -307,7 +263,6 @@ const useLogisticStore = create(
                     timestamp: Date.now()
                 };
 
-                // ✅ Always update location immediately
                 set({
                     currentLocation: newLocation,
                     lastLocationUpdate: Date.now(),
@@ -322,28 +277,24 @@ const useLogisticStore = create(
                 });
 
                 if (state.isOnActiveDelivery) {
-                    // Only delivery-related updates
                     if (state.activeOrderId) {
                         get().syncLocationToBackend(state.activeOrderId, newLocation);
                         get().checkGeofences(newLocation);
 
-                        // ✅ CRITICAL: Update ETA if navigating
                         if (state.navigationData?.isNavigating) {
                             console.log('🔄 Updating ETA...');
                             get().updateETA(newLocation);
                         }
                     }
-                    return; // Don't fetch orders during delivery
+                    return;
                 }
 
-                // Discovery mode
+                // Discovery mode - update history and fetch orders
                 const updatedHistory = [...state.locationHistory, newLocation].slice(-50);
                 set({ locationHistory: updatedHistory });
 
-                const targetTab = sourceTab || state.currentTabContext;
-                if (targetTab) {
-                    get().fetchAvailableOrders(newLocation, true, targetTab);
-                }
+                // Always fetch for map (no tab context needed)
+                get().fetchAvailableOrders(newLocation, true);
             },
 
             handleLocationFailure: () => {
@@ -401,16 +352,12 @@ const useLogisticStore = create(
 
             // ========== ACTIONS: GEOFENCE MANAGEMENT ==========
 
-            /**
-             * Check if driver is within pickup/dropoff geofence
-             */
             checkGeofences: (currentLocation) => {
                 const state = get();
                 const { activeOrder, deliveryStage } = state;
 
                 if (!activeOrder || !currentLocation) return;
 
-                // ✅ Extract pickup coordinates safely
                 if (deliveryStage === DELIVERY_STAGES.ACCEPTED) {
                     const pickupLocation = extractCoordinates(activeOrder.location?.pickUp);
 
@@ -438,7 +385,7 @@ const useLogisticStore = create(
                     const wasInPickupGeofence = state.isInPickupGeofence;
                     const isNowInPickupGeofence = distanceToPickup <= GEOFENCE_RADIUS;
 
-                    // ✅ Proximity warnings (25m, 15m, 10m)
+                    // Proximity warnings
                     if (distanceToPickup <= 25 && distanceToPickup > 15 && !state.proximityWarning25m) {
                         toast.info('📍 Getting close! 25m to pickup location');
                         set({ proximityWarning25m: true });
@@ -452,7 +399,7 @@ const useLogisticStore = create(
                         set({ proximityWarning10m: true });
                     }
 
-                    // ✅ Geofence entry/exit
+                    // Geofence entry/exit
                     if (!wasInPickupGeofence && isNowInPickupGeofence) {
                         set({
                             isInPickupGeofence: true,
@@ -478,7 +425,6 @@ const useLogisticStore = create(
                     }
                 }
 
-                // ✅ Extract dropoff coordinates safely
                 if (deliveryStage === DELIVERY_STAGES.PICKED_UP) {
                     const dropoffLocation = extractCoordinates(activeOrder.location?.dropOff);
 
@@ -506,7 +452,7 @@ const useLogisticStore = create(
                     const wasInDropoffGeofence = state.isInDropoffGeofence;
                     const isNowInDropoffGeofence = distanceToDropoff <= GEOFENCE_RADIUS;
 
-                    // ✅ Proximity warnings for dropoff
+                    // Proximity warnings for dropoff
                     if (distanceToDropoff <= 25 && distanceToDropoff > 15 && !state.proximityWarningDropoff25m) {
                         toast.info('📍 Approaching delivery location! 25m away');
                         set({ proximityWarningDropoff25m: true });
@@ -520,7 +466,7 @@ const useLogisticStore = create(
                         set({ proximityWarningDropoff10m: true });
                     }
 
-                    // ✅ Geofence entry/exit
+                    // Geofence entry/exit
                     if (!wasInDropoffGeofence && isNowInDropoffGeofence) {
                         set({
                             isInDropoffGeofence: true,
@@ -547,12 +493,8 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Calculate distance between two coordinates (Haversine formula)
-             * Returns distance in meters
-             */
             calculateDistance: (lat1, lon1, lat2, lon2) => {
-                const R = 6371e3; // Earth's radius in meters
+                const R = 6371e3;
                 const φ1 = (lat1 * Math.PI) / 180;
                 const φ2 = (lat2 * Math.PI) / 180;
                 const Δφ = ((lat2 - lat1) * Math.PI) / 180;
@@ -564,17 +506,13 @@ const useLogisticStore = create(
 
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-                return R * c; // Distance in meters
+                return R * c;
             },
 
             // ========== ACTIONS: DELIVERY STATE MACHINE ==========
 
-            /**
-             * Accept an order and start delivery
-             */
             acceptOrder: async (order) => {
                 const state = get();
-                // const currentTab = state.currentTabContext || 'map';
 
                 try {
                     const currentLocation = state.currentLocation;
@@ -583,7 +521,7 @@ const useLogisticStore = create(
                         toast.error('Unable to get your current location');
                         return { success: false, message: 'Location unavailable' };
                     }
-                    // Call API to accept order
+
                     const result = await DriverUtils.acceptOrder(
                         order._id,
                         {
@@ -598,7 +536,6 @@ const useLogisticStore = create(
                         return { success: false, message: result.message };
                     }
 
-                    // Update state
                     set({
                         isOnActiveDelivery: true,
                         activeOrderId: order._id,
@@ -606,20 +543,9 @@ const useLogisticStore = create(
                         deliveryStage: DELIVERY_STAGES.ACCEPTED,
                         deliveryStartTime: Date.now(),
                         deliveryAcceptedTime: Date.now(),
-
-                        // Clear discovery orders
-                        // tabOrders: {
-                        //     ...state.tabOrders,
-                        //     [currentTab]: {
-                        //         availableOrders: [],
-                        //         orderCount: 0,
-                        //         lastFetchTimestamp: null,
-                        //         isFetchingOrders: false
-                        //     }
-                        // }
                     });
+
                     const { user } = result;
-                    // Start location tracking
                     await get().startLocationTracking();
                     return { success: true, order, user };
                 } catch (error) {
@@ -628,9 +554,6 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Transition to arrived at pickup
-             */
             arriveAtPickup: async () => {
                 const state = get();
 
@@ -645,11 +568,6 @@ const useLogisticStore = create(
                 }
 
                 try {
-                    console.log({
-                        a: state.activeOrderId,
-                        b: DELIVERY_STAGES.ARRIVED_PICKUP,
-                        c: state.currentLocation
-                    })
                     const payload = {
                         orderId: state.activeOrderId,
                         stage: DELIVERY_STAGES.ARRIVED_PICKUP,
@@ -676,9 +594,6 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Confirm package pickup
-             */
             confirmPickup: async (verificationData) => {
                 const state = get();
                 const currentLocation = state.currentLocation;
@@ -709,7 +624,7 @@ const useLogisticStore = create(
                             isVerified: true,
                             timestamp: Date.now()
                         },
-                        isInPickupGeofence: false // Reset geofence
+                        isInPickupGeofence: false
                     });
 
                     toast.success('Package pickup confirmed!');
@@ -724,9 +639,6 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Transition to arrived at dropoff
-             */
             arriveAtDropoff: async () => {
                 const state = get();
 
@@ -766,9 +678,6 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Complete delivery
-             */
             completeDelivery: async (verificationData) => {
                 const state = get();
 
@@ -777,7 +686,6 @@ const useLogisticStore = create(
                     return { success: false, message: 'Invalid stage transition' };
                 }
 
-                // Verify delivery token
                 if (!verificationData.tokenVerified) {
                     toast.error('Please verify the delivery token');
                     return { success: false, message: 'Token not verified' };
@@ -789,10 +697,10 @@ const useLogisticStore = create(
                         stage: DELIVERY_STAGES.ARRIVED_DROPOFF,
                         verificationData,
                         locationDetails: state.currentLocation
-                    }
-                    console.log({
-                        payload
-                    })
+                    };
+
+                    console.log('📦 Completing delivery:', payload);
+
                     const result = await DriverUtils.completeDelivery(payload);
 
                     if (!result.success) {
@@ -809,15 +717,14 @@ const useLogisticStore = create(
                         deliveryCompletedTime: Date.now()
                     });
 
-                    toast.success('🎉 Delivery completed successfully!');
-                    console.log('✅ Delivery completed');
+                    console.log('✅ Delivery completed successfully');
 
-                    // Transition to completed after a short delay
-                    setTimeout(() => {
-                        get().finalizeDelivery();
-                    }, 2000);
-
-                    return { success: true, requiresRating: result.requiresRating, nextAction: result.nextAction };
+                    return {
+                        success: true,
+                        userData: result.user,
+                        nextAction: result.nextAction,
+                        earnings: result.earnings
+                    };
 
                 } catch (error) {
                     console.log('Failed to complete delivery:', error);
@@ -826,17 +733,12 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Finalize delivery and return to discovering state
-             */
             finalizeDelivery: () => {
-                const state = get();
-                const currentTab = state.currentTabContext || 'map';
+                console.log('🔄 Finalizing delivery and returning to discovery...');
 
                 get().stopLocationTracking();
 
                 set({
-                    // Reset delivery state
                     isOnActiveDelivery: false,
                     activeOrderId: null,
                     activeOrder: null,
@@ -844,12 +746,14 @@ const useLogisticStore = create(
                     deliveryStartTime: null,
                     deliveryAcceptedTime: null,
                     deliveryCompletedTime: null,
-
-                    // Reset geofences
                     isInPickupGeofence: false,
                     isInDropoffGeofence: false,
-
-                    // Reset verifications
+                    proximityWarning25m: false,
+                    proximityWarning15m: false,
+                    proximityWarning10m: false,
+                    proximityWarningDropoff25m: false,
+                    proximityWarningDropoff15m: false,
+                    proximityWarningDropoff10m: false,
                     pickupVerification: {
                         isVerified: false,
                         timestamp: null,
@@ -871,8 +775,6 @@ const useLogisticStore = create(
                         recipientSignature: null,
                         notes: ''
                     },
-
-                    // Reset navigation
                     navigationData: {
                         isNavigating: false,
                         targetLocation: null,
@@ -881,30 +783,20 @@ const useLogisticStore = create(
                         estimatedDuration: null,
                         lastETAUpdate: null
                     },
-
-                    // Reset messages and issues
                     messages: [],
                     lastMessageTimestamp: null,
                     issueReported: false,
                     issueDetails: null,
                     sosActivated: false,
-
                     locationHistory: []
                 });
 
-                // Fetch orders for current tab
-                get().fetchAvailableOrders(null, false, currentTab);
-
-                console.log('🔄 Delivery finalized, returned to discovering');
+                console.log('✅ Delivery finalized, returned to discovering');
             },
 
-            /**
-             * Cancel delivery (only before pickup)
-             */
             cancelDelivery: async (reason, description) => {
                 const state = get();
 
-                // Cannot cancel after pickup
                 if (state.deliveryStage === DELIVERY_STAGES.PICKED_UP ||
                     state.deliveryStage === DELIVERY_STAGES.ARRIVED_DROPOFF) {
                     toast.error('Cannot cancel after pickup. Please contact support.');
@@ -929,7 +821,6 @@ const useLogisticStore = create(
                     toast.info('Delivery cancelled');
                     console.log('❌ Delivery cancelled:', reason);
 
-                    // Return to discovering after short delay
                     setTimeout(() => {
                         get().finalizeDelivery();
                     }, 1500);
@@ -945,9 +836,6 @@ const useLogisticStore = create(
 
             // ========== ACTIONS: NAVIGATION ==========
 
-            /**
-             * Start navigation to pickup or dropoff
-             */
             startNavigation: (target) => {
                 const state = get();
                 const { activeOrder, currentLocation } = state;
@@ -957,7 +845,6 @@ const useLogisticStore = create(
                     return;
                 }
 
-                // ✅ Extract target coordinates using helper
                 const targetCoords = target === 'pickup'
                     ? extractCoordinates(activeOrder.location?.pickUp)
                     : extractCoordinates(activeOrder.location?.dropOff);
@@ -967,7 +854,6 @@ const useLogisticStore = create(
                     return;
                 }
 
-                // ✅ Calculate initial ETA immediately
                 const distance = get().calculateDistance(
                     currentLocation.lat,
                     currentLocation.lng,
@@ -983,14 +869,13 @@ const useLogisticStore = create(
                     navigationData: {
                         isNavigating: true,
                         targetLocation: target,
-                        routePolyline: null, // Will be updated by routing service
-                        estimatedDistance: validDistance.toFixed(1), // ✅ Set immediately
-                        estimatedDuration: estimatedDuration,         // ✅ Set immediately
+                        routePolyline: null,
+                        estimatedDistance: validDistance.toFixed(1),
+                        estimatedDuration: estimatedDuration,
                         lastETAUpdate: Date.now()
                     }
                 });
 
-                // Restart location tracking with high frequency
                 get().stopLocationTracking();
                 get().startLocationTracking();
 
@@ -1001,9 +886,6 @@ const useLogisticStore = create(
                 });
             },
 
-            /**
-             * Stop navigation
-             */
             stopNavigation: () => {
                 set({
                     navigationData: {
@@ -1016,23 +898,18 @@ const useLogisticStore = create(
                     }
                 });
 
-                // Restart location tracking with normal frequency
                 get().stopLocationTracking();
                 get().startLocationTracking();
 
                 console.log('🛑 Navigation stopped');
             },
 
-            /**
-             * Update ETA based on current location
-             */
             updateETA: async (currentLocation) => {
                 const state = get();
                 const { navigationData, activeOrder } = state;
 
                 if (!navigationData.isNavigating || !activeOrder) return;
 
-                // ✅ Extract target coordinates safely
                 const targetCoords = navigationData.targetLocation === 'pickup'
                     ? extractCoordinates(activeOrder.location?.pickUp)
                     : extractCoordinates(activeOrder.location?.dropOff);
@@ -1043,7 +920,6 @@ const useLogisticStore = create(
                 }
 
                 try {
-                    // Calculate distance
                     const distance = get().calculateDistance(
                         currentLocation.lat,
                         currentLocation.lng,
@@ -1051,17 +927,14 @@ const useLogisticStore = create(
                         targetCoords.lng
                     );
 
-                    // ✅ Validate distance
                     if (isNaN(distance) || distance < 0) {
                         console.warn('⚠️ Invalid distance calculated:', distance);
                         return;
                     }
 
-                    // Estimate duration (40 km/h average city speed)
                     const distanceInKm = distance / 1000;
-                    const estimatedDuration = (distanceInKm / 40) * 60; // minutes
+                    const estimatedDuration = (distanceInKm / 40) * 60;
 
-                    // ✅ Ensure valid values
                     const validDuration = Math.max(1, Math.ceil(estimatedDuration));
                     const validDistance = Math.max(0.1, distanceInKm);
 
@@ -1107,23 +980,21 @@ const useLogisticStore = create(
                 console.log('🔄 Scan settings reset to defaults');
             },
 
-            // ========== ACTIONS: ORDER FETCHING ==========
+            // ========== ACTIONS: ORDER FETCHING (Simplified - Map Only) ==========
 
-            fetchAvailableOrders: async (location = null, silent = false, tab = null) => {
+            fetchAvailableOrders: async (location = null, silent = false) => {
                 const state = get();
-                const targetTab = tab || state.currentTabContext || 'map';
                 const targetLocation = location || state.currentLocation;
 
                 if (!targetLocation) {
-                    console.log(`⚠️ No location available for fetching orders (tab: ${targetTab})`);
+                    console.log('⚠️ No location available for fetching orders');
                     return { success: false, message: 'Location unavailable' };
                 }
 
                 set({
                     tabOrders: {
-                        ...state.tabOrders,
-                        [targetTab]: {
-                            ...state.tabOrders[targetTab],
+                        map: {
+                            ...state.tabOrders.map,
                             isFetchingOrders: !silent
                         }
                     }
@@ -1139,18 +1010,16 @@ const useLogisticStore = create(
                         radius: scanSettings.area === 'current' ? scanSettings.radius : null,
                         vehicleFilter: scanSettings.vehicleFilter.length > 0 ? scanSettings.vehicleFilter : null,
                         priorityFilter: scanSettings.priorityFilter,
-                        maxDistance: scanSettings.maxDistance,
-                        tabContext: targetTab
+                        maxDistance: scanSettings.maxDistance
                     };
 
-                    console.log(`📡 Fetching orders for tab: ${targetTab}`, queryParams);
+                    console.log('📡 Fetching orders for map', queryParams);
 
                     const response = await DriverUtils.getAvailableOrders(queryParams);
 
                     set({
                         tabOrders: {
-                            ...state.tabOrders,
-                            [targetTab]: {
+                            map: {
                                 availableOrders: response.orders || [],
                                 orderCount: response.count || 0,
                                 lastFetchTimestamp: Date.now(),
@@ -1159,17 +1028,16 @@ const useLogisticStore = create(
                         }
                     });
 
-                    console.log(`✅ Orders fetched for ${targetTab}: ${response.count || 0} orders`);
+                    console.log(`✅ Orders fetched: ${response.count || 0} orders`);
 
                     return { success: true, orders: response.orders || [], count: response.count || 0 };
                 } catch (error) {
-                    console.log(`❌ Failed to fetch orders for ${targetTab}:`, error);
+                    console.log('❌ Failed to fetch orders:', error);
 
                     set({
                         tabOrders: {
-                            ...state.tabOrders,
-                            [targetTab]: {
-                                ...state.tabOrders[targetTab],
+                            map: {
+                                ...state.tabOrders.map,
                                 isFetchingOrders: false,
                                 orderCount: 0,
                                 availableOrders: []
@@ -1184,13 +1052,9 @@ const useLogisticStore = create(
             // ========== UTILITY ACTIONS ==========
 
             clearOrders: () => {
-                const state = get();
-                const currentTab = state.currentTabContext || 'map';
-
                 set(state => ({
                     tabOrders: {
-                        ...state.tabOrders,
-                        [currentTab]: {
+                        map: {
                             availableOrders: [],
                             orderCount: 0,
                             lastFetchTimestamp: null,
@@ -1200,11 +1064,10 @@ const useLogisticStore = create(
                 }));
             },
 
-            clearTabOrders: (tab = 'map') => {
+            clearTabOrders: () => {
                 set(state => ({
                     tabOrders: {
-                        ...state.tabOrders,
-                        [tab]: {
+                        map: {
                             availableOrders: [],
                             orderCount: 0,
                             lastFetchTimestamp: null,
@@ -1212,23 +1075,10 @@ const useLogisticStore = create(
                         }
                     }
                 }));
-            },
-
-            getTabOrders: (tab) => {
-                const state = get();
-                return state.tabOrders[tab] || {
-                    availableOrders: [],
-                    orderCount: 0,
-                    lastFetchTimestamp: null,
-                    isFetchingOrders: false
-                };
             },
 
             // ========== ACTIONS: COMMUNICATION ==========
 
-            /**
-             * Send message to client
-             */
             sendMessage: async (message, type = 'text') => {
                 const state = get();
 
@@ -1271,9 +1121,6 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Receive message from client
-             */
             receiveMessage: (messageData) => {
                 const state = get();
 
@@ -1291,14 +1138,10 @@ const useLogisticStore = create(
                     lastMessageTimestamp: Date.now()
                 });
 
-                // Show notification
                 toast.info('New message from client');
                 console.log('💬 Message received:', messageData.message);
             },
 
-            /**
-             * Mark messages as read
-             */
             markMessagesAsRead: () => {
                 const state = get();
 
@@ -1310,9 +1153,6 @@ const useLogisticStore = create(
                 set({ messages: updatedMessages });
             },
 
-            /**
-             * Send automated status update to client
-             */
             sendAutomatedUpdate: async (updateType) => {
                 const state = get();
 
@@ -1333,9 +1173,6 @@ const useLogisticStore = create(
 
             // ========== ACTIONS: EMERGENCY & ISSUES ==========
 
-            /**
-             * Report an issue
-             */
             reportIssue: async (issueType, description, severity = 'medium') => {
                 const state = get();
 
@@ -1379,9 +1216,6 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Activate SOS emergency mode
-             */
             activateSOS: async () => {
                 const state = get();
 
@@ -1402,11 +1236,6 @@ const useLogisticStore = create(
 
                         toast.error('🆘 SOS ACTIVATED - Support has been notified');
                         console.log('🆘 SOS ACTIVATED');
-
-                        // TODO: Trigger additional emergency protocols
-                        // - Share location with emergency contacts
-                        // - Auto-call emergency services (if configured)
-                        // - Send push notifications to admin
                     }
 
                     return result;
@@ -1418,9 +1247,6 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Deactivate SOS
-             */
             deactivateSOS: async () => {
                 const state = get();
 
@@ -1445,9 +1271,6 @@ const useLogisticStore = create(
 
             // ========== ACTIONS: VERIFICATION HELPERS ==========
 
-            /**
-             * Verify delivery token
-             */
             verifyDeliveryToken: async (inputToken) => {
                 const state = get();
 
@@ -1457,13 +1280,11 @@ const useLogisticStore = create(
 
                 try {
                     const payload = {
-                        orderId : state.activeOrderId,
+                        orderId: state.activeOrderId,
                         deliveryToken: inputToken,
                         stage: state.deliveryStage
                     }
-                    console.log({
-                        payload,
-                    })
+
                     const result = await DriverUtils.verifyDeliveryToken(payload);
 
                     if (result.success) {
@@ -1490,9 +1311,6 @@ const useLogisticStore = create(
                 }
             },
 
-            /**
-             * Update pickup verification data
-             */
             updatePickupVerification: (field, value) => {
                 const state = get();
 
@@ -1504,9 +1322,6 @@ const useLogisticStore = create(
                 });
             },
 
-            /**
-             * Update delivery verification data
-             */
             updateDeliveryVerification: (field, value) => {
                 const state = get();
 
@@ -1520,9 +1335,6 @@ const useLogisticStore = create(
 
             // ========== ACTIONS: OFFLINE QUEUE MANAGEMENT ==========
 
-            /**
-             * Queue action for when offline
-             */
             queueOfflineAction: (action) => {
                 const state = get();
                 const offlineQueue = state.offlineQueue || [];
@@ -1539,9 +1351,6 @@ const useLogisticStore = create(
                 console.log('📦 Action queued for offline sync:', action.type);
             },
 
-            /**
-             * Process offline queue when connection restored
-             */
             processOfflineQueue: async () => {
                 const state = get();
                 const offlineQueue = state.offlineQueue || [];
@@ -1552,10 +1361,8 @@ const useLogisticStore = create(
 
                 for (const queuedAction of offlineQueue) {
                     try {
-                        // TODO: Process each queued action
                         console.log('Processing:', queuedAction.action.type);
 
-                        // Remove from queue after successful processing
                         set({
                             offlineQueue: state.offlineQueue.filter(a => a.id !== queuedAction.id)
                         });
@@ -1563,7 +1370,6 @@ const useLogisticStore = create(
                     } catch (error) {
                         console.log('Failed to process queued action:', error);
 
-                        // Increment retry count
                         const updatedQueue = state.offlineQueue.map(a =>
                             a.id === queuedAction.id
                                 ? { ...a, retries: a.retries + 1 }
@@ -1580,47 +1386,32 @@ const useLogisticStore = create(
 
             // ========== STORE RESET ==========
 
-            /**
-             * Reset entire store (logout, etc.)
-             */
             resetStore: () => {
                 const state = get();
 
-                // Stop all tracking
                 state.stopLocationTracking();
 
-                // Clear geofence interval
                 if (state.geofenceCheckInterval) {
                     clearInterval(state.geofenceCheckInterval);
                 }
 
-                // Reset all state to initial values
                 set({
-                    // Location state
                     currentLocation: null,
                     locationHistory: [],
                     isTrackingLocation: false,
                     locationFailureCount: 0,
                     lastLocationUpdate: null,
                     locationSubscription: null,
-
-                    // Active delivery state
                     isOnActiveDelivery: false,
                     activeOrderId: null,
                     activeOrder: null,
-
-                    // Delivery state machine
                     deliveryStage: DELIVERY_STAGES.DISCOVERING,
                     deliveryStartTime: null,
                     deliveryAcceptedTime: null,
                     deliveryCompletedTime: null,
-
-                    // Geofence
                     isInPickupGeofence: false,
                     isInDropoffGeofence: false,
                     geofenceCheckInterval: null,
-
-                    // Verification
                     pickupVerification: {
                         isVerified: false,
                         timestamp: null,
@@ -1640,8 +1431,6 @@ const useLogisticStore = create(
                         recipientSignature: null,
                         notes: ''
                     },
-
-                    // Navigation
                     navigationData: {
                         isNavigating: false,
                         targetLocation: null,
@@ -1650,46 +1439,19 @@ const useLogisticStore = create(
                         estimatedDuration: null,
                         lastETAUpdate: null
                     },
-
-                    // Communication
                     messages: [],
                     lastMessageTimestamp: null,
-
-                    // Emergency
                     issueReported: false,
                     issueDetails: null,
                     sosActivated: false,
-
-                    // Offline queue
                     offlineQueue: [],
-
-                    // Scan settings
                     scanSettings: {
                         area: 'territorial',
                         radius: 25,
                         vehicleFilter: [],
                         priorityFilter: 'all',
                         maxDistance: 40
-                    },
-
-                    // Tab context
-                    currentTabContext: 'map',
-
-                    // Tab orders
-                    // tabOrders: {
-                    //     map: {
-                    //         availableOrders: [],
-                    //         orderCount: 0,
-                    //         lastFetchTimestamp: null,
-                    //         isFetchingOrders: false
-                    //     },
-                    //     orders: {
-                    //         availableOrders: [],
-                    //         orderCount: 0,
-                    //         lastFetchTimestamp: null,
-                    //         isFetchingOrders: false
-                    //     }
-                    // }
+                    }
                 });
 
                 console.log('🔄 Logistic store reset');
@@ -1697,9 +1459,6 @@ const useLogisticStore = create(
 
             // ========== HELPER GETTERS ==========
 
-            /**
-             * Get current delivery stage display info
-             */
             getStageInfo: () => {
                 const state = get();
                 const stageInfo = {
@@ -1756,9 +1515,6 @@ const useLogisticStore = create(
                 return stageInfo[state.deliveryStage] || stageInfo[DELIVERY_STAGES.DISCOVERING];
             },
 
-            /**
-             * Check if action is allowed in current stage
-             */
             canPerformAction: (action) => {
                 const state = get();
                 const { deliveryStage } = state;
@@ -1777,9 +1533,6 @@ const useLogisticStore = create(
                 return allowedActions[deliveryStage]?.includes(action) || false;
             },
 
-            /**
-             * Get delivery duration in minutes
-             */
             getDeliveryDuration: () => {
                 const state = get();
 
@@ -1788,12 +1541,9 @@ const useLogisticStore = create(
                 const endTime = state.deliveryCompletedTime || Date.now();
                 const durationMs = endTime - state.deliveryStartTime;
 
-                return Math.floor(durationMs / 60000); // Convert to minutes
+                return Math.floor(durationMs / 60000);
             },
 
-            /**
-             * Get delivery progress percentage
-             */
             getDeliveryProgress: () => {
                 const state = get();
                 const stageProgress = {
@@ -1810,6 +1560,17 @@ const useLogisticStore = create(
                 return stageProgress[state.deliveryStage] || 0;
             },
 
+            isStoreClean: () => {
+                const state = get();
+                return (
+                    !state.isOnActiveDelivery &&
+                    !state.activeOrderId &&
+                    !state.activeOrder &&
+                    state.deliveryStage === DELIVERY_STAGES.DISCOVERING &&
+                    !state.navigationData.isNavigating
+                );
+            },
+
             debugStore: () => {
                 const state = get();
                 console.log('🔍 STORE DEBUG:', {
@@ -1817,7 +1578,12 @@ const useLogisticStore = create(
                     activeOrderId: state.activeOrderId,
                     deliveryStage: state.deliveryStage,
                     currentLocation: state.currentLocation,
-                    isTrackingLocation: state.isTrackingLocation
+                    isTrackingLocation: state.isTrackingLocation,
+                    isNavigating: state.navigationData.isNavigating,
+                    tokenVerified: state.deliveryVerification.tokenVerified,
+                    pickupVerified: state.pickupVerification.isVerified,
+                    isClean: get().isStoreClean()
+
                 });
             },
 
@@ -1826,79 +1592,44 @@ const useLogisticStore = create(
                 const { activeOrder, currentLocation, navigationData } = state;
 
                 console.log('🐛 NAVIGATION DEBUG:', {
-                    // Current state
                     isNavigating: navigationData.isNavigating,
                     target: navigationData.targetLocation,
-
-                    // ETA values
                     estimatedDistance: navigationData.estimatedDistance,
                     estimatedDuration: navigationData.estimatedDuration,
                     lastETAUpdate: navigationData.lastETAUpdate ? new Date(navigationData.lastETAUpdate).toLocaleTimeString() : 'never',
-
-                    // Locations
                     driverLocation: currentLocation,
                     pickupRaw: activeOrder?.location?.pickUp,
                     pickupExtracted: extractCoordinates(activeOrder?.location?.pickUp),
                     dropoffRaw: activeOrder?.location?.dropOff,
                     dropoffExtracted: extractCoordinates(activeOrder?.location?.dropOff),
-
-                    // Active order
                     hasActiveOrder: !!activeOrder,
                     orderId: activeOrder?._id,
                 });
             },
         }),
-    {
-        name: 'logistic-store', // Storage key
-        storage: createJSONStorage(() => AsyncStorage),
+        {
+            name: 'logistic-store',
+            storage: createJSONStorage(() => AsyncStorage),
 
-        // ✅ IMPORTANT: Only persist critical delivery state
-        partialize: (state) => ({
-            // Persist active delivery data
-            isOnActiveDelivery: state.isOnActiveDelivery,
-            activeOrderId: state.activeOrderId,
-            activeOrder: state.activeOrder,
-            deliveryStage: state.deliveryStage,
-            deliveryStartTime: state.deliveryStartTime,
-            deliveryAcceptedTime: state.deliveryAcceptedTime,
+            partialize: (state) => ({
+                isOnActiveDelivery: state.isOnActiveDelivery,
+                activeOrderId: state.activeOrderId,
+                activeOrder: state.activeOrder,
+                deliveryStage: state.deliveryStage,
+                deliveryStartTime: state.deliveryStartTime,
+                deliveryAcceptedTime: state.deliveryAcceptedTime,
+                pickupVerification: state.pickupVerification,
+                deliveryVerification: state.deliveryVerification,
+                deliveryCompletedTime: state.deliveryCompletedTime,
+                isInPickupGeofence: state.isInPickupGeofence,
+                isInDropoffGeofence: state.isInDropoffGeofence,
+                currentLocation: state.currentLocation,
+                navigationData: state.navigationData,
+                scanSettings: state.scanSettings,
+            }),
+        }
+    )
+);
 
-            // Persist verification states
-            pickupVerification: state.pickupVerification,
-            deliveryVerification: state.deliveryVerification,
-            deliveryCompletedTime: state.deliveryCompletedTime, // ✅ ADDED
-
-            // Persist geofence states
-            isInPickupGeofence: state.isInPickupGeofence,
-            isInDropoffGeofence: state.isInDropoffGeofence,
-
-            currentLocation: state.currentLocation,
-            navigationData: state.navigationData,
-            scanSettings: state.scanSettings,
-            currentTabContext: state.currentTabContext,
-
-        }),
-
-        // ✅ Handle rehydration
-        // onRehydrateStorage: () => (state) => {
-        //     if (state) {
-        //         console.log('💾 Store rehydrated:', {
-        //             hasActiveDelivery: state.isOnActiveDelivery,
-        //             orderId: state.activeOrderId,
-        //             stage: state.deliveryStage
-        //         });
-        //
-        //         // ✅ Restart location tracking if there's an active delivery
-        //         if (state.isOnActiveDelivery) {
-        //             console.log('🔄 Restarting location tracking for active delivery');
-        //             setTimeout(() => {
-        //                 state.startLocationTracking();
-        //             }, 1000);
-        //         }
-        //     }
-        // }
-    }
-    ));
-
-// Export delivery stages for use in components
 export { DELIVERY_STAGES, GEOFENCE_RADIUS };
 export default useLogisticStore;

@@ -71,6 +71,8 @@ const Step2 = forwardRef(({defaultValues}, ref) => {
                 location: {  // ✅ Keep this wrapper
                     pickUp: {
                         address: defaultValues?.location?.pickUp?.address || orderData?.location?.pickUp?.address || '',
+                        state: defaultValues?.location?.pickUp?.state || orderData?.location?.pickUp?.state || '',
+                        lga: defaultValues?.location?.pickUp?.lga || orderData?.location?.pickUp?.lga || '',
                         coordinates: {
                             type: 'Point',
                             coordinates: defaultValues?.location?.pickUp?.coordinates?.coordinates ||

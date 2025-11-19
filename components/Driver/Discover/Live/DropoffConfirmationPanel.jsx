@@ -1,4 +1,4 @@
-// components/Driver/Delivery/Panels/ArrivedDropoffPanel.jsx
+// components/Driver/Delivery/Panels/DropoffConfirmationPanel.jsx
 import React, {useState, useRef} from 'react';
 import {
     View,
@@ -13,9 +13,9 @@ import {
 import {Ionicons} from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {toast} from 'sonner-native';
+import {router} from "expo-router";
 import useLogisticStore from '../../../../store/Driver/useLogisticStore';
 import DriverMediaUploader from '../../DriverMediaUploader';
-import {router} from "expo-router";
 
 function DropoffConfirmationPanel() {
     const {
@@ -34,15 +34,23 @@ function DropoffConfirmationPanel() {
         video: null
     });
 
-    // Animation for token verification
     const shakeAnimation = useRef(new RNAnimated.Value(0)).current;
 
-    if (!activeOrder) return null;
+    if (!activeOrder) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.handleBar}/>
+                <View style={styles.emptyState}>
+                    <Ionicons name="alert-circle-outline" size={48} color="#9CA3AF"/>
+                    <Text style={styles.emptyText}>No active order</Text>
+                </View>
+            </View>
+        );
+    }
 
     const dropoffLocation = activeOrder.location.dropOff;
     const recipientContact = dropoffLocation.contactPerson;
 
-    // Handle token verification
     const handleVerifyToken = async () => {
         if (tokenInput.length !== 6) {
             toast.error('Token must be 6 digits');
@@ -71,7 +79,6 @@ function DropoffConfirmationPanel() {
         }
     };
 
-    // Shake animation for wrong token
     const triggerShakeAnimation = () => {
         shakeAnimation.setValue(0);
         RNAnimated.sequence([
@@ -82,24 +89,21 @@ function DropoffConfirmationPanel() {
         ]).start();
     };
 
-    // Callback when media changes
     const handleMediaChange = (images, video) => {
         setMediaData({images, video});
-        // Update verification with media URLs
         updateDeliveryVerification('photos', images.map(img => img.url));
         updateDeliveryVerification('videoUrl', video?.url || null);
     };
 
-    // Check if ready to complete
     const isReadyToComplete = () => {
         return (
             deliveryVerification.tokenVerified &&
             deliveryVerification.recipientName.trim().length > 0 &&
-            mediaData.images.length >= 2 // Minimum 2 delivery photos required
+            mediaData.images.length >= 2
         );
     };
 
-    // Handle delivery completion
+    // ✅ SIMPLIFIED: Just complete delivery and navigate to review route
     const handleCompleteDelivery = async () => {
         if (!isReadyToComplete()) {
             if (!deliveryVerification.tokenVerified) {
@@ -108,8 +112,6 @@ function DropoffConfirmationPanel() {
                 toast.error('Please enter recipient name');
             } else if (mediaData.images.length < 2) {
                 toast.error('Please upload at least 2 delivery photos');
-            } else {
-                toast.error('Please complete all required fields');
             }
             return;
         }
@@ -117,7 +119,6 @@ function DropoffConfirmationPanel() {
         setIsCompletingDelivery(true);
 
         try {
-            // Prepare verification data with media
             const verificationData = {
                 ...deliveryVerification,
                 photos: mediaData.images.map(img => ({
@@ -133,21 +134,42 @@ function DropoffConfirmationPanel() {
                 } : null
             };
 
+            console.log('📦 Completing delivery...');
             const result = await completeDelivery(verificationData);
+
             if (!result.success) {
-                toast.error('Try again : Failed to complete delivery');
-                return
+                toast.error(result.message || 'Failed to complete delivery');
+                return;
             }
 
+            // ✅ Success!
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success('Delivery completed successfully! 🎉');
+
+            console.log('✅ Delivery completed, navigating to review...');
+
+            useLogisticStore.getState().stopLocationTracking();
+            useLogisticStore.getState().stopNavigation();
+            console.log({
+                result,
+                from: 'dropOff'
+            })
+            const earningsValue = result.earnings.final || result.earnings.base || 0;
+            // ✅ Navigate to review route with params
             setTimeout(() => {
-                router.push({
-                    pathname: result.nextAction.route,
-                    params: result.nextAction.params
+                router.replace({
+                    pathname: '/driver/discover/review',
+                    params: {
+                        orderId: result.nextAction.orderId,
+                        orderRef: result.nextAction.orderRef,
+                        clientId: result.nextAction.clientId,
+                        earnings: earningsValue
+                    }
                 });
-            }, 1000);
+            }, 800);
+
         } catch (error) {
-            console.log('Delivery completion error:', error);
+            console.log('❌ Delivery completion error:', error);
             toast.error('Failed to complete delivery');
         } finally {
             setIsCompletingDelivery(false);
@@ -156,10 +178,8 @@ function DropoffConfirmationPanel() {
 
     return (
         <View style={styles.container}>
-            {/* Handle Bar */}
             <View style={styles.handleBar}/>
 
-            {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerLeft}>
                     <View style={styles.iconContainer}>
@@ -167,9 +187,7 @@ function DropoffConfirmationPanel() {
                     </View>
                     <View>
                         <Text style={styles.headerTitle}>Complete Delivery</Text>
-                        <Text style={styles.headerSubtitle}>
-                            Verify and hand over package
-                        </Text>
+                        <Text style={styles.headerSubtitle}>Verify and hand over package</Text>
                     </View>
                 </View>
             </View>
@@ -300,7 +318,7 @@ function DropoffConfirmationPanel() {
                     </View>
                 </View>
 
-                {/* Media Documentation (Images & Video) - ENHANCED */}
+                {/* Media Documentation */}
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
                         <Ionicons name="camera" size={20} color="#8B5CF6"/>
@@ -414,27 +432,6 @@ function DropoffConfirmationPanel() {
                                 Video evidence (optional {mediaData.video ? '✓' : ''})
                             </Text>
                         </View>
-                        <View style={styles.progressItem}>
-                            <Ionicons
-                                name="information-circle-outline"
-                                size={20}
-                                color="#6B7280"
-                            />
-                            <Text style={[styles.progressText, {color: '#6B7280'}]}>
-                                Notes are optional
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Success Tips */}
-                <View style={styles.tipsCard}>
-                    <Text style={styles.tipsTitle}>✨ Final Steps</Text>
-                    <View style={styles.tipsList}>
-                        <Text style={styles.tipItem}>• Ensure package is in recipient's hands</Text>
-                        <Text style={styles.tipItem}>• Thank the recipient for their business</Text>
-                        <Text style={styles.tipItem}>• Confirm all items match the order</Text>
-                        <Text style={styles.tipItem}>• Be professional and courteous</Text>
                     </View>
                 </View>
 
@@ -444,11 +441,9 @@ function DropoffConfirmationPanel() {
     );
 }
 
+// Styles (same as before, truncated for brevity)
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff'
-    },
+    container: {flex: 1, backgroundColor: '#fff'},
     handleBar: {
         width: 40,
         height: 4,
@@ -456,66 +451,27 @@ const styles = StyleSheet.create({
         borderRadius: 2,
         alignSelf: 'center',
         marginTop: 12,
-        marginBottom: 16
+        marginBottom: 8
     },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 16
-    },
-    headerLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12
-    },
+    emptyState: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20},
+    emptyText: {fontSize: 16, fontFamily: 'PoppinsRegular', color: '#9CA3AF', marginTop: 12},
+    header: {paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6'},
+    headerLeft: {flexDirection: 'row', alignItems: 'center', gap: 12},
     iconContainer: {
         width: 48,
         height: 48,
         borderRadius: 24,
         backgroundColor: '#FEE2E2',
-        alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        alignItems: 'center'
     },
-    headerTitle: {
-        fontSize: 18,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#111827'
-    },
-    headerSubtitle: {
-        fontSize: 13,
-        fontFamily: 'PoppinsRegular',
-        color: '#6B7280'
-    },
-    scrollView: {
-        flex: 1
-    },
-    scrollContent: {
-        padding: 20,
-        paddingTop: 0,
-        paddingBottom: 40
-    },
-    card: {
-        backgroundColor: '#F9FAFB',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#E5E7EB'
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 12
-    },
-    cardTitle: {
-        fontSize: 15,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#111827',
-        flex: 1
-    },
+    headerTitle: {fontSize: 18, fontFamily: 'PoppinsSemiBold', color: '#111827'},
+    headerSubtitle: {fontSize: 13, fontFamily: 'PoppinsRegular', color: '#6B7280'},
+    scrollView: {flex: 1},
+    scrollContent: {padding: 20, gap: 16},
+    card: {backgroundColor: '#fff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#F3F4F6', gap: 12},
+    cardHeader: {flexDirection: 'row', alignItems: 'center', gap: 8},
+    cardTitle: {flex: 1, fontSize: 16, fontFamily: 'PoppinsSemiBold', color: '#111827'},
     verifiedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -523,166 +479,99 @@ const styles = StyleSheet.create({
         backgroundColor: '#D1FAE5',
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 6
+        borderRadius: 12
     },
-    verifiedText: {
-        fontSize: 11,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#10B981'
-    },
+    verifiedText: {fontSize: 11, fontFamily: 'PoppinsSemiBold', color: '#10B981'},
     completedBadge: {
         width: 24,
         height: 24,
         borderRadius: 12,
         backgroundColor: '#D1FAE5',
-        alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        alignItems: 'center'
     },
-    address: {
-        fontSize: 14,
-        fontFamily: 'PoppinsRegular',
-        color: '#374151',
-        lineHeight: 20
-    },
-    sectionDescription: {
-        fontSize: 13,
-        fontFamily: 'PoppinsRegular',
-        color: '#6B7280',
-        marginBottom: 12,
-        lineHeight: 18
-    },
-    tokenDescription: {
-        fontSize: 13,
-        fontFamily: 'PoppinsRegular',
-        color: '#6B7280',
-        marginBottom: 12,
-        lineHeight: 18
-    },
-    tokenInputContainer: {
-        flexDirection: 'row',
-        gap: 10,
-        marginBottom: 10
-    },
+    address: {fontSize: 14, fontFamily: 'PoppinsRegular', color: '#374151', lineHeight: 20},
+    tokenDescription: {fontSize: 14, fontFamily: 'PoppinsRegular', color: '#6B7280'},
+    tokenInputContainer: {flexDirection: 'row', gap: 12},
     tokenInput: {
         flex: 1,
-        backgroundColor: '#fff',
-        padding: 14,
+        height: 50,
+        backgroundColor: '#F9FAFB',
         borderRadius: 12,
-        fontSize: 18,
-        fontFamily: 'PoppinsBold',
+        paddingHorizontal: 16,
+        fontSize: 16,
+        fontFamily: 'PoppinsMedium',
         color: '#111827',
-        textAlign: 'center',
-        letterSpacing: 4,
-        borderWidth: 2,
-        borderColor: '#F59E0B',
-        textTransform: 'uppercase'
+        borderWidth: 1,
+        borderColor: '#E5E7EB'
     },
     verifyButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        backgroundColor: '#F59E0B',
-        alignItems: 'center',
-        justifyContent: 'center'
+        width: 50,
+        height: 50,
+        borderRadius: 12,
+        backgroundColor: '#10B981',
+        justifyContent: 'center',
+        alignItems: 'center'
     },
-    verifyButtonDisabled: {
-        opacity: 0.5
-    },
+    verifyButtonDisabled: {backgroundColor: '#D1D5DB'},
     tokenHint: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 6,
-        backgroundColor: '#F3F4F6',
-        padding: 10,
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: '#F9FAFB',
         borderRadius: 8
     },
-    tokenHintText: {
-        flex: 1,
-        fontSize: 12,
-        fontFamily: 'PoppinsRegular',
-        color: '#6B7280',
-        lineHeight: 16
-    },
-    tokenVerifiedBox: {
-        alignItems: 'center',
-        padding: 24,
-        backgroundColor: '#F0FDF4',
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: '#86EFAC'
-    },
-    tokenVerifiedTitle: {
-        fontSize: 18,
-        fontFamily: 'PoppinsBold',
-        color: '#166534',
-        marginTop: 12,
-        marginBottom: 4
-    },
+    tokenHintText: {flex: 1, fontSize: 12, fontFamily: 'PoppinsRegular', color: '#6B7280'},
+    tokenVerifiedBox: {alignItems: 'center', padding: 24, backgroundColor: '#ECFDF5', borderRadius: 12},
+    tokenVerifiedTitle: {fontSize: 18, fontFamily: 'PoppinsBold', color: '#10B981', marginTop: 12},
     tokenVerifiedText: {
         fontSize: 14,
         fontFamily: 'PoppinsRegular',
-        color: '#15803D',
-        textAlign: 'center'
-    },
-    recipientInfo: {
-        gap: 12
-    },
-    expectedRecipient: {
-        backgroundColor: '#fff',
-        padding: 12,
-        borderRadius: 8
-    },
-    expectedLabel: {
-        fontSize: 12,
-        fontFamily: 'PoppinsRegular',
         color: '#6B7280',
-        marginBottom: 4
+        textAlign: 'center',
+        marginTop: 4
     },
-    expectedValue: {
-        fontSize: 15,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#111827'
-    },
+    recipientInfo: {gap: 12},
+    expectedRecipient: {flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8},
+    expectedLabel: {fontSize: 13, fontFamily: 'PoppinsRegular', color: '#6B7280'},
+    expectedValue: {fontSize: 14, fontFamily: 'PoppinsSemiBold', color: '#111827'},
     recipientInput: {
-        backgroundColor: '#fff',
-        padding: 14,
-        borderRadius: 10,
+        height: 50,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        paddingHorizontal: 16,
         fontSize: 15,
         fontFamily: 'PoppinsRegular',
         color: '#111827',
-        borderWidth: 2,
-        borderColor: '#6366F1'
+        borderWidth: 1,
+        borderColor: '#E5E7EB'
     },
-    inputNote: {
-        fontSize: 11,
-        fontFamily: 'PoppinsRegular',
-        color: '#6B7280',
-        fontStyle: 'italic'
-    },
+    inputNote: {fontSize: 11, fontFamily: 'PoppinsRegular', color: '#9CA3AF', fontStyle: 'italic'},
+    sectionDescription: {fontSize: 13, fontFamily: 'PoppinsRegular', color: '#6B7280'},
     photoHint: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        gap: 6,
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
         backgroundColor: '#F5F3FF',
-        padding: 10,
         borderRadius: 8,
         marginTop: 8
     },
     photoHintText: {
-        flex: 1,
-        fontSize: 12,
-        fontFamily: 'PoppinsRegular',
-        color: '#6D28D9',
-        lineHeight: 16
+        flex: 1, fontSize: 12, fontFamily: 'PoppinsRegular', color: '#7C3AED', lineHeight: 16
     },
     notesInput: {
-        backgroundColor: '#fff',
-        padding: 12,
-        borderRadius: 8,
+        minHeight: 80,
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         fontSize: 14,
         fontFamily: 'PoppinsRegular',
         color: '#111827',
-        minHeight: 80,
         borderWidth: 1,
         borderColor: '#E5E7EB'
     },
@@ -690,78 +579,20 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 10,
+        gap: 12,
         backgroundColor: '#10B981',
-        paddingVertical: 18,
-        borderRadius: 14,
-        marginBottom: 16,
-        shadowColor: '#10B981',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 6
-    },
-    completeButtonDisabled: {
-        opacity: 0.5
-    },
-    completeButtonText: {
-        fontSize: 17,
-        fontFamily: 'PoppinsBold',
-        color: '#fff'
-    },
-    progressCard: {
-        backgroundColor: '#F0F9FF',
+        paddingVertical: 16,
         borderRadius: 12,
-        padding: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#BAE6FD'
+        marginTop: 8
     },
-    progressTitle: {
-        fontSize: 14,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#0C4A6E',
-        marginBottom: 12
-    },
-    progressChecklist: {
-        gap: 10
-    },
-    progressItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10
-    },
-    progressText: {
-        fontSize: 13,
-        fontFamily: 'PoppinsRegular',
-        color: '#075985',
-        flex: 1
-    },
-    tipsCard: {
-        backgroundColor: '#FEF3C7',
-        borderRadius: 12,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: '#FDE68A'
-    },
-    tipsTitle: {
-        fontSize: 14,
-        fontFamily: 'PoppinsSemiBold',
-        color: '#78350F',
-        marginBottom: 10
-    },
-    tipsList: {
-        gap: 6
-    },
-    tipItem: {
-        fontSize: 13,
-        fontFamily: 'PoppinsRegular',
-        color: '#92400E',
-        lineHeight: 18
-    },
-    bottomSpace: {
-        height: 120
-    }
+    completeButtonDisabled: {backgroundColor: '#D1D5DB'},
+    completeButtonText: {fontSize: 16, fontFamily: 'PoppinsSemiBold', color: '#fff'},
+    progressCard: {backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#E5E7EB'},
+    progressTitle: {fontSize: 15, fontFamily: 'PoppinsSemiBold', color: '#111827', marginBottom: 12},
+    progressChecklist: {gap: 12},
+    progressItem: {flexDirection: 'row', alignItems: 'center', gap: 10},
+    progressText: {flex: 1, fontSize: 13, fontFamily: 'PoppinsRegular', color: '#374151'},
+    bottomSpace: {height: 60}
 });
 
 export default DropoffConfirmationPanel;

@@ -1,4 +1,4 @@
-// components/Driver/Discover/Discover.jsx
+// components/Driver/Discover/LiveTrackingManager";
 import React, {useState, useMemo, useCallback, useEffect} from 'react';
 import {View, TouchableOpacity, StyleSheet, Platform, Dimensions} from 'react-native';
 import {BlurView} from 'expo-blur';

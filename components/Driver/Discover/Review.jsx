@@ -1,5 +1,5 @@
 // components/Driver/Discover/Review.jsx
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
     View,
     Text,
@@ -8,17 +8,24 @@ import {
     TouchableOpacity,
     TextInput,
     ActivityIndicator,
-    Animated
+    Alert,
+    BackHandler
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { toast } from 'sonner-native';
+import {Ionicons} from '@expo/vector-icons';
+import {router, useLocalSearchParams} from 'expo-router';
+import {toast} from 'sonner-native';
 import * as Haptics from 'expo-haptics';
 import DriverUtils from '../../../utils/DriverUtilities';
+import useLogisticStore from '../../../store/Driver/useLogisticStore';
+import SessionManager from '../../../lib/SessionManager';
+import useNavigationStore from "../../../store/Driver/useNavigationStore";
 
-function Review() {
-    const params = useLocalSearchParams();
-    const { orderId, orderRef, clientId, earnings } = params;
+function Review({userData, earnings, orderRef, orderId}) {
+    const setComingFromReview = useNavigationStore(state => state.setComingFromReview);
+    console.log({
+        earnings,
+        ft: 'rv',
+    })
 
     const [rating, setRating] = useState(0);
     const [hoveredStar, setHoveredStar] = useState(0);
@@ -27,30 +34,44 @@ function Review() {
         communication: 0,
         package_condition: 0,
         location_accuracy: 0,
-        payment: 0
+        logistics: 0
     });
     const [wouldRecommend, setWouldRecommend] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [canSkip, setCanSkip] = useState(true);
+    const [isSkipping, setIsSkipping] = useState(false);
 
-    // Prevent back navigation
+    // Parse userData
+
+    // ✅ Prevent back navigation with confirmation
     useEffect(() => {
-        const unsubscribe = router.beforeRemove((e) => {
-            // Allow navigation only if submitted or skipped
-            if (!isSubmitting && canSkip) {
-                return;
-            }
-            e.preventDefault();
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            handleBackPress();
+            return true; // Prevent default back behavior
         });
 
-        return unsubscribe;
-    }, [isSubmitting, canSkip]);
+        return () => backHandler.remove();
+    }, [isSubmitting, isSkipping]);
+
+    const handleBackPress = () => {
+        if (isSubmitting || isSkipping) {
+            return; // Don't allow back if already submitting/skipping
+        }
+
+        Alert.alert(
+            'Skip Review?',
+            'Are you sure you want to skip this review? You can add it later.',
+            [
+                {text: 'Cancel', style: 'cancel'},
+                {text: 'Skip Review', onPress: handleSkip, style: 'destructive'}
+            ]
+        );
+    };
 
     const categoryLabels = {
         communication: 'Communication',
         package_condition: 'Package Condition',
         location_accuracy: 'Location Accuracy',
-        payment: 'Payment Experience'
+        logistics: 'Logistics Experience'
     };
 
     const handleStarPress = (star) => {
@@ -59,13 +80,54 @@ function Review() {
     };
 
     const handleCategoryRating = (category, value) => {
-        setCategories(prev => ({ ...prev, [category]: value }));
+        setCategories(prev => ({...prev, [category]: value}));
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    };
+
+    // ✅ CENTRALIZED CLEANUP FUNCTION
+    const performCleanupAndNavigate = async () => {
+        try {
+            console.log('🔄 Starting cleanup and navigation...');
+
+            // 1. SET THE FLAG FIRST - This is crucial!
+            setComingFromReview();
+            console.log('🚩 Set comingFromReview flag');
+
+            // 2. STOP ALL LOCATION TRACKING AND NAVIGATION
+            useLogisticStore.getState().stopLocationTracking();
+            useLogisticStore.getState().stopNavigation();
+
+            await SessionManager.updateUser(userData);
+            console.log('✅ Session updated at the review');
+
+            // 2. Finalize delivery in store
+            useLogisticStore.getState().finalizeDelivery();
+            useLogisticStore.getState().resetStore();
+
+            console.log('✅ Store finalized');
+
+            // 3. Small delay before navigation
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // 4. Navigate to discover
+            router.replace('/driver/discover');
+            console.log('✅ Navigated to discover');
+
+        } catch (error) {
+            console.error('❌ Cleanup error:', error);
+            toast.error('Navigation error. Please restart the app.');
+
+            // Force navigate anyway
+            setTimeout(() => {
+                router.replace('/driver/discover');
+            }, 1000);
+        }
     };
 
     const handleSubmit = async () => {
         if (rating === 0) {
             toast.error('Please select a star rating');
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             return;
         }
 
@@ -79,35 +141,38 @@ function Review() {
                     feedback: feedback.trim(),
                     categories: Object.entries(categories)
                         .filter(([_, value]) => value > 0)
-                        .map(([category, rating]) => ({ category, rating })),
+                        .map(([category, rating]) => ({category, rating})),
                     wouldRecommend
                 }
             };
 
+            console.log('📝 Submitting review...');
             const result = await DriverUtils.submitClientRating(ratingData);
 
             if (result.success) {
                 toast.success('Thank you for your feedback! 🎉');
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-                // Navigate to dashboard after short delay
-                setTimeout(() => {
-                    router.replace('/driver/discover');
-                }, 1500);
+                // ✅ Cleanup and navigate
+                await performCleanupAndNavigate();
             } else {
                 toast.error(result.message || 'Failed to submit rating');
                 setIsSubmitting(false);
             }
         } catch (error) {
-            console.error('Submit rating error:', error);
+            console.error('❌ Submit rating error:', error);
             toast.error('Failed to submit rating');
             setIsSubmitting(false);
         }
     };
 
-    const handleSkip = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.replace('/driver/discover');
+    const handleSkip = async () => {
+        setIsSkipping(true);
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        toast.info('Review skipped. You can add it later!');
+
+        // ✅ Cleanup and navigate
+        await performCleanupAndNavigate();
     };
 
     const renderStars = (currentRating, onPress, size = 40) => {
@@ -120,6 +185,7 @@ function Review() {
                         onPressIn={() => setHoveredStar(star)}
                         onPressOut={() => setHoveredStar(0)}
                         style={styles.starButton}
+                        disabled={isSubmitting || isSkipping}
                     >
                         <Ionicons
                             name={star <= (hoveredStar || currentRating) ? 'star' : 'star-outline'}
@@ -137,15 +203,13 @@ function Review() {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.successIcon}>
-                    <Ionicons name="checkmark-circle" size={60} color="#10B981" />
+                    <Ionicons name="checkmark-circle" size={60} color="#10B981"/>
                 </View>
                 <Text style={styles.headerTitle}>Delivery Completed! 🎉</Text>
-                <Text style={styles.headerSubtitle}>
-                    Order {orderRef}
-                </Text>
+                <Text style={styles.headerSubtitle}>Order {orderRef}</Text>
                 <View style={styles.earningsBadge}>
                     <Text style={styles.earningsText}>
-                        Earned: ₦{parseFloat(earnings).toFixed(2)}
+                        Earned: ₦{parseFloat(earnings.final).toFixed(2)}
                     </Text>
                 </View>
             </View>
@@ -189,6 +253,7 @@ function Review() {
                                             key={star}
                                             onPress={() => handleCategoryRating(key, star)}
                                             style={styles.categoryStarButton}
+                                            disabled={isSubmitting || isSkipping}
                                         >
                                             <Ionicons
                                                 name={star <= categories[key] ? 'star' : 'star-outline'}
@@ -217,6 +282,7 @@ function Review() {
                                     setWouldRecommend(true);
                                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                 }}
+                                disabled={isSubmitting || isSkipping}
                             >
                                 <Ionicons
                                     name="thumbs-up"
@@ -240,6 +306,7 @@ function Review() {
                                     setWouldRecommend(false);
                                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                 }}
+                                disabled={isSubmitting || isSkipping}
                             >
                                 <Ionicons
                                     name="thumbs-down"
@@ -271,6 +338,7 @@ function Review() {
                             value={feedback}
                             onChangeText={setFeedback}
                             maxLength={500}
+                            editable={!isSubmitting && !isSkipping}
                         />
                         <Text style={styles.charCount}>
                             {feedback.length}/500
@@ -283,42 +351,46 @@ function Review() {
                     <TouchableOpacity
                         style={[
                             styles.submitButton,
-                            (rating === 0 || isSubmitting) && styles.submitButtonDisabled
+                            (rating === 0 || isSubmitting || isSkipping) && styles.submitButtonDisabled
                         ]}
                         onPress={handleSubmit}
-                        disabled={rating === 0 || isSubmitting}
+                        disabled={rating === 0 || isSubmitting || isSkipping}
                     >
                         {isSubmitting ? (
-                            <ActivityIndicator size="small" color="#fff" />
+                            <ActivityIndicator size="small" color="#fff"/>
                         ) : (
                             <>
-                                <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                                <Ionicons name="checkmark-circle" size={24} color="#fff"/>
                                 <Text style={styles.submitButtonText}>Submit Review</Text>
                             </>
                         )}
                     </TouchableOpacity>
 
-                    {canSkip && !isSubmitting && (
+                    {!isSubmitting && !isSkipping && (
                         <TouchableOpacity
                             style={styles.skipButton}
-                            onPress={handleSkip}
+                            onPress={handleBackPress}
                         >
                             <Text style={styles.skipButtonText}>Skip for Now</Text>
                         </TouchableOpacity>
                     )}
+
+                    {isSkipping && (
+                        <View style={styles.skippingIndicator}>
+                            <ActivityIndicator size="small" color="#6B7280"/>
+                            <Text style={styles.skippingText}>Returning to dashboard...</Text>
+                        </View>
+                    )}
                 </View>
 
-                <View style={styles.bottomSpace} />
+                <View style={styles.bottomSpace}/>
             </ScrollView>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F9FAFB'
-    },
+    container: {flex: 1, backgroundColor: '#F9FAFB'},
     header: {
         backgroundColor: '#fff',
         padding: 24,
@@ -327,9 +399,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB'
     },
-    successIcon: {
-        marginBottom: 16
-    },
+    successIcon: {marginBottom: 16},
     headerTitle: {
         fontSize: 24,
         fontFamily: 'PoppinsBold',
@@ -353,12 +423,8 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsSemiBold',
         color: '#10B981'
     },
-    scrollView: {
-        flex: 1
-    },
-    scrollContent: {
-        padding: 20
-    },
+    scrollView: {flex: 1},
+    scrollContent: {padding: 20},
     card: {
         backgroundColor: '#fff',
         borderRadius: 16,
@@ -385,9 +451,7 @@ const styles = StyleSheet.create({
         gap: 12,
         marginBottom: 16
     },
-    starButton: {
-        padding: 4
-    },
+    starButton: {padding: 4},
     ratingLabel: {
         fontSize: 16,
         fontFamily: 'PoppinsSemiBold',
@@ -406,18 +470,9 @@ const styles = StyleSheet.create({
         color: '#374151',
         flex: 1
     },
-    categoryStars: {
-        flexDirection: 'row',
-        gap: 4
-    },
-    categoryStarButton: {
-        padding: 2
-    },
-    recommendRow: {
-        flexDirection: 'row',
-        gap: 12,
-        marginTop: 12
-    },
+    categoryStars: {flexDirection: 'row', gap: 4},
+    categoryStarButton: {padding: 2},
+    recommendRow: {flexDirection: 'row', gap: 12, marginTop: 12},
     recommendButton: {
         flex: 1,
         flexDirection: 'row',
@@ -439,9 +494,7 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsSemiBold',
         color: '#6B7280'
     },
-    recommendTextActive: {
-        color: '#10B981'
-    },
+    recommendTextActive: {color: '#10B981'},
     feedbackInput: {
         backgroundColor: '#F9FAFB',
         padding: 14,
@@ -460,9 +513,7 @@ const styles = StyleSheet.create({
         textAlign: 'right',
         marginTop: 4
     },
-    actions: {
-        marginTop: 8
-    },
+    actions: {marginTop: 8},
     submitButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -473,31 +524,36 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         marginBottom: 12,
         shadowColor: '#10B981',
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: {width: 0, height: 4},
         shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 6
     },
-    submitButtonDisabled: {
-        opacity: 0.5
-    },
+    submitButtonDisabled: {opacity: 0.5},
     submitButtonText: {
         fontSize: 17,
         fontFamily: 'PoppinsBold',
         color: '#fff'
     },
-    skipButton: {
-        paddingVertical: 14,
-        alignItems: 'center'
-    },
+    skipButton: {paddingVertical: 14, alignItems: 'center'},
     skipButtonText: {
         fontSize: 15,
         fontFamily: 'PoppinsSemiBold',
         color: '#6B7280'
     },
-    bottomSpace: {
-        height: 40
-    }
+    skippingIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        paddingVertical: 14
+    },
+    skippingText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280'
+    },
+    bottomSpace: {height: 40}
 });
 
 export default Review;

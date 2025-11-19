@@ -1,4 +1,4 @@
-// components/Driver/Delivery/LiveTrackingScreen.jsx
+// components/Driver/Delivery/LiveTracking.jsx
 import React, {useState, useEffect, useRef, useMemo, Component, useCallback} from 'react';
 import {
     View,
@@ -31,6 +31,8 @@ import EnRoutePickUp from './Live/EnRoutePickUp';
 import PickupConfirmationPanel from './Live/PickupConfirmationPanel';
 import EnRouteDropOff from './Live/EnRouteDropOff';
 import DropoffConfirmationPanel from './Live/DropoffConfirmationPanel';
+import useNavigationStore from "../../../store/Driver/useNavigationStore";
+import {router} from "expo-router";
 
 const {height: SCREEN_H} = Dimensions.get('window');
 const MAP_HEIGHT = SCREEN_H * 0.6;
@@ -151,6 +153,8 @@ const toRegion = (pt, deltas = {latitudeDelta: 0.05, longitudeDelta: 0.05}) =>
     isValidLatLng(pt) ? {...pt, ...deltas} : null;
 
 function LiveTracking({onNavigateToChat}) {
+    const { shouldSkipLiveTracking, clearComingFromReview } = useNavigationStore();
+
     const {
         currentLocation,
         activeOrder,
@@ -165,10 +169,12 @@ function LiveTracking({onNavigateToChat}) {
         arriveAtDropoff
     } = useLogisticStore();
 
+    // ✅ MOVE ALL HOOKS TO THE TOP - NO CONDITIONAL RETURNS BEFORE HOOKS
     const mapRef = useRef(null);
     const [mapReady, setMapReady] = useState(false);
     const [isMapLoading, setIsMapLoading] = useState(true);
     const [mapError, setMapError] = useState(null);
+    const [redirecting, setRedirecting] = useState(false);
     const mapLoadTimeout = useRef(null);
 
     // auto-nav debounce + target memory
@@ -179,6 +185,76 @@ function LiveTracking({onNavigateToChat}) {
     const driverPulse = useSharedValue(0);
     const pickupPulse = useSharedValue(0);
     const dropoffPulse = useSharedValue(0);
+
+    useEffect(() => {
+        // If we somehow get here without active order, redirect immediately
+        if (!activeOrder && deliveryStage === DELIVERY_STAGES.DISCOVERING) {
+            console.log('🛑 LiveTracking in invalid state - redirecting');
+            router.replace('/driver/discover');
+        }
+    }, [activeOrder, deliveryStage]);
+
+    // ✅ SAFETY CHECK EFFECT - This runs AFTER all hooks are declared
+    useEffect(() => {
+        if ((!activeOrder || shouldSkipLiveTracking()) && !redirecting) {
+            console.log('🛑 LiveTracking safety check triggered - redirecting');
+            setRedirecting(true);
+
+            // Clear the review flag if it exists
+            if (shouldSkipLiveTracking()) {
+                clearComingFromReview();
+            }
+
+            // Stop any ongoing navigation IMMEDIATELY
+            stopNavigation();
+
+            // Force reset the store to ensure clean state
+            useLogisticStore.getState().resetStore();
+
+            // Redirect after a small delay for better UX
+            const timer = setTimeout(() => {
+                router.replace('/(protected)/driver/discover');
+            }, 800);
+
+            return () => clearTimeout(timer);
+        }
+    }, [activeOrder, shouldSkipLiveTracking, redirecting]);
+
+    // ✅ EARLY RETURN - BUT ONLY AFTER ALL HOOKS ARE DECLARED
+    if (!activeOrder || shouldSkipLiveTracking() || redirecting) {
+        console.log('🛑 LiveTracking blocked - redirecting to discover');
+        return (
+            <View style={styles.fallbackContainer}>
+                <Ionicons name="navigation" size={64} color="#6366F1" />
+                <Text style={styles.fallbackTitle}>
+                    {redirecting ? 'Returning to Discover...' : 'No Active Delivery'}
+                </Text>
+                <Text style={styles.fallbackText}>
+                    {redirecting
+                        ? 'Taking you back to available orders'
+                        : 'You don\'t have an active delivery at the moment'
+                    }
+                </Text>
+
+                <ActivityIndicator size="large" color="#6366F1" style={{ marginTop: 20 }} />
+
+                {/* Manual recovery button in case auto-redirect fails */}
+                {!redirecting && (
+                    <TouchableOpacity
+                        style={styles.manualRedirectButton}
+                        onPress={() => {
+                            setRedirecting(true);
+                            clearComingFromReview();
+                            stopNavigation();
+                            router.replace('/(protected)/driver/discover');
+                        }}
+                    >
+                        <Text style={styles.manualRedirectText}>Go to Discover</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
+    }
 
     console.log({
         navigationData
@@ -591,7 +667,6 @@ function LiveTracking({onNavigateToChat}) {
                     </TouchableOpacity>
                 )}
             </View>
-
             {/* PANEL 40% */}
             <View style={styles.panelContainer}>
                 {(() => {
@@ -609,7 +684,7 @@ function LiveTracking({onNavigateToChat}) {
                     }
                 })()}
             </View>
-        {/*    bottom space */}
+            {/*    bottom space */}
             <View style={styles.bottomSpace}/>
         </View>
     );
@@ -958,7 +1033,41 @@ const styles = StyleSheet.create({
     },
     bottomSpace: {
         height: 120
-    }
+    },
+    fallbackContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+        padding: 40,
+    },
+    fallbackTitle: {
+        fontSize: 20,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#1F2937',
+        marginTop: 16,
+        textAlign: 'center',
+    },
+    fallbackText: {
+        fontSize: 16,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+        marginTop: 8,
+        textAlign: 'center',
+        lineHeight: 22,
+    },
+    manualRedirectButton: {
+        backgroundColor: '#6366F1',
+        paddingHorizontal: 24,
+        paddingVertical: 12,
+        borderRadius: 12,
+        marginTop: 20,
+    },
+    manualRedirectText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: 'PoppinsSemiBold',
+    },
 });
 
 export default LiveTracking;

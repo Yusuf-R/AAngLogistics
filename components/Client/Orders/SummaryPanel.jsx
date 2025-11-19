@@ -1,4 +1,4 @@
-// components/order/SummaryPanel.jsx - CLEAN & PROFESSIONAL
+// components/order/SummaryPanel.jsx - Updated with State & LGA Display
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,6 +55,26 @@ export default function SummaryPanel({
                             {data?.address || 'No address provided'}
                         </Text>
                     </View>
+
+                    {/* State & LGA Display - Only for Pickup */}
+                    {type === 'pickup' && (data?.state || data?.lga) && (
+                        <View style={styles.stateSection}>
+                            <View style={styles.stateRow}>
+                                <View style={styles.stateItem}>
+                                    <Ionicons name="map" size={14} color="#3b82f6" />
+                                    <Text style={styles.stateLabel}>State:</Text>
+                                    <Text style={styles.stateValue}>{data?.state || 'N/A'}</Text>
+                                </View>
+                                {data?.lga && (
+                                    <View style={styles.stateItem}>
+                                        <Ionicons name="location-outline" size={14} color="#8b5cf6" />
+                                        <Text style={styles.stateLabel}>LGA:</Text>
+                                        <Text style={styles.stateValue}>{data.lga}</Text>
+                                    </View>
+                                )}
+                            </View>
+                        </View>
+                    )}
 
                     <View style={styles.contactSection}>
                         <Text style={styles.contactName}>{data?.contactPerson?.name || 'No contact name'}</Text>
@@ -225,6 +245,39 @@ const styles = StyleSheet.create({
         flex: 1,
         lineHeight: 20,
     },
+
+    // State & LGA Section (NEW)
+    stateSection: {
+        backgroundColor: '#eff6ff',
+        padding: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#dbeafe',
+    },
+    stateRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+    },
+    stateItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+        minWidth: '45%',
+    },
+    stateLabel: {
+        fontSize: 13,
+        fontFamily: 'PoppinsMedium',
+        color: '#1e40af',
+        marginLeft: 4,
+        marginRight: 4,
+    },
+    stateValue: {
+        fontSize: 13,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#1e3a8a',
+    },
+
     contactSection: {
         backgroundColor: '#f8fafc',
         padding: 12,

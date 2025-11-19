@@ -7,12 +7,16 @@ import LiveTrackingManager  from "../../../../components/Driver/Discover/LiveTra
 import { useSessionStore } from "../../../../store/useSessionStore";
 import useLogisticStore, { DELIVERY_STAGES } from "../../../../store/Driver/useLogisticStore";
 import { toast } from 'sonner-native';
+import useNavigationStore from "../../../../store/Driver/useNavigationStore";
 
 function LiveTrackingScreen() {
     const router = useRouter();
     const userData = useSessionStore(state => state.user);
     const [isVerifying, setIsVerifying] = useState(true);
     const [accessDenied, setAccessDenied] = useState(false);
+
+    // ✅ Get navigation state
+    const { shouldSkipLiveTracking, clearComingFromReview } = useNavigationStore();
 
     // ✅ Get delivery state from store
     const {
@@ -21,11 +25,24 @@ function LiveTrackingScreen() {
         deliveryStage
     } = useLogisticStore();
 
+
     // ✅ MULTI-LAYER SECURITY CHECK
     useEffect(() => {
         const verifyAccess = async () => {
             // Small delay for UX
             await new Promise(resolve => setTimeout(resolve, 500));
+
+            // ✅ CRITICAL: If coming from review, DENY ACCESS immediately
+            if (shouldSkipLiveTracking()) {
+                console.log('🚩 Blocked Live Tracking - coming from review');
+                setAccessDenied(true);
+                clearComingFromReview();
+
+                setTimeout(() => {
+                    router.replace('/driver/discover');
+                }, 1000);
+                return;
+            }
 
             // ✅ LAYER 1: Check user availability status
             const isDriverBusy = userData?.availabilityStatus === 'on-delivery';
@@ -62,7 +79,7 @@ function LiveTrackingScreen() {
         };
 
         verifyAccess();
-    }, [userData, isOnActiveDelivery, activeOrder, deliveryStage]);
+    }, [userData, isOnActiveDelivery, activeOrder, deliveryStage, shouldSkipLiveTracking]);
 
     // ✅ SECURITY: Prevent access when delivery completes
     useEffect(() => {

@@ -237,10 +237,8 @@ function EnRoutePickUp({ onNavigateToChat }) {
                         <Text style={styles.tipItem}>• Confirm contact person identity</Text>
                     </View>
                 </View>
-            {/*    bottom space */}
-                <View
-                    style={styles.bottomSpace}
-                />
+            {/* bottom space */}
+                <View style={styles.bottomSpace}  />
             </ScrollView>
         </View>
     );
@@ -496,7 +494,7 @@ const styles = StyleSheet.create({
         lineHeight: 18
     },
     bottomSpace: {
-        height: 20
+        height: 120
     }
 });
 

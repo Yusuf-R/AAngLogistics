@@ -71,7 +71,30 @@ const geoJSONPoint = Yup.object({
         .required('Coordinates are required'),
 });
 
-const locationShape = Yup.object({
+// const locationShape = Yup.object({
+//     address: Yup.string().trim().min(3, 'Enter a valid address').required('Address is required'),
+//     coordinates: geoJSONPoint.required(),
+//     landmark: Yup.string().trim().max(140),
+//     contactPerson: Yup.object({
+//         name: Yup.string().trim().max(80).required('Contact name is required'),
+//         phone: Yup.string().trim().matches(PHONE_REGEX, 'Enter a valid phone'),
+//         alternatePhone: Yup.string()
+//             .trim()
+//             .nullable()
+//             .notRequired()
+//             .matches(PHONE_REGEX, 'Enter a valid alternate phone number')
+//             .transform((value) => value === '' ? null : value),
+//     }),
+//     extraInformation: Yup.string().trim().max(240),
+//     locationType: Yup.string().oneOf(LOCATION_TYPES).default('residential'),
+//     building: Yup.object({
+//         name: Yup.string().trim().max(100),
+//         floor: Yup.string().trim().max(20),
+//         unit: Yup.string().trim().max(20),
+//     }),
+// });
+
+const baseLocationShape = Yup.object({
     address: Yup.string().trim().min(3, 'Enter a valid address').required('Address is required'),
     coordinates: geoJSONPoint.required(),
     landmark: Yup.string().trim().max(140),
@@ -94,10 +117,18 @@ const locationShape = Yup.object({
     }),
 });
 
+const pickUpLocationShape = baseLocationShape.shape({
+    state: Yup.string().required('State is required'),
+    lga: Yup.string().required('LGA is required'),
+});
+
+// Dropoff-specific schema
+export const dropoffLocationSchema = baseLocationShape;
+
 export const stepTwoSchema = Yup.object({
     location: Yup.object({
-        pickUp: locationShape.required(),
-        dropOff: locationShape.required(),
+        pickUp: pickUpLocationShape.required(),
+        dropOff: baseLocationShape.required(),
     })
         .required()
         .test('distinct-points', 'Pick-up and Drop-off cannot be the same location', function (loc) {

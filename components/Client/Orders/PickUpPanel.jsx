@@ -1,5 +1,5 @@
 // components/order/PickUpPanel.jsx
-import React, {useCallback, useState, useRef} from 'react';
+import React, {useCallback, useState, useRef, useEffect} from 'react';
 import {
     View,
     Text,
@@ -9,30 +9,37 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Alert
+    Alert,
+    Modal
 } from 'react-native';
 import {Controller, useWatch, useFormContext} from 'react-hook-form';
 import {COLORS, LOCATION_ICONS, LOCATION_COLORS} from "../../../utils/Constant";
 import {Ionicons, Octicons} from "@expo/vector-icons";
+import {stateAndLGA} from '../../../utils/Driver/Constants';
+
+// Convert stateAndLGA object to array format
+const NIGERIAN_STATES = Object.keys(stateAndLGA).map(state => ({
+    value: state,
+    label: state
+}));
 
 export default function PickUpPanel({
                                         control,
                                         errors,
                                         savedPlaces = [],
-                                        onPersist = () => {
-                                        },
-                                        onOpenMap = () => {
-                                        },
-                                        onValidateAndSave = () => {
-                                        },
-                                        notify = () => {
-                                        },
-
+                                        onPersist = () => {},
+                                        onOpenMap = () => {},
+                                        onValidateAndSave = () => {},
+                                        notify = () => {},
                                     }) {
     const {setValue, getValues} = useFormContext();
     const [savedOpen, setSavedOpen] = useState(false);
     const [activeSection, setActiveSection] = useState('address');
     const [isValidating, setIsValidating] = useState(false);
+    const [showStateModal, setShowStateModal] = useState(false);
+    const [showLGAModal, setShowLGAModal] = useState(false);
+    const [lgas, setLgas] = useState([]);
+
     const types = ['residential', 'commercial', 'office', 'mall', 'hospital', 'school', 'other'];
 
     const coords = useWatch({control, name: 'location.pickUp.coordinates.coordinates'});
@@ -40,9 +47,22 @@ export default function PickUpPanel({
     const contactName = useWatch({control, name: 'location.pickUp.contactPerson.name'});
     const contactPhone = useWatch({control, name: 'location.pickUp.contactPerson.phone'});
     const currentLocationType = useWatch({control, name: 'location.pickUp.locationType'});
+    const currentState = useWatch({control, name: 'location.pickUp.state'});
+    const currentLga = useWatch({control, name: 'location.pickUp.lga'});
 
     const isAddressComplete = address && coords && coords.length === 2;
     const isContactComplete = contactName && contactPhone;
+
+    // Update LGAs when state changes
+    useEffect(() => {
+        if (currentState) {
+            setLgas(stateAndLGA[currentState] || []);
+            // Reset LGA if it doesn't belong to the new state
+            if (currentLga && !stateAndLGA[currentState]?.includes(currentLga)) {
+                setValue('location.pickUp.lga', '', {shouldValidate: true});
+            }
+        }
+    }, [currentState]);
 
     const onSelectSavedPlace = (place) => {
         // Update ALL relevant fields from the saved place
@@ -54,6 +74,15 @@ export default function PickUpPanel({
             type: 'Point',
             coordinates: [place.coordinates?.lng ?? 0, place.coordinates?.lat ?? 0]
         }, {shouldValidate: true, shouldDirty: true});
+
+        // Set state and LGA from saved place
+        setValue('location.pickUp.state', place.state || '', {
+            shouldValidate: true, shouldDirty: true
+        });
+
+        setValue('location.pickUp.lga', place.lga || '', {
+            shouldValidate: true, shouldDirty: true
+        });
 
         setValue('location.pickUp.landmark', place.landmark || '', {
             shouldValidate: true, shouldDirty: true
@@ -81,16 +110,14 @@ export default function PickUpPanel({
         });
 
         setSavedOpen(false);
-        notify('info', 'Place applied', 'Address and coordinates filled from saved place.');
+        notify('info', 'Place applied', 'All location details filled from saved place.');
     };
 
     const renderLocationTypeSelector = () => {
-
         return (
             <View style={styles.locationTypeContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll}>
                     {types.map((type) => {
-
                         const isSelected = currentLocationType === type;
                         const iconName = LOCATION_ICONS[type];
                         const iconColor = LOCATION_COLORS[type];
@@ -106,7 +133,6 @@ export default function PickUpPanel({
                                         shouldValidate: true,
                                         shouldDirty: true
                                     });
-                                    // onPersist();
                                 }}
                             >
                                 <Ionicons
@@ -151,8 +177,10 @@ export default function PickUpPanel({
                     style: 'destructive',
                     onPress: () => {
                         setValue('location.pickUp', {
-                            address: 'TBD',
-                            coordinates: {type: 'Point', coordinates: [1, 0]},
+                            address: '',
+                            state: '',
+                            lga: '',
+                            coordinates: {type: 'Point', coordinates: []},
                             contactPerson: {name: '', phone: '', alternatePhone: ''},
                             landmark: '',
                             extraInformation: '',
@@ -166,6 +194,42 @@ export default function PickUpPanel({
             {cancelable: true}
         );
     };
+
+    const renderStateItem = ({item}) => (
+        <TouchableOpacity
+            style={styles.modalItem}
+            onPress={() => {
+                setValue('location.pickUp.state', item.value, {
+                    shouldValidate: true,
+                    shouldDirty: true
+                });
+                setShowStateModal(false);
+            }}
+        >
+            <Text style={styles.modalItemText}>{item.label}</Text>
+            {currentState === item.value && (
+                <Ionicons name="checkmark" size={20} color={COLORS.primary} />
+            )}
+        </TouchableOpacity>
+    );
+
+    const renderLGAItem = ({item}) => (
+        <TouchableOpacity
+            style={styles.modalItem}
+            onPress={() => {
+                setValue('location.pickUp.lga', item, {
+                    shouldValidate: true,
+                    shouldDirty: true
+                });
+                setShowLGAModal(false);
+            }}
+        >
+            <Text style={styles.modalItemText}>{item}</Text>
+            {currentLga === item && (
+                <Ionicons name="checkmark" size={20} color={COLORS.primary} />
+            )}
+        </TouchableOpacity>
+    );
 
     return (
         <>
@@ -202,7 +266,7 @@ export default function PickUpPanel({
                                         render={({field}) => (
                                             <Pressable onPress={onOpenMap} style={[
                                                 styles.addressInput,
-                                                styles.addressInputExpanded, // New style for when there's a button
+                                                styles.addressInputExpanded,
                                                 errors?.location?.pickUp?.address && styles.inputError
                                             ]}>
                                                 <View style={styles.addressInputContent}>
@@ -216,12 +280,7 @@ export default function PickUpPanel({
                                             </Pressable>
                                         )}
                                     />
-
-                                    {/* Map Icon Button */}
-                                    <Pressable
-                                        style={styles.mapIconButton}
-                                        onPress={onOpenMap}
-                                    >
+                                    <Pressable style={styles.mapIconButton} onPress={onOpenMap}>
                                         <Ionicons name="location-sharp" size={20} color={COLORS.error}/>
                                     </Pressable>
                                 </View>
@@ -297,6 +356,83 @@ export default function PickUpPanel({
                     </View>
                 </View>
 
+                {/* State & LGA Section - NEW */}
+                <View style={[styles.section]}>
+                    <Pressable onPress={() => setActiveSection('statelga')} style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>🗺️ State & LGA</Text>
+                        <Text style={[styles.sectionStatus, (currentState && currentLga) && styles.sectionStatusComplete]}>
+                            {(currentState && currentLga) ? 'Complete' : 'Required'}
+                        </Text>
+                    </Pressable>
+
+                    <View style={styles.sectionContent}>
+                        {/* State */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>State *</Text>
+                            <Controller
+                                name="location.pickUp.state"
+                                control={control}
+                                render={({field: {value}}) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.input,
+                                            styles.selectInput,
+                                            errors?.location?.pickUp?.state && styles.inputError
+                                        ]}
+                                        onPress={() => setShowStateModal(true)}
+                                    >
+                                        <Text style={value ? styles.selectText : styles.selectPlaceholder}>
+                                            {value || 'Select State'}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={20} color={COLORS.muted}/>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            {errors?.location?.pickUp?.state && (
+                                <Text style={styles.errorText}>
+                                    {errors.location.pickUp.state.message}
+                                </Text>
+                            )}
+                        </View>
+
+                        {/* LGA */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Local Government Area *</Text>
+                            <Controller
+                                name="location.pickUp.lga"
+                                control={control}
+                                render={({field: {value}}) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.input,
+                                            styles.selectInput,
+                                            errors?.location?.pickUp?.lga && styles.inputError,
+                                            !currentState && styles.disabledSelect
+                                        ]}
+                                        onPress={() => currentState && setShowLGAModal(true)}
+                                        disabled={!currentState}
+                                    >
+                                        <Text style={value ? styles.selectText : styles.selectPlaceholder}>
+                                            {value || 'Select LGA'}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={20} color={COLORS.muted}/>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            {errors?.location?.pickUp?.lga && (
+                                <Text style={styles.errorText}>
+                                    {errors.location.pickUp.lga.message}
+                                </Text>
+                            )}
+                            {!currentState && (
+                                <Text style={styles.disabledHint}>
+                                    Please select a state first
+                                </Text>
+                            )}
+                        </View>
+                    </View>
+                </View>
+
                 {/* Contact Section */}
                 <View style={[styles.section]}>
                     <Pressable onPress={() => setActiveSection('contact')} style={styles.sectionHeader}>
@@ -321,10 +457,7 @@ export default function PickUpPanel({
                                             ]}
                                             placeholder="Enter full name"
                                             value={field.value || ''}
-                                            onChangeText={(text) => {
-                                                field.onChange(text);
-                                                // onPersist();
-                                            }}
+                                            onChangeText={field.onChange}
                                         />
                                     )}
                                 />
@@ -350,10 +483,7 @@ export default function PickUpPanel({
                                         placeholder="e.g., 07012345678 or +2347012345678"
                                         keyboardType="phone-pad"
                                         value={field.value || ''}
-                                        onChangeText={(text) => {
-                                            field.onChange(text);
-                                            // onPersist();
-                                        }}
+                                        onChangeText={field.onChange}
                                     />
                                 )}
                             />
@@ -378,10 +508,7 @@ export default function PickUpPanel({
                                         placeholder="e.g., 07012345678 or +2347012345678"
                                         keyboardType="phone-pad"
                                         value={field.value || ''}
-                                        onChangeText={(text) => {
-                                            field.onChange(text);
-                                            // onPersist();
-                                        }}
+                                        onChangeText={field.onChange}
                                     />
                                 )}
                             />
@@ -412,10 +539,7 @@ export default function PickUpPanel({
                                         style={styles.input}
                                         placeholder="e.g., Near the big oak tree"
                                         value={field.value || ''}
-                                        onChangeText={(text) => {
-                                            field.onChange(text);
-                                            // onPersist();
-                                        }}
+                                        onChangeText={field.onChange}
                                     />
                                 )}
                             />
@@ -430,10 +554,7 @@ export default function PickUpPanel({
                                         style={styles.input}
                                         placeholder="Building name"
                                         value={field.value || ''}
-                                        onChangeText={(text) => {
-                                            field.onChange(text);
-                                            // onPersist();
-                                        }}
+                                        onChangeText={field.onChange}
                                     />
                                 )}
                             />
@@ -450,10 +571,7 @@ export default function PickUpPanel({
                                             style={styles.input}
                                             placeholder="Floor"
                                             value={field.value || ''}
-                                            onChangeText={(text) => {
-                                                field.onChange(text);
-                                                // onPersist();
-                                            }}
+                                            onChangeText={field.onChange}
                                         />
                                     )}
                                 />
@@ -468,10 +586,7 @@ export default function PickUpPanel({
                                             style={styles.input}
                                             placeholder="Unit/Apt"
                                             value={field.value || ''}
-                                            onChangeText={(text) => {
-                                                field.onChange(text);
-                                                // onPersist();
-                                            }}
+                                            onChangeText={field.onChange}
                                         />
                                     )}
                                 />
@@ -491,10 +606,7 @@ export default function PickUpPanel({
                                         numberOfLines={3}
                                         textAlignVertical="top"
                                         value={field.value || ''}
-                                        onChangeText={(text) => {
-                                            field.onChange(text);
-                                            // onPersist();
-                                        }}
+                                        onChangeText={field.onChange}
                                     />
                                 )}
                             />
@@ -506,7 +618,6 @@ export default function PickUpPanel({
                 <View style={styles.buttonSection}>
                     <Pressable style={styles.clearButton} onPress={handleClearPickupData}>
                         <Octicons name="repo-deleted" size={24} color="red"/>
-                        {/*<Text style={styles.clearButtonText}>Clear</Text>*/}
                     </Pressable>
 
                     <Pressable style={styles.saveButton} onPress={handleSavePickupData}>
@@ -514,9 +625,63 @@ export default function PickUpPanel({
                     </Pressable>
                 </View>
 
-                {/* Bottom Spacer */}
                 <View style={styles.bottomSpacer}/>
             </ScrollView>
+
+            {/* State Modal */}
+            <Modal
+                visible={showStateModal}
+                animationType="slide"
+                presentationStyle="pageSheet"
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>Select State</Text>
+                        <TouchableOpacity
+                            onPress={() => setShowStateModal(false)}
+                            style={styles.modalCloseButton}
+                        >
+                            <Ionicons name="close" size={24} color={COLORS.text}/>
+                        </TouchableOpacity>
+                    </View>
+                    <FlatList
+                        data={NIGERIAN_STATES}
+                        keyExtractor={(item) => item.value}
+                        renderItem={renderStateItem}
+                    />
+                </View>
+            </Modal>
+
+            {/* LGA Modal */}
+            <Modal
+                visible={showLGAModal}
+                animationType="slide"
+                presentationStyle="pageSheet"
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>
+                            Select LGA ({currentState || 'No State Selected'})
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => setShowLGAModal(false)}
+                            style={styles.modalCloseButton}
+                        >
+                            <Ionicons name="close" size={24} color={COLORS.text}/>
+                        </TouchableOpacity>
+                    </View>
+                    <FlatList
+                        data={lgas}
+                        keyExtractor={(item) => item}
+                        renderItem={renderLGAItem}
+                        ListEmptyComponent={
+                            <Text style={styles.emptyListText}>
+                                No LGAs available for {currentState}
+                            </Text>
+                        }
+                    />
+                </View>
+            </Modal>
         </>
     );
 }
@@ -560,43 +725,6 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsRegular',
         color: '#64748b',
     },
-    progressSteps: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 16,
-        backgroundColor: '#ffffff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
-    },
-    progressStep: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#e2e8f0',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    progressStepComplete: {
-        backgroundColor: '#ef4444',
-    },
-    progressStepText: {
-        fontSize: 14,
-        fontFamily: 'PoppinsBold',
-        color: '#64748b',
-    },
-    progressStepTextComplete: {
-        color: '#ffffff',
-    },
-    progressLine: {
-        width: 40,
-        height: 2,
-        backgroundColor: '#e2e8f0',
-        marginHorizontal: 12,
-    },
-    progressLineComplete: {
-        backgroundColor: '#ef4444',
-    },
     section: {
         marginHorizontal: 16,
         marginVertical: 8,
@@ -605,14 +733,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#e2e8f0',
         overflow: 'hidden',
-    },
-    sectionActive: {
-        borderColor: '#ef4444',
-        shadowColor: '#ef4444',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -688,11 +808,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 12,
     },
-    searchIcon: {
-        fontSize: 16,
-        marginRight: 8,
-        color: '#6b7280',
-    },
     addressInputText: {
         fontSize: 15,
         fontFamily: 'PoppinsRegular',
@@ -705,7 +820,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     addressInputExpanded: {
-        flex: 1, // Takes up remaining space
+        flex: 1,
     },
     mapIconButton: {
         width: 48,
@@ -805,12 +920,6 @@ const styles = StyleSheet.create({
     locationTypeContainer: {
         marginBottom: 16,
     },
-    sectionLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: COLORS.text,
-        marginBottom: 12,
-    },
     typeScroll: {
         flexDirection: 'row',
     },
@@ -832,6 +941,31 @@ const styles = StyleSheet.create({
         marginTop: 4,
         textAlign: 'center',
     },
+    selectInput: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    selectText: {
+        fontSize: 16,
+        color: '#1f2937',
+        fontFamily: 'PoppinsRegular',
+    },
+    selectPlaceholder: {
+        fontSize: 16,
+        color: '#9ca3af',
+        fontFamily: 'PoppinsRegular',
+    },
+    disabledSelect: {
+        opacity: 0.6,
+        backgroundColor: '#f9fafb',
+    },
+    disabledHint: {
+        fontSize: 12,
+        color: '#6b7280',
+        marginTop: 4,
+        fontFamily: 'PoppinsRegular',
+    },
     errorText: {
         fontSize: 12,
         color: '#ef4444',
@@ -847,34 +981,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#f9fafb',
     },
-    saveActions: {
-        marginTop: 20,
-        marginBottom: 10,
-    },
-    saveHint: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 10,
-        backgroundColor: 'green',
-        borderRadius: 8,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: '#f59e0b',
-    },
-    saveHintIcon: {
-        fontSize: 22,
-        marginRight: 8,
-    },
-    saveHintText: {
-        flex: 1,
-        fontSize: 14,
-        color: '#FFF',
-        fontFamily: 'PoppinsRegular',
-    },
-    actionButtons: {
-        flexDirection: 'row',
-        gap: 55
-    },
     clearButton: {
         backgroundColor: '#fee2e2',
         paddingVertical: 14,
@@ -883,11 +989,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: '#ef4444',
-    },
-    clearButtonText: {
-        fontSize: 15,
-        fontFamily: 'PoppinsMedium',
-        color: '#dc2626',
     },
     saveButton: {
         backgroundColor: '#dcfce7',
@@ -898,12 +999,49 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#22c55e',
     },
-    saveButtonText: {
-        fontSize: 15,
-        color: '#16a34a',
-        fontFamily: 'PoppinsMedium'
-    },
     bottomSpacer: {
         height: 100,
+    },
+    modalContainer: {
+        flex: 1,
+        backgroundColor: '#f8fafc',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e2e8f0',
+        backgroundColor: '#ffffff',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#1e293b',
+    },
+    modalCloseButton: {
+        padding: 4,
+    },
+    modalItem: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e2e8f0',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+    },
+    modalItemText: {
+        fontSize: 16,
+        color: '#1f2937',
+        fontFamily: 'PoppinsRegular',
+    },
+    emptyListText: {
+        fontSize: 16,
+        color: '#6b7280',
+        fontFamily: 'PoppinsRegular',
+        textAlign: 'center',
+        padding: 20,
     },
 });
