@@ -1,21 +1,17 @@
-// DriverAnalytics.jsx
+// app/(protected)/driver/account/analytics/earnings/index.jsx
 import React from 'react';
-import { useQuery } from "@tanstack/react-query";
-import {
-    ActivityIndicator,
-    View,
-    StyleSheet,
-    Text,
-} from "react-native";
-import AnalyticsManagement from "../../../../../components/Driver/Account/Analytics/AnalyticsManagement";
-import DriverUtils from "../../../../../utils/DriverUtilities";
-import { useSessionStore } from "../../../../../store/useSessionStore";
+import Earnings from "components/Driver/Account/Analytics/Earnings"
+import {useSessionStore} from "../../../../../../store/useSessionStore";
+import {useQuery} from "@tanstack/react-query";
+import DriverUtils from "../../../../../../utils/DriverUtilities";
+import {ActivityIndicator, StyleSheet, Text, View} from "react-native";
 
-function DriverAnalytics() {
+function AllEarnings() {
+
     const userData = useSessionStore((state) => state.user);
     const { data, isLoading, error, isError, refetch } = useQuery({
-        queryKey: ['DriverAnalytics'],
-        queryFn: DriverUtils.getAnalytics,
+        queryKey: ['DriverEarningsAnalytics'],
+        queryFn: DriverUtils.getEarningsAnalytics,
         retry: 3,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
         refetchOnWindowFocus: false,
@@ -46,11 +42,16 @@ function DriverAnalytics() {
             </View>
         );
     }
-
-    // Pass both analytics and userData to child
-    return <AnalyticsManagement analytics={data?.data} userData={userData} refetch={refetch} />;
+    return (
+        <>
+            <Earnings
+                earningAnalytics={data?.data}
+                userData={userData}
+                refetch={refetch}
+            />
+        </>
+    );
 }
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -83,4 +84,5 @@ const styles = StyleSheet.create({
     },
 });
 
-export default DriverAnalytics;
+
+export default AllEarnings;

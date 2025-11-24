@@ -1159,6 +1159,82 @@ class DriverUtils {
         }
     }
 
+    // analytics
+
+    static async getAnalytics() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/driver/analytics'
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Something went wrong:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getEarningsAnalytics() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/driver/earning/analytics'
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Something went wrong:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getSingleTransaction(txId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/earning/${txId}`
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getDeliveryAnalytics() {
+        const queryParams = {
+            month: 1,
+            year: 2025,
+            status: 'all'
+        }
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/driver/delivery/analytics',
+                params: queryParams
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Something went wrong:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getSingleDelivery(orderId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/delivery/${orderId}`
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
+
+
+
 }
 
 export default DriverUtils;

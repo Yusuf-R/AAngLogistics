@@ -1,21 +1,17 @@
-// DriverAnalytics.jsx
-import React from 'react';
-import { useQuery } from "@tanstack/react-query";
-import {
-    ActivityIndicator,
-    View,
-    StyleSheet,
-    Text,
-} from "react-native";
-import AnalyticsManagement from "../../../../../components/Driver/Account/Analytics/AnalyticsManagement";
-import DriverUtils from "../../../../../utils/DriverUtilities";
-import { useSessionStore } from "../../../../../store/useSessionStore";
+// app/(protected)/driver/account/analytics/deliveries/index.jsx
+import Deliveries from "components/Driver/Account/Analytics/Deliveries"
+import {ActivityIndicator, StyleSheet, Text, View} from "react-native";
+import {useSessionStore} from "../../../../../../store/useSessionStore";
+import {useQuery} from "@tanstack/react-query";
+import DriverUtils from "../../../../../../utils/DriverUtilities";
+import React from "react";
 
-function DriverAnalytics() {
+
+function AllDeliveries(props) {
     const userData = useSessionStore((state) => state.user);
     const { data, isLoading, error, isError, refetch } = useQuery({
-        queryKey: ['DriverAnalytics'],
-        queryFn: DriverUtils.getAnalytics,
+        queryKey: ['DriverDeliveryAnalytics'],
+        queryFn: DriverUtils.getDeliveryAnalytics,
         retry: 3,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
         refetchOnWindowFocus: false,
@@ -47,8 +43,15 @@ function DriverAnalytics() {
         );
     }
 
-    // Pass both analytics and userData to child
-    return <AnalyticsManagement analytics={data?.data} userData={userData} refetch={refetch} />;
+    return (
+        <>
+            <Deliveries
+                deliveryAnalytics={data?.data}
+                userData={userData}
+                refetch={refetch}
+            />
+        </>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -83,4 +86,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default DriverAnalytics;
+export default AllDeliveries;

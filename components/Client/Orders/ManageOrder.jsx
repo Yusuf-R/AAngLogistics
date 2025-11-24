@@ -53,7 +53,7 @@ function ManageOrder({allOrderData, onRefreshData}) {
             case 'Pending':
                 return allOrderData.filter(order => order.status === 'pending');
             case 'Ongoing':
-                const ongoingStatuses = ['submitted', 'confirmed', 'admin_review', 'broadcast', 'assigned', 'en_route_pickup', 'arrived_pickup', 'picked_up', 'in_transit', 'arrived_dropoff'];
+                const ongoingStatuses = ['submitted', 'admin_review', 'broadcast', 'assigned', 'pickedUp-confirmed', 'en_route_pickup', 'en_route_dropoff', 'arrived_pickup', 'arrived_dropoff', 'en_route_pickup', 'arrived_pickup', 'picked_up', 'in_transit', 'arrived_dropoff'];
                 return allOrderData.filter(order => ongoingStatuses.includes(order.status));
             case 'Completed':
                 return allOrderData.filter(order => ['delivered', 'cancelled', 'failed', 'returned'].includes(order.status));
@@ -234,10 +234,14 @@ function ManageOrder({allOrderData, onRefreshData}) {
                 });
                 break;
 
-            case 'confirmed':
             case 'broadcast':
             case 'admin_review':
             case 'assigned':
+            case 'pickedUp-confirmed':
+            case 'en_route_pickup':
+            case 'en_route_dropoff':
+            case 'arrived_pickup':
+            case 'arrived_dropoff':
             case 'picked_up':
             case 'in_transit':
                 actions.push({
@@ -510,7 +514,7 @@ function ManageOrder({allOrderData, onRefreshData}) {
 
                 {/* Tab Navigation */}
                 <View style={styles.tabContainer}>
-                    {['Draft', 'Pending', 'Ongoing', 'Completed'].map((tab) => (
+                    {['Draft', 'Ongoing', 'Completed'].map((tab) => (
                         <TouchableOpacity
                             key={tab}
                             onPress={() => setActiveTab(tab)}

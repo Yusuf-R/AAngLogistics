@@ -84,6 +84,15 @@ export const PRICING_CONFIG = {
     tax: {
         vatRate: 0.075,        // 7.5% VAT
         includeInDisplay: true // Show VAT separately
+    },
+
+    // Paystack Fee Configuration for Nigeria
+    paymentProcessing: {
+        decimalFee: 0.015,      // 1.5%
+        flatFee: 100,           // ₦100
+        feeCap: 2000,           // ₦2,000 maximum
+        flatFeeThreshold: 2500, // ₦100 fee waived under ₦2,500
+        currency: 'NGN'
     }
 };
 
@@ -355,6 +364,42 @@ export function calculateVAT(taxableAmount) {
 }
 
 /**
+ * Calculate Paystack processing fees and final customer amount
+ * Ensures you receive exact amount after fees
+ */
+export function calculatePaystackFees(amount) {
+    const { decimalFee, flatFee, feeCap, flatFeeThreshold } = PRICING_CONFIG.paymentProcessing;
+
+    // Determine if flat fee applies
+    const effectiveFlatFee = amount < flatFeeThreshold ? 0 : flatFee;
+
+    // Calculate applicable fees
+    const applicableFees = (decimalFee * amount) + effectiveFlatFee;
+
+    let processingFee, finalCustomerAmount;
+
+    if (applicableFees > feeCap) {
+        // Use fee cap (rare case for very large amounts)
+        processingFee = feeCap;
+        finalCustomerAmount = amount + feeCap;
+    } else {
+        // Use percentage + flat fee formula
+        finalCustomerAmount = ((amount + effectiveFlatFee) / (1 - decimalFee)) + 0.01;
+        processingFee = finalCustomerAmount - amount;
+    }
+
+    return {
+        processingFee: Math.ceil(processingFee),
+        finalCustomerAmount: Math.ceil(finalCustomerAmount),
+        effectiveFlatFee,
+        breakdown: {
+            description: `Payment processing (${(decimalFee * 100)}% + ₦${effectiveFlatFee})`,
+            calculation: `₦${Math.ceil(processingFee)}`
+        }
+    };
+}
+
+/**
  * Master pricing calculation function
  */
 export function calculateTotalPrice(orderData = {}) {
@@ -403,8 +448,11 @@ export function calculateTotalPrice(orderData = {}) {
     const taxableAmount = subtotal - discountCalc.discount;
     const vatCalc = calculateVAT(taxableAmount);
 
-    // Final total
-    const totalAmount = taxableAmount + vatCalc.vat;
+    // Step 10: Final delivery total (what you want to receive)
+    const deliveryTotal = taxableAmount + vatCalc.vat;
+
+    // Step 11: Calculate Paystack fees and final customer amount
+    const paystackCalc = calculatePaystackFees(deliveryTotal);
 
     // Compile all surcharges for backend
     const allSurcharges = [
@@ -421,7 +469,7 @@ export function calculateTotalPrice(orderData = {}) {
             insurance: insuranceCalc.premium,
             discount: discountCalc.discount,
             vat: vatCalc.vat,
-            total: Math.round(totalAmount)
+            total: paystackCalc.finalCustomerAmount
         },
 
         // Backend schema-compliant structure
@@ -437,7 +485,21 @@ export function calculateTotalPrice(orderData = {}) {
                 code: discountCalc.code,
                 reason: discountCalc.reason
             } : undefined,
-            totalAmount: Math.round(totalAmount),
+            // CRITICAL: Financial breakdown
+            financialBreakdown: {
+                deliveryTotal: Math.round(deliveryTotal),      // What you should receive
+                customerAmount: paystackCalc.finalCustomerAmount, // What customer pays
+                processingFee: paystackCalc.processingFee,     // Paystack's cut
+                netAmount: Math.round(deliveryTotal),          // What you actually get
+
+                // Revenue sharing (70/30 split)
+                driverEarnings: Math.round(deliveryTotal * 0.7),
+                platformRevenue: Math.round(deliveryTotal * 0.3),
+
+                currency: 'NGN'
+            },
+
+            totalAmount: paystackCalc.finalCustomerAmount,
             currency: 'NGN'
         },
 
@@ -453,7 +515,15 @@ export function calculateTotalPrice(orderData = {}) {
             vat: vatCalc,
             vehicleType,
             distance: distance.toFixed(1),
-            packageWeight
+            packageWeight,
+            // Financial summary
+            financialSummary: {
+                youReceive: Math.round(deliveryTotal),
+                customerPays: paystackCalc.finalCustomerAmount,
+                paystackFee: paystackCalc.processingFee,
+                driverShare: Math.round(deliveryTotal * 0.7),
+                yourShare: Math.round(deliveryTotal * 0.3)
+            }
         }
     };
 }

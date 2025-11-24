@@ -1,8 +1,8 @@
 import {Redirect, Stack, usePathname} from 'expo-router';
-import {useSessionStore} from "../../../../../store/useSessionStore";
+import {useSessionStore} from "../../../../../../../store/useSessionStore";
 
 
-export default function AnalyticsLayout() {
+export default function DeliveryAnalyticsLayout() {
     const userData = useSessionStore((state) => state.user);
     const isAccepted = !!userData?.tcs?.isAccepted;
 

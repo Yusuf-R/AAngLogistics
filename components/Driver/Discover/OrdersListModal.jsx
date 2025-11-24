@@ -384,7 +384,7 @@ function OrdersListModal({ visible, onClose, sourceTab = null }) {
                         <View style={styles.pricingCard}>
                             <View style={styles.pricingRow}>
                                 <Text style={styles.pricingLabel}>Delivery Fee:</Text>
-                                <Text style={styles.pricingAmount}>{formatCurrency(selectedOrder.pricing.totalAmount)}</Text>
+                                <Text style={styles.pricingAmount}>{formatCurrency(selectedOrder.payment?.financialBreakdown?.driverShare)}</Text>
                             </View>
                             <View style={styles.pricingNote}>
                                 <Ionicons name="information-circle" size={14} color="#6B7280" />
@@ -534,7 +534,7 @@ function OrdersListModal({ visible, onClose, sourceTab = null }) {
                                     <View style={styles.earningsRow}>
                                         <Ionicons name="wallet" size={16} color="#10B981" />
                                         <Text style={styles.earningsLabel}>Earnings:</Text>
-                                        <Text style={styles.earningsAmount}>{formatCurrency(order.pricing.totalAmount)}</Text>
+                                        <Text style={styles.earningsAmount}>{formatCurrency(order.payment.financialBreakdown.driverShare)}</Text>
                                     </View>
                                 </View>
 

@@ -20,6 +20,7 @@
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "8.3.0",
     "@react-native-community/netinfo": "11.4.1",
+    "@react-native-community/slider": "4.5.6",
     "@react-native-picker/picker": "^2.11.1",
     "@react-native/metro-config": "^0.79.1",
     "@react-navigation/bottom-tabs": "^7.2.0",
@@ -51,6 +52,7 @@
     "expo-status-bar": "~2.2.3",
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.8",
+    "expo-task-manager": "~13.1.6",
     "expo-video": "~2.2.0",
     "expo-web-browser": "~14.1.6",
     "lottie-react-native": "7.2.2",
@@ -61,6 +63,7 @@
     "react-dom": "19.0.0",
     "react-hook-form": "^7.56.1",
     "react-native": "0.79.3",
+    "react-native-chart-kit": "^6.12.0",
     "react-native-css-interop": "^0.1.22",
     "react-native-geolocation-service": "^5.3.1",
     "react-native-gesture-handler": "~2.24.0",
@@ -84,9 +87,7 @@
     "tailwindcss": "^3.4.17",
     "toastify-react-native": "^7.2.0",
     "yup": "^1.6.1",
-    "zustand": "^5.0.5",
-    "expo-task-manager": "~13.1.6",
-    "@react-native-community/slider": "4.5.6"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
