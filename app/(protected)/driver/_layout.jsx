@@ -260,6 +260,15 @@ export default function DriverTabsLayout() {
                         href: '/driver/discover/index',
                     }}
                 />
+
+                <Tabs.Screen
+                    name="finance"
+                    options={{
+                        title: 'Finance',
+                        href: '/driver/finance/index',
+                    }}
+                />
+
                 <Tabs.Screen
                     name="notifications"
                     options={{

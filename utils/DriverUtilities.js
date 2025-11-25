@@ -1233,8 +1233,102 @@ class DriverUtils {
     }
 
 
+    static async getFinancialSummary() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/fiance/summary`
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getEarningsHistory(queryParams) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/earning/history`,
+                params: queryParams
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getPayoutHistory(queryParams) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/payout/history`,
+                params: queryParams
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
 
 
+    static async getBanks() {
+        return undefined
+
+    }
+
+    static async verifyBankAccount(accountNumber, code) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/bank/verify`,
+                params: {
+                    accountNumber,
+                    code
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+        
+    }
+
+    static async updateBankDetails(driverId, bankDetails) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/bank/update`,
+                params: {
+                    driverId,
+                    bankDetails
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+
+    }
+
+    static async requestPayout(param) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/payout/request`,
+                params: param
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
 }
 
 export default DriverUtils;

@@ -102,6 +102,12 @@ export function TabNavigation({ state, descriptors, navigation, canAccess }) {
             isActiveDelivery: isOnActiveDelivery,
         },
         {
+            name: 'finance',
+            label: 'Finance',
+            iconOutline: 'wallet-outline',
+            iconFilled: 'wallet',
+        },
+        {
             name: 'notifications',
             label: 'Notifications',
             iconOutline: 'notifications-outline',
