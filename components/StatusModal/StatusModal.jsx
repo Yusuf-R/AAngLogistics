@@ -15,6 +15,7 @@ const StatusModal = ({
                          onRetry,       // optional
                          onClose,       // optional
                          showRetryOnError = true,
+                         autoCloseDelay = 3000,
                      }) => {
     const getAnimation = () => {
         switch (status) {

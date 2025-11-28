@@ -1,19 +1,28 @@
 // app/(protected)/driver/finance/index.jsx
-import React from 'react';
-import {Text, View} from 'react-native';
-import {useSessionStore} from "../../../../store/useSessionStore";
-import FinanceManager from "../../../../components/Driver/FinanceManager/FinanceManager";
+import React, { useRef } from 'react';
+import { View, StyleSheet } from 'react-native';
+import FloatingFinanceTabs from "../../../../components/Driver/Finance/FloatingFinaceTabs";
+import { useSessionStore } from "../../../../store/useSessionStore";
 
-function FinanceManagerScreen() {
+function FinanceScreen() {
     const userData = useSessionStore((state) => state.user);
+    const floatingTabsRef = useRef(null);
 
     return (
-        <>
-            <FinanceManager
+        <View style={styles.container}>
+            <FloatingFinanceTabs
+                ref={floatingTabsRef}
                 userData={userData}
             />
-        </>
+        </View>
     );
 }
 
-export default FinanceManagerScreen;
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F9FAFB',
+    },
+});
+
+export default FinanceScreen;

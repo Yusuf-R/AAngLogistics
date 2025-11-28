@@ -1237,7 +1237,7 @@ class DriverUtils {
         try {
             const response = await axiosPrivate({
                 method: 'GET',
-                url: `/driver/fiance/summary`
+                url: `/driver/finance/summary`
             });
             return response.data;
         } catch (error) {
@@ -1246,17 +1246,27 @@ class DriverUtils {
         }
     }
 
-    static async getEarningsHistory(queryParams) {
+    // utils/DriverUtilities.js
+    static async getEarningsHistory(params = {}) {
         try {
             const response = await axiosPrivate({
                 method: 'GET',
-                url: `/driver/earning/history`,
-                params: queryParams
+                url: `/driver/finance/earning/history`,
+                params: {
+                    page: params.page || 1,
+                    limit: params.limit || 20,
+                    type: params.type || 'all',
+                    status: params.status || 'all'
+                }
             });
             return response.data;
         } catch (error) {
-            console.log('Error fetching delivery:', error);
-            throw new Error(error);
+            console.log('Error fetching earnings history:', error);
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data?.error ||
+                error.message ||
+                'Failed to load transaction history';
+            throw new Error(errorMessage);
         }
     }
 
@@ -1264,7 +1274,7 @@ class DriverUtils {
         try {
             const response = await axiosPrivate({
                 method: 'GET',
-                url: `/driver/payout/history`,
+                url: `/driver/finance/payout/history`,
                 params: queryParams
             });
             return response.data;
@@ -1276,37 +1286,24 @@ class DriverUtils {
 
 
     static async getBanks() {
-        return undefined
-
-    }
-
-    static async verifyBankAccount(accountNumber, code) {
         try {
             const response = await axiosPrivate({
                 method: 'GET',
-                url: `/driver/bank/verify`,
-                params: {
-                    accountNumber,
-                    code
-                }
+                url: `/driver/finance/bank`
             });
             return response.data;
         } catch (error) {
             console.log('Error fetching delivery:', error);
             throw new Error(error);
         }
-        
     }
 
-    static async updateBankDetails(driverId, bankDetails) {
+    static async newBankDetails(bankDetails) {
         try {
             const response = await axiosPrivate({
-                method: 'GET',
-                url: `/driver/bank/update`,
-                params: {
-                    driverId,
-                    bankDetails
-                }
+                method: 'POST',
+                url: `/driver/finance/bank/new`,
+                data: bankDetails
             });
             return response.data;
         } catch (error) {
@@ -1316,17 +1313,87 @@ class DriverUtils {
 
     }
 
-    static async requestPayout(param) {
+    static async updateBankDetails(bankDetails) {
         try {
             const response = await axiosPrivate({
-                method: 'GET',
-                url: `/driver/payout/request`,
-                params: param
+                method: 'PATCH',
+                url: `/driver/finance/bank/update`,
+                data: bankDetails
             });
             return response.data;
         } catch (error) {
             console.log('Error fetching delivery:', error);
             throw new Error(error);
+        }
+
+    }
+
+    static async requestPayout(payload) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/driver/finance/request/payout`,
+                data: payload
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error requesting payout:', error);
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data?.error ||
+                error.message ||
+                'Failed to process withdrawal request';
+            throw new Error(errorMessage);
+        }
+    }
+
+    static async getPayoutStatus(payoutId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/finance/verify/payout`,
+                params: { payoutId }
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching payout status:', error);
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data?.error ||
+                error.message ||
+                'Failed to fetch payout status';
+            throw new Error(errorMessage);
+        }
+    }
+
+    static async deleteBankDetails(bankId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'DELETE',
+                url: `/driver/finance/bank/delete`,
+                data: bankId,
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+
+    }
+
+    static async verifyWithdrawalAuthPin(payload ) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/driver/finance/verify/pin`,
+                data: payload,
+            });
+            return response.data;
+        } catch (error) {
+            if (error.response && (error.response.status === 400 || error.response.status === 423)) {
+                console.log('Returning error response data for status:', error.response.status);
+                return error.response.data;
+            }
+            console.log('Throwing error for status:', error.response?.status);
+            throw error;
         }
     }
 }
