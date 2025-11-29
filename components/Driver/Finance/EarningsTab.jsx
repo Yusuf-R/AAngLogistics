@@ -195,7 +195,7 @@ function EarningsTab({
 
                     <View style={[styles.statCard, styles.statCardWallet]}>
                         <View style={styles.statIconContainerWallet}>
-                            <Wallet size={16} color="#dc2626" />
+                            <Wallet size={16} color="green" />
                         </View>
                         <Text style={styles.statLabel}>Available Balance</Text>
                         <Text style={styles.statValueWallet}>
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f0fdf4',
     },
     statCardWallet: {
-        backgroundColor: '#fff5f5',
+        backgroundColor: '#C8F2F8',
     },
     statCardBlue: {
         backgroundColor: '#eff6ff',
@@ -663,7 +663,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     statIconContainerWallet: {
-        backgroundColor: '#CFAEC7',
+        backgroundColor: '#83E2EE',
         alignSelf: 'flex-start',
         borderRadius: 20,
         padding: 8,
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsSemiBold',
     },
     statValueWallet: {
-        color: '#BC8EB0',
+        color: '#18A0B2',
         fontSize: 20,
         fontFamily: 'PoppinsSemiBold',
     },
