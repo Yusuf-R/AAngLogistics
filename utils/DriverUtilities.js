@@ -1254,7 +1254,7 @@ class DriverUtils {
                 url: `/driver/finance/earning/history`,
                 params: {
                     page: params.page || 1,
-                    limit: params.limit || 20,
+                    limit: params.limit || 50,
                     type: params.type || 'all',
                     status: params.status || 'all'
                 }
@@ -1377,6 +1377,20 @@ class DriverUtils {
             throw new Error(error);
         }
 
+    }
+
+    static async makeBankPrimary(bankId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PATCH',
+                url: `/driver/finance/bank/primary`,
+                data: bankId,
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
     }
 
     static async verifyWithdrawalAuthPin(payload ) {

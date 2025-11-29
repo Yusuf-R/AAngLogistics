@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         fontSize: 20,
-        fontWeight: 'bold',
+        fontFamily: 'PoppinsSemiBold',
         color: '#111827',
     },
     headerSpacer: {

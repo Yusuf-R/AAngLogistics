@@ -82,13 +82,14 @@ function EarningsTab({ userData }) {
     return (
         <EarningsScreen
             userData={userData}
-            earningsHistory={transactions} // Pass transactions as earningsHistory
+            earningsHistory={transactions}
             earningsPagination={pagination}
             isLoading={transactionsLoading}
             onLoadMore={handleLoadMore}
             onRefresh={handleRefresh}
             onFilterChange={handleFilterChange}
             currentPage={page}
+            stats={stats}
             // Note: Your EarningsTab calculates stats internally from earningsHistory
         />
     );

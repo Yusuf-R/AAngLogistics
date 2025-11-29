@@ -1,5 +1,5 @@
 // components/StatusModal/StatusModal.jsx
-import React from 'react';
+import React, { useEffect } from 'react'; // Add useEffect
 import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
 import LottieView from 'lottie-react-native';
 
@@ -15,8 +15,25 @@ const StatusModal = ({
                          onRetry,       // optional
                          onClose,       // optional
                          showRetryOnError = true,
-                         autoCloseDelay = 3000,
+                         // New optional props
+                         autoClose = false,
+                         autoCloseDelay = 1500,
+                         showAction = false,
+                         actionText = 'Action',
+                         onAction,
                      }) => {
+
+    // Add auto-close functionality
+    useEffect(() => {
+        if (visible && autoClose && status === 'success' && onFinish) {
+            const timer = setTimeout(() => {
+                onFinish();
+            }, autoCloseDelay);
+
+            return () => clearTimeout(timer);
+        }
+    }, [visible, autoClose, status, autoCloseDelay, onFinish]);
+
     const getAnimation = () => {
         switch (status) {
             case 'success':
@@ -43,21 +60,30 @@ const StatusModal = ({
                         loop={status === 'loading'}
                         style={{ width: 100, height: 100 }}
                         onAnimationFinish={() => {
-                            if (status === 'success' && onFinish) onFinish();
+                            // Only use this for non-autoClose scenarios
+                            if (status === 'success' && onFinish && !autoClose) onFinish();
                         }}
                     />
                     <Text style={styles.text}>{message}</Text>
 
-                    {status === 'error' && (
+                    {/* Action buttons for error or custom actions */}
+                    {(status === 'error' || showAction) && (
                         <View style={styles.buttonGroup}>
-                            {onRetry && showRetryOnError && (
+                            {showAction && onAction && (
+                                <TouchableOpacity style={styles.actionButton} onPress={onAction}>
+                                    <Text style={styles.actionText}>{actionText}</Text>
+                                </TouchableOpacity>
+                            )}
+                            {onRetry && showRetryOnError && status === 'error' && (
                                 <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
                                     <Text style={styles.retryText}>Try Again</Text>
                                 </TouchableOpacity>
                             )}
-                            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                                <Text style={styles.closeText}>Close</Text>
-                            </TouchableOpacity>
+                            {onClose && (
+                                <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                                    <Text style={styles.closeText}>Close</Text>
+                                </TouchableOpacity>
+                            )}
                         </View>
                     )}
                 </View>
@@ -92,6 +118,17 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 12,
         marginTop: 24,
+    },
+    actionButton: {
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        backgroundColor: '#10b981',
+        borderRadius: 8,
+    },
+    actionText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 14,
     },
     retryButton: {
         paddingHorizontal: 20,

@@ -67,9 +67,6 @@ function PayoutsTab({
     const authPinEnabled = userData?.authPin?.isEnabled;
     const authPinLocked = userData?.authPin?.lockedUntil && new Date(userData.authPin.lockedUntil) > new Date();
 
-
-
-
     useEffect(() => {
         calculateStats();
     }, [payouts]);
@@ -107,7 +104,7 @@ function PayoutsTab({
             setStatusModal({
                 visible: true,
                 status: 'success',
-                message: 'Your withdrawal has been processed successfully! Funds have been sent to your bank account.',
+                message: 'Withdrawal successfully!\n\n Your bank account has been credited.🎉',
                 onClose: () => setStatusModal(prev => ({ ...prev, visible: false }))
             });
         }
@@ -116,7 +113,7 @@ function PayoutsTab({
             setStatusModal({
                 visible: true,
                 status: 'error',
-                message: 'Your withdrawal could not be completed. Your funds have been returned to your available balance.',
+                message: 'Withdrawal failed!',
                 onClose: () => setStatusModal(prev => ({ ...prev, visible: false }))
             });
         }
@@ -133,12 +130,6 @@ function PayoutsTab({
         handlePayoutUpdate(data);
         calculateStats();
     };
-
-
-    // Get all pending/processing payout IDs
-    const pendingPayoutIds = payouts
-        .filter(p => p.status === 'pending' || p.status === 'processing')
-        .map(p => p._id);
 
     const calculateStats = () => {
         const newStats = {
@@ -157,75 +148,93 @@ function PayoutsTab({
         try {
             setVerifyingPayoutId(payoutId);
 
-            // Show loading state in modal
+            // Show loading state
             setStatusModal({
                 visible: true,
                 status: 'loading',
-                message: 'Checking payout status...'
+                message: 'Checking status...'
             });
 
             const result = await DriverUtils.getPayoutStatus(payoutId);
+            console.log('Payout status result:', result);
 
             if (result.success) {
+                // Your backend returns: result.payout.status and result.payout.paystackStatus
+                // Map to what we need for UI
+                let displayStatus;
+                const payoutStatus = result.payout?.status;
+                const paystackStatus = result.payout?.paystackStatus;
+
+                if (payoutStatus === 'success' || paystackStatus === 'success') {
+                    displayStatus = 'completed';
+                } else if (payoutStatus === 'completed') {
+                    displayStatus = 'completed';
+                } else if (payoutStatus === 'failed' || paystackStatus === 'failed') {
+                    displayStatus = 'failed';
+                } else if (payoutStatus === 'reversed' || paystackStatus === 'reversed') {
+                    displayStatus = 'reversed';
+                } else {
+                    displayStatus = payoutStatus || 'processing';
+                }
+
+                // Update local state
                 setPayouts(prev => prev.map(payout =>
                     payout._id === payoutId
-                        ? { ...payout, status: result.status }
+                        ? { ...payout, status: displayStatus }
                         : payout
                 ));
 
-                // invalidate tanStack queries for new fetch
+                // Refresh data
                 await invalidateFinanceQueries();
-
-
-                const statusMessages = {
-                    completed: {
-                        status: 'success',
-                        message: 'Your withdrawal has been completed successfully! The funds have been sent to your bank account.'
-                    },
-                    failed: {
-                        status: 'error',
-                        message: 'Your withdrawal could not be completed. Your funds have been returned to your available balance.'
-                    },
-                    reversed: {
-                        status: 'error',
-                        message: 'Your withdrawal was reversed. Your funds have been returned to your available balance.'
-                    },
-                    processing: {
-                        status: 'loading',
-                        message: 'Your withdrawal is still being processed. This usually takes a few minutes but can take up to 24 hours.'
-                    },
-                    pending: {
-                        status: 'loading',
-                        message: 'Your withdrawal is pending confirmation. Please check back in a few minutes.'
-                    }
-                };
-
                 await dataRefresh();
                 await onRefresh();
 
-                const statusInfo = statusMessages[result.status] || statusMessages.processing;
-
-                setStatusModal({
-                    visible: true,
-                    status: statusInfo.status,
-                    message: statusInfo.message + (result.warning ? `\n\n⚠️ ${result.warning}` : ''),
-                    onClose: () => {
-                        setStatusModal(prev => ({ ...prev, visible: false }));
-                        if (result.status === 'completed' || result.status === 'failed') {
-                            setDetailsModal(false); // Close details modal on final status
+                // Handle different statuses
+                if (displayStatus === 'completed') {
+                    // Success - auto close
+                    setStatusModal({
+                        visible: true,
+                        status: 'success',
+                        message: 'Withdrawal Complete!🎉\n\nFunds sent to your bank.🚀',
+                        autoClose: true,
+                        autoCloseDelay: 2000,
+                        onClose: () => {
+                            setStatusModal(prev => ({ ...prev, visible: false }));
+                            setDetailsModal(false);
                         }
-                    }
-                });
+                    });
+                } else if (displayStatus === 'failed' || displayStatus === 'reversed') {
+                    setStatusModal({
+                        visible: true,
+                        status: 'error',
+                        message: 'Withdrawal failed. Funds returned to balance.🗃️',
+                        onClose: () => {
+                            setStatusModal(prev => ({ ...prev, visible: false }));
+                            setDetailsModal(false);
+                        }
+                    });
+                } else {
+                    // Still processing - show close button
+                    setStatusModal({
+                        visible: true,
+                        status: 'loading',
+                        message: 'Still processing. Check back later.🕚',
+                        onClose: () => {
+                            setStatusModal(prev => ({ ...prev, visible: false }));
+                        }
+                    });
+                }
             }
         } catch (error) {
-            console.log('Error verifying payout:', error);
+            console.log('Verification error:', error);
             setStatusModal({
                 visible: true,
                 status: 'error',
-                message: error.message || 'Failed to verify payout status. Please try again.',
+                message: 'Could not verify status🧐\n\nPlease try again.',
+                showRetryOnError: true,
                 onRetry: () => {
                     setStatusModal(prev => ({ ...prev, visible: false }));
-                    handleVerifyPayout(payoutId);
+                    setTimeout(() => handleVerifyPayout(payoutId), 300);
                 },
                 onClose: () => setStatusModal(prev => ({ ...prev, visible: false }))
             });
@@ -288,7 +297,7 @@ function PayoutsTab({
     const handleWithdrawalSuccess = async () => {
         setWithdrawalModal(false);
         await invalidateFinanceQueries();
-        onRefresh(); // Refresh to show new payout
+        await onRefresh(); // Refresh to show new payout
         console.log('✅ All queries invalidated after successful withdrawal');
     };
 
@@ -687,7 +696,6 @@ function PayoutsTab({
                                             <Text style={styles.modalAlertTitle}>Processing</Text>
                                             <Text style={styles.modalAlertMessage}>
                                                 Your withdrawal is being processed. Funds typically arrive within 10 minutes, but may take up to 24 hours.
-                                                {pollingActive && '\n\nWe\'re automatically checking for updates every few seconds.'}
                                             </Text>
                                         </View>
                                     </View>
@@ -819,7 +827,8 @@ function PayoutsTab({
                 onRetry={statusModal.onRetry}
                 onClose={statusModal.onClose}
                 showRetryOnError={!!statusModal.onRetry}
-                autoCloseDelay={statusModal.status === 'success' ? 3000 : undefined}
+                autoClose={statusModal.autoClose}
+                autoCloseDelay={statusModal.autoCloseDelay}
             />
         </View>
     );

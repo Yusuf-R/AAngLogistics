@@ -52,7 +52,7 @@ function FinanceManager({
 
     const formatCurrency = (amount) => {
         if (!amount && amount !== 0) return '₦0.00';
-        return `₦${amount.toLocaleString('en-NG', {
+        return `₦  ${amount.toLocaleString('en-NG', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         })}`;
@@ -130,31 +130,31 @@ function FinanceManager({
                     <View style={styles.statItem}>
                         <Text style={styles.statLabel}>Pending Earnings</Text>
                         <Text style={styles.statValue}>
-                            {formatCurrency(financialSummary.pendingEarnings || userData?.wallet?.pendingEarnings || 0)}
+                            {formatCurrency(financialSummary.pendingEarnings || 0)}
                         </Text>
                     </View>
                     <View style={styles.statDivider} />
                     <View style={styles.statItem}>
                         <Text style={styles.statLabel}>Total Withdrawn</Text>
                         <Text style={styles.statValue}>
-                            {formatCurrency(financialSummary.totalWithdrawn || userData?.wallet?.totalWithdrawn || 0)}
+                            {formatCurrency(financialSummary.totalWithdrawn || 0)}
                         </Text>
                     </View>
                 </View>
 
                 <TouchableOpacity
                     onPress={handleWithdrawPress}
-                    disabled={(financialSummary.availableBalance || userData?.wallet?.balance || 0) < 1000}
+                    disabled={(financialSummary.availableBalance  || 0) < 1000}
                     style={[
                         styles.withdrawButton,
-                        (financialSummary.availableBalance || userData?.wallet?.balance || 0) < 1000 && styles.withdrawButtonDisabled
+                        (financialSummary.availableBalance  || 0) < 1000 && styles.withdrawButtonDisabled
                     ]}
                     activeOpacity={0.8}
                 >
                     <Text style={styles.withdrawButtonText}>Withdraw Funds</Text>
                 </TouchableOpacity>
 
-                {(financialSummary.availableBalance || userData?.wallet?.balance || 0) < 1000 && (
+                {(financialSummary.availableBalance || 0) < 1000 && (
                     <Text style={styles.minimumText}>
                         Minimum withdrawal amount is ₦1,000
                     </Text>

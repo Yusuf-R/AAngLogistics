@@ -22,7 +22,8 @@ import {
     X,
     CheckCircle2,
     Clock,
-    XCircle
+    XCircle,
+    Wallet
 } from 'lucide-react-native';
 import DriverUtils from "../../../utils/DriverUtilities";
 
@@ -33,7 +34,8 @@ function EarningsTab({
                          isLoading,
                          onLoadMore,
                          onRefresh,
-                         currentPage
+                         currentPage,
+                         stats
                      }) {
     const [refreshing, setRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -43,31 +45,33 @@ function EarningsTab({
     const [detailsModal, setDetailsModal] = useState(false);
 
     // Stats
-    const [stats, setStats] = useState({
-        totalEarnings: 0,
-        totalWithdrawals: 0,
-        availableCount: 0,
-        withdrawnCount: 0
-    });
+    // const [stats, setStats] = useState({
+    //     totalEarnings: 0,
+    //     totalWithdrawals: 0,
+    //     availableCount: 0,
+    //     withdrawnCount: 0,
+    //     availableBalance: 0
+    // });
 
-    useEffect(() => {
-        calculateStats();
-    }, [earningsHistory]);
-
-    const calculateStats = () => {
-        if (!earningsHistory || earningsHistory.length === 0) return;
-
-        const earnings = earningsHistory.filter(t => t.transactionType === 'driver_earning');
-        const withdrawals = earningsHistory.filter(t => t.transactionType === 'driver_payout');
-
-        const newStats = {
-            totalEarnings: earnings.reduce((sum, e) => sum + (e.amount?.net || 0), 0),
-            totalWithdrawals: withdrawals.reduce((sum, w) => sum + (w.amount?.net || 0), 0),
-            availableCount: earnings.filter(e => e.status === 'completed').length,
-            withdrawnCount: withdrawals.filter(w => w.status === 'completed').length
-        };
-        setStats(newStats);
-    };
+    // useEffect(() => {
+    //     calculateStats();
+    // }, [earningsHistory]);
+    //
+    // const calculateStats = () => {
+    //     if (!earningsHistory || earningsHistory.length === 0) return;
+    //
+    //     const earnings = earningsHistory.filter(t => t.transactionType === 'driver_earning');
+    //     const withdrawals = earningsHistory.filter(t => t.transactionType === 'driver_payout');
+    //
+    //     const newStats = {
+    //         totalEarnings: earnings.reduce((sum, e) => sum + (e.amount?.gross || 0), 0),
+    //         totalWithdrawals: withdrawals.reduce((sum, w) => sum + (w.amount?.gross || 0), 0),
+    //         availableCount: earnings.filter(e => e.status === 'completed').length,
+    //         withdrawnCount: withdrawals.filter(w => w.status === 'completed').length
+    //         availableBalance: totalEarnings - totalWithdrawals
+    //     };
+    //     setStats(newStats);
+    // };
 
     const formatCurrency = (amount) => {
         if (!amount && amount !== 0) return '₦0.00';
@@ -189,6 +193,16 @@ function EarningsTab({
                         </Text>
                     </View>
 
+                    <View style={[styles.statCard, styles.statCardWallet]}>
+                        <View style={styles.statIconContainerWallet}>
+                            <Wallet size={16} color="#dc2626" />
+                        </View>
+                        <Text style={styles.statLabel}>Available Balance</Text>
+                        <Text style={styles.statValueWallet}>
+                            {formatCurrency(stats.availableBalance)}
+                        </Text>
+                    </View>
+
                     <View style={[styles.statCard, styles.statCardBlue]}>
                         <View style={styles.statIconContainerBlue}>
                             <TrendingDown size={16} color="#3b82f6" />
@@ -199,13 +213,15 @@ function EarningsTab({
                         </Text>
                     </View>
 
+
+
                     <View style={[styles.statCard, styles.statCardPurple]}>
                         <View style={styles.statIconContainerPurple}>
                             <Package size={16} color="#8b5cf6" />
                         </View>
                         <Text style={styles.statLabel}>Deliveries</Text>
                         <Text style={styles.statValuePurple}>
-                            {stats.availableCount}
+                            {stats.earningsCount}
                         </Text>
                     </View>
                 </ScrollView>
@@ -630,6 +646,9 @@ const styles = StyleSheet.create({
     statCardGreen: {
         backgroundColor: '#f0fdf4',
     },
+    statCardWallet: {
+        backgroundColor: '#fff5f5',
+    },
     statCardBlue: {
         backgroundColor: '#eff6ff',
     },
@@ -638,6 +657,13 @@ const styles = StyleSheet.create({
     },
     statIconContainer: {
         backgroundColor: '#d1fae5',
+        alignSelf: 'flex-start',
+        borderRadius: 20,
+        padding: 8,
+        marginBottom: 8,
+    },
+    statIconContainerWallet: {
+        backgroundColor: '#CFAEC7',
         alignSelf: 'flex-start',
         borderRadius: 20,
         padding: 8,
@@ -665,6 +691,11 @@ const styles = StyleSheet.create({
     },
     statValueGreen: {
         color: '#065f46',
+        fontSize: 20,
+        fontFamily: 'PoppinsSemiBold',
+    },
+    statValueWallet: {
+        color: '#BC8EB0',
         fontSize: 20,
         fontFamily: 'PoppinsSemiBold',
     },

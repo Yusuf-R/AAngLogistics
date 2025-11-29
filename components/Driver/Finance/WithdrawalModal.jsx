@@ -90,58 +90,59 @@ function WithdrawalModal({
         const withdrawalAmount = parseFloat(amount);
 
         if (!amount || isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
-            Alert.alert('Invalid Amount', 'Please enter a valid amount');
+            setStatusModal({
+                visible: true,
+                status: 'error',
+                message: 'Please enter a valid amount'
+            });
             return;
         }
 
         if (withdrawalAmount < MIN_WITHDRAWAL) {
-            Alert.alert(
-                'Minimum Amount Required',
-                `Minimum withdrawal is ${formatCurrency(MIN_WITHDRAWAL)}`
-            );
+            setStatusModal({
+                visible: true,
+                status: 'error',
+                message: `Minimum withdrawal is ${formatCurrency(MIN_WITHDRAWAL)}`
+            });
             return;
         }
 
         if (withdrawalAmount > availableBalance) {
-            Alert.alert(
-                'Insufficient Balance',
-                'Withdrawal amount exceeds your available balance'
-            );
+            setStatusModal({
+                visible: true,
+                status: 'error',
+                message: 'Insufficient balance!'
+            });
             return;
         }
 
         if (!primaryBankAccount) {
-            Alert.alert(
-                'Bank Account Required',
-                'Please add and verify your bank account before making a withdrawal',
-                [
-                    {text: 'Cancel', style: 'cancel'},
-                    {
-                        text: 'Add Bank', onPress: () => {
-                            onClose();
-                            // Navigate to bank management
-                        }
-                    }
-                ]
-            );
+            setStatusModal({
+                visible: true,
+                status: 'error',
+                message: 'Info: Verify your bank account',
+                showAction: true,
+                actionText: 'Add Bank',
+                onAction: () => {
+                    onClose();
+                }
+            });
             return;
         }
 
         // Check if auth pin is enabled and not locked
         if (!authPinEnabled) {
-            Alert.alert(
-                'Security PIN Required',
-                'Please set up your 6-digit Authorization PIN in the Security section to enable withdrawals.',
-                [
-                    {text: 'Cancel', style: 'cancel'},
-                    {
-                        text: 'Go to Security', onPress: () => {
-                            onClose();
-                            // Navigate to security settings
-                        }
-                    }
-                ]
-            );
+            setStatusModal({
+                visible: true,
+                status: 'error',
+                message: 'Info: Authorization PIN required.',
+                showAction: true,
+                actionText: 'Go to Security',
+                onAction: () => {
+                    onClose();
+                    // Navigate to security settings
+                }
+            });
             return;
         }
 
@@ -150,19 +151,16 @@ function WithdrawalModal({
             const now = new Date();
             const minutesLeft = Math.ceil((lockedUntil - now) / (1000 * 60));
 
-            Alert.alert(
-                'PIN Locked',
-                `Too many failed attempts. Please try again in ${minutesLeft} minutes or reset your PIN.`,
-                [
-                    {
-                        text: 'Reset PIN', onPress: () => {
-                            onClose();
-                            // Navigate to PIN reset
-                        }
-                    },
-                    {text: 'OK', style: 'default'}
-                ]
-            );
+            setStatusModal({
+                visible: true,
+                status: 'error',
+                message: `PIN Error: Try again in ${minutesLeft} or reset your PIN.`,
+                showAction: true,
+                actionText: 'Reset PIN',
+                onAction: () => {
+                    onClose();
+                }
+            });
             return;
         }
 
@@ -267,7 +265,9 @@ function WithdrawalModal({
                 setStatusModal({
                     visible: true,
                     status: 'success',
-                    message: `Withdrawal initiated successfully!\n\nYou'll receive ${formatCurrency(netAmount)} within 24 hours.`
+                    message: `Withdrawal initiated successfully!\n\nYou'll receive ${formatCurrency(netAmount)} within 24 hours.`,
+                    autoClose: true,
+                    autoCloseDelay: 1500
                 });
             } else {
                 throw new Error(result.message || 'Withdrawal failed');
@@ -632,8 +632,13 @@ function WithdrawalModal({
             setStep(1);
             setPinInputs(Array(6).fill(''));
             setStatusModal({ visible: false, status: 'loading', message: '' });
+            // Close modal immediately but delay the success callback
             onClose();
-            onSuccess();
+
+            // Give websocket 1 second to initialize before triggering refresh
+            setTimeout(() => {
+                onSuccess();
+            }, 1000);
         }
     };
 
@@ -642,6 +647,11 @@ function WithdrawalModal({
     };
 
     const handleCloseError = () => {
+        // if step one, then just close
+        if (step === 1) {
+            handleRetry();
+            return
+        }
         setStatusModal({ visible: false, status: 'loading', message: '' });
         setStep(2);
         setPinInputs(Array(6).fill(''));
@@ -738,6 +748,12 @@ function WithdrawalModal({
                 onRetry={handleRetry}
                 onClose={handleCloseError}
                 showRetryOnError={true}
+                //
+                autoClose={statusModal.autoClose}
+                autoCloseDelay={statusModal.autoCloseDelay}
+                showAction={statusModal.showAction}
+                actionText={statusModal.actionText}
+                onAction={statusModal.onAction}
             />
         </>
     );
