@@ -1379,7 +1379,7 @@ class DriverUtils {
 
     }
 
-    static async makeBankPrimary(bankId) {
+    static async setPrimaryBankAccount(bankId) {
         try {
             const response = await axiosPrivate({
                 method: 'PATCH',

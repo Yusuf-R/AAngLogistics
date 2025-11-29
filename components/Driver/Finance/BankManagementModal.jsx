@@ -40,6 +40,7 @@ function BankManagementModal({
     const [loading, setLoading] = useState(false);
     const [customAlert, setCustomAlert] = useState({ visible: false, type: '', message: '' });
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [settingPrimaryId, setSettingPrimaryId] = useState(null); // Add this state
 
     // Bank data
     const [filteredBanks, setFilteredBanks] = useState(NIGERIAN_BANKS);
@@ -331,9 +332,33 @@ function BankManagementModal({
                                         </TouchableOpacity>
                                     </View>
                                 </View>
-                                <View style={styles.verifiedBadge}>
-                                    <CheckCircle2 size={16} color="#10b981" />
-                                    <Text style={styles.verifiedBadgeText}>Verified Account</Text>
+
+                                {/* Add this section for Make Primary button */}
+                                <View style={styles.cardFooter}>
+                                    <View style={styles.verifiedBadge}>
+                                        <CheckCircle2 size={16} color="#10b981" />
+                                        <Text style={styles.verifiedBadgeText}>Verified Account</Text>
+                                    </View>
+
+                                    {/* Make Primary Button - Show only for non-primary accounts */}
+                                    {!account.isPrimary && (
+                                        <TouchableOpacity
+                                            onPress={() => handleSetPrimaryAccount(account._id)}
+                                            disabled={loading && settingPrimaryId === account._id}
+                                            style={[
+                                                styles.makePrimaryButton,
+                                                (loading && settingPrimaryId === account._id) && styles.makePrimaryButtonDisabled
+                                            ]}
+                                        >
+                                            {loading && settingPrimaryId === account._id ? (
+                                                <ActivityIndicator size="small" color="#ffffff" />
+                                            ) : (
+                                                <Text style={styles.makePrimaryButtonText}>
+                                                    Make Primary
+                                                </Text>
+                                            )}
+                                        </TouchableOpacity>
+                                    )}
                                 </View>
                             </View>
                         ))}
@@ -346,7 +371,7 @@ function BankManagementModal({
                             <Text style={styles.addNewButtonText}>Add Another Account</Text>
                         </TouchableOpacity>
                     </View>
-                ) : (
+                )  : (
                     <View style={styles.emptyBankState}>
                         <View style={styles.emptyBankIcon}>
                             <CreditCard size={32} color="#6b7280" />
@@ -506,6 +531,32 @@ function BankManagementModal({
             </View>
         </View>
     );
+
+    const handleSetPrimaryAccount = async (bankId) => {
+        try {
+            setSettingPrimaryId(bankId);
+            setLoading(true);
+
+            const result = await DriverUtils.setPrimaryBankAccount({bankId});
+
+            if (result.success) {
+                showAlert('success', 'Primary bank account updated successfully!');
+                await SessionManager.updateUser(result.userData);
+                onSuccess();
+                setTimeout(() => {
+                    hideAlert();
+                }, 2000);
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            console.log('Set primary bank error:', error);
+            showAlert('error', error.message || 'Failed to set primary bank account');
+        } finally {
+            setLoading(false);
+            setSettingPrimaryId(null);
+        }
+    };
 
     return (
         <Modal
@@ -709,7 +760,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         alignSelf: 'flex-start',
         gap: 6,
-        marginTop: 8,
+        // marginTop: 8,
     },
     verifiedBadgeText: {
         fontSize: 12,
@@ -1212,6 +1263,38 @@ const styles = StyleSheet.create({
     confirmDeleteText: {
         color: '#ffffff',
         fontFamily: 'PoppinsSemiBold',
+    },
+
+
+
+    cardFooter: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#d1fae5',
+    },
+
+    makePrimaryButton: {
+        backgroundColor: '#3b82f6',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
+        minWidth: 100,
+    },
+
+    makePrimaryButtonDisabled: {
+        backgroundColor: '#9ca3af',
+        opacity: 0.6,
+    },
+
+    makePrimaryButtonText: {
+        color: '#ffffff',
+        fontSize: 12,
+        fontFamily: 'PoppinsSemiBold',
+        textAlign: 'center',
     },
 });
 
