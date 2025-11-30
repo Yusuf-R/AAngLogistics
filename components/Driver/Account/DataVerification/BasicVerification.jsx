@@ -12,7 +12,6 @@ import {
     FlatList
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 
@@ -33,6 +32,7 @@ function BasicVerification({ formData, updateFormData, userData }) {
     const [showLGAPicker, setShowLGAPicker] = useState(false);
     const [stateSearchQuery, setStateSearchQuery] = useState('');
     const [lgaSearchQuery, setLgaSearchQuery] = useState('');
+    const [showIdTypePicker, setShowIdTypePicker] = useState(false);
 
     const getIdValidation = (idType) => {
         const validations = {
@@ -133,22 +133,23 @@ function BasicVerification({ formData, updateFormData, userData }) {
                     Choose one form of ID
                 </Text>
 
-                <View style={styles.pickerContainer}>
-                    <Picker
-                        selectedValue={formData.identificationType}
-                        onValueChange={handleIdentificationTypeChange}
-                        style={styles.picker}
-                    >
-                        <Picker.Item label="Select ID Type" value={null} />
-                        <Picker.Item label="Driver's License" value="drivers_license" />
-                        <Picker.Item label="Nigerian Passport" value="nigerian_passport" />
-                        <Picker.Item label="NIN Card" value="nin_card" />
-                        <Picker.Item label="NIN Slip" value="nin_slip" />
-                    </Picker>
-                </View>
+                {/* Identification Type Selector */}
+                <Pressable
+                    style={styles.locationSelector}
+                    onPress={() => setShowIdTypePicker(true)}
+                >
+                    <Text style={[styles.locationSelectorText, !formData.identificationType && styles.placeholder]}>
+                        {formData.identificationType
+                            ? formData.identificationType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
+                            : 'Select ID Type'
+                        }
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#6b7280" />
+                </Pressable>
 
                 {formData.identificationType && (
                     <>
+                        <Text style={styles.expiryLabel}> License Number</Text>
                         <View style={styles.inputWithHint}>
                             <TextInput
                                 style={styles.input}
@@ -165,6 +166,7 @@ function BasicVerification({ formData, updateFormData, userData }) {
 
                         {needsExpiryDate() && (
                             <>
+                                <Text style={styles.expiryLabel}> Expiry date</Text>
                                 <Pressable
                                     style={styles.dateInputContainer}
                                     onPress={() => setShowDatePicker(true)}
@@ -313,7 +315,7 @@ function BasicVerification({ formData, updateFormData, userData }) {
                     Complete all basic information before proceeding to vehicle-specific documents
                 </Text>
             </View>
-
+            {/* State Modal */}
             <Modal
                 animationType="slide"
                 transparent={true}
@@ -442,6 +444,54 @@ function BasicVerification({ formData, updateFormData, userData }) {
                     </View>
                 </View>
             </Modal>
+
+            {/* ID modal */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={showIdTypePicker}
+                onRequestClose={() => setShowIdTypePicker(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <Pressable
+                        style={styles.modalBackdrop}
+                        onPress={() => setShowIdTypePicker(false)}
+                    />
+                    <View style={styles.pickerModalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select ID Type</Text>
+                            <Pressable onPress={() => setShowIdTypePicker(false)}>
+                                <Ionicons name="close" size={24} color="#374151" />
+                            </Pressable>
+                        </View>
+
+                        <FlatList
+                            data={[
+                                { label: "Driver's License", value: "drivers_license" },
+                                { label: "Nigerian Passport", value: "nigerian_passport" },
+                                { label: "NIN Card", value: "nin_card" },
+                                { label: "NIN Slip", value: "nin_slip" }
+                            ]}
+                            keyExtractor={(item) => item.value}
+                            renderItem={({ item }) => (
+                                <Pressable
+                                    style={styles.locationItem}
+                                    onPress={() => {
+                                        handleIdentificationTypeChange(item.value);
+                                        setShowIdTypePicker(false);
+                                    }}
+                                >
+                                    <Text style={styles.locationItemText}>{item.label}</Text>
+                                    {formData.identificationType === item.value && (
+                                        <Ionicons name="checkmark" size={20} color="#10b981" />
+                                    )}
+                                </Pressable>
+                            )}
+                            ItemSeparatorComponent={() => <View style={styles.separator} />}
+                        />
+                    </View>
+                </View>
+            </Modal>
         </ScrollView>
     );
 }
@@ -552,6 +602,12 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsSemiBold',
         marginTop: -8,
         marginLeft: 4
+    },
+    expiryLabel: {
+        fontSize: 16,
+        color: '#6b7280',
+        fontFamily: 'PoppinsSemiBold',
+        marginTop: 4,
     },
     locationSelector: {
         flexDirection: 'row',

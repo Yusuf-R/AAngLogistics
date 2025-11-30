@@ -37,13 +37,13 @@ function IntroScreen({ onStart, verificationStatus }) {
 
     return (
         <View style={styles.container}>
-            {statusInfo && (
-                <View style={[styles.statusCard, { borderColor: statusInfo.color }]}>
-                    <Ionicons name={statusInfo.icon} size={48} color={statusInfo.color} />
-                    <Text style={styles.statusTitle}>{statusInfo.title}</Text>
-                    <Text style={styles.statusMessage}>{statusInfo.message}</Text>
-                </View>
-            )}
+            {/*{statusInfo && (*/}
+            {/*    <View style={[styles.statusCard, { borderColor: statusInfo.color }]}>*/}
+            {/*        <Ionicons name={statusInfo.icon} size={48} color={statusInfo.color} />*/}
+            {/*        <Text style={styles.statusTitle}>{statusInfo.title}</Text>*/}
+            {/*        <Text style={styles.statusMessage}>{statusInfo.message}</Text>*/}
+            {/*    </View>*/}
+            {/*)}*/}
 
             <View style={styles.welcomeCard}>
                 <LinearGradient

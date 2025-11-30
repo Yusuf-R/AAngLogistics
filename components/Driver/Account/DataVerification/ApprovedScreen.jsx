@@ -6,6 +6,7 @@ import {
     ScrollView,
     Pressable,
     StyleSheet,
+    Alert,
     Animated, RefreshControl
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,7 @@ function ApprovedScreen({ verification, userData, onRefresh }) {
     const router = useRouter();
     const [refreshing, setRefreshing] = useState(false);
     const scaleAnim = React.useRef(new Animated.Value(0)).current;
+    const [initiatingUpdate, setInitiatingUpdate] = useState(false);
 
     React.useEffect(() => {
         Animated.spring(scaleAnim, {
@@ -46,7 +48,39 @@ function ApprovedScreen({ verification, userData, onRefresh }) {
         setRefreshing(false);
     };
 
+    const hasPendingUpdate = verification?.pendingUpdate?.exists &&
+        verification?.pendingUpdate?.status === 'pending_review';
+
+
     const verificationDate = verification?.verificationDate || verification?.lastReviewDate;
+
+    const handleInitiateUpdate = () => {
+        if (hasPendingUpdate) {
+            Alert.alert(
+                'Pending Update',
+                'You already have an update request under review. Please wait for admin approval.',
+                [{ text: 'OK' }]
+            );
+            return;
+        }
+
+        Alert.alert(
+            'Update Verification',
+            'Do you want to update your verification details? Your current verification will remain active while the update is being reviewed.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Continue',
+                    onPress: () => {
+                        router.push({
+                            pathname: '/driver/account/verification',
+                            params: { mode: 'update' }
+                        });
+                    }
+                }
+            ]
+        );
+    };
 
     return (
         <View style={styles.container}>
@@ -68,6 +102,23 @@ function ApprovedScreen({ verification, userData, onRefresh }) {
                     />
                 }
             >
+                {hasPendingUpdate && (
+                    <View style={styles.pendingBanner}>
+                        <View style={styles.pendingIconContainer}>
+                            <Ionicons name="time-outline" size={28} color="#f59e0b" />
+                        </View>
+                        <View style={styles.pendingContent}>
+                            <Text style={styles.pendingTitle}>Update Under Review</Text>
+                            <Text style={styles.pendingText}>
+                                Your verification update is being reviewed. You can continue
+                                working with your current verification.
+                            </Text>
+                            <Text style={styles.pendingDate}>
+                                Submitted: {formatDate(verification.pendingUpdate.submittedAt)}
+                            </Text>
+                        </View>
+                    </View>
+                )}
                 {/* Success Animation */}
                 <Animated.View
                     style={[
@@ -95,10 +146,32 @@ function ApprovedScreen({ verification, userData, onRefresh }) {
                     </LinearGradient>
                 </Animated.View>
 
+                {/* Update Verification Button */}
+                {!hasPendingUpdate && (
+                    <Pressable
+                        style={styles.updateCard}
+                        onPress={handleInitiateUpdate}
+                        disabled={initiatingUpdate}
+                    >
+                        <View style={styles.updateCardContent}>
+                            <View style={styles.updateIconContainer}>
+                                <Ionicons name="refresh-circle" size={32} color="#3b82f6" />
+                            </View>
+                            <View style={styles.updateTextContainer}>
+                                <Text style={styles.updateTitle}>Update Verification</Text>
+                                <Text style={styles.updateDescription}>
+                                    Change vehicle type, location, or renew documents
+                                </Text>
+                            </View>
+                            <Ionicons name="chevron-forward" size={24} color="#9ca3af" />
+                        </View>
+                    </Pressable>
+                )}
+
                 {/* Welcome Message */}
                 <View style={styles.welcomeCard}>
                     <Text style={styles.welcomeTitle}>
-                        Welcome to Aang Logistics! 🎉
+                        Welcome to AAng Logistics! 🎉
                     </Text>
                     <Text style={styles.welcomeText}>
                         You're now officially verified and ready to start accepting delivery
@@ -305,7 +378,7 @@ const styles = StyleSheet.create({
     },
     successTitle: {
         fontSize: 28,
-        fontWeight: 'bold',
+        fontFamily: 'PoppinsSemiBold',
         color: '#fff',
         marginBottom: 8,
     },
@@ -313,6 +386,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: 'rgba(255, 255, 255, 0.9)',
         textAlign: 'center',
+        fontFamily: 'PoppinsSemiBold',
         marginBottom: 16,
     },
     approvedBadge: {
@@ -327,7 +401,7 @@ const styles = StyleSheet.create({
     approvedBadgeText: {
         color: '#fff',
         fontSize: 14,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
     },
     welcomeCard: {
         backgroundColor: '#fff',
@@ -339,14 +413,16 @@ const styles = StyleSheet.create({
     },
     welcomeTitle: {
         fontSize: 20,
-        fontWeight: '700',
+        fontFamily: 'PoppinsSemiBold',
         color: '#111827',
-        marginBottom: 8,
+        marginBottom: 4,
     },
     welcomeText: {
         fontSize: 14,
         color: '#6b7280',
+        fontFamily: 'PoppinsMedium',
         lineHeight: 20,
+        textAlign: 'justify'
     },
     card: {
         backgroundColor: '#fff',
@@ -367,6 +443,7 @@ const styles = StyleSheet.create({
     },
     cardTitle: {
         fontSize: 18,
+        fontFamily: 'PoppinsMedium',
         fontWeight: '600',
         color: '#111827',
     },
@@ -380,11 +457,12 @@ const styles = StyleSheet.create({
     },
     detailLabel: {
         fontSize: 14,
+        fontFamily: 'PoppinsMedium',
         color: '#6b7280',
     },
     detailValue: {
         fontSize: 14,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#111827',
         textTransform: 'capitalize',
     },
@@ -405,7 +483,7 @@ const styles = StyleSheet.create({
     },
     statusText: {
         fontSize: 12,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#059669',
     },
     scoreValue: {
@@ -432,12 +510,13 @@ const styles = StyleSheet.create({
     },
     featureTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#111827',
         marginBottom: 4,
     },
     featureDescription: {
         fontSize: 13,
+        fontFamily: 'PoppinsRegular',
         color: '#6b7280',
         lineHeight: 18,
     },
@@ -450,6 +529,7 @@ const styles = StyleSheet.create({
     tipText: {
         flex: 1,
         fontSize: 13,
+        fontFamily: 'PoppinsRegular',
         color: '#4b5563',
         lineHeight: 18,
     },
@@ -468,11 +548,13 @@ const styles = StyleSheet.create({
     supportTitle: {
         fontSize: 14,
         fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#111827',
         marginBottom: 4,
     },
     supportText: {
         fontSize: 13,
+        fontFamily: 'PoppinsMedium',
         color: '#6b7280',
     },
     bottomBar: {
@@ -504,7 +586,87 @@ const styles = StyleSheet.create({
     startButtonText: {
         fontSize: 16,
         fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#fff',
+    },
+
+
+
+    pendingBanner: {
+        backgroundColor: '#fffbeb',
+        borderLeftWidth: 4,
+        borderLeftColor: '#f59e0b',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        flexDirection: 'row',
+        gap: 12,
+    },
+    pendingIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#fef3c7',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pendingContent: {
+        flex: 1,
+    },
+    pendingTitle: {
+        fontSize: 16,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#92400e',
+        marginBottom: 4,
+    },
+    pendingText: {
+        fontSize: 13,
+        color: '#78350f',
+        fontFamily: 'PoppinsRegular',
+        lineHeight: 18,
+        marginBottom: 8,
+    },
+    pendingDate: {
+        fontSize: 12,
+        color: '#a16207',
+        fontStyle: 'italic',
+    },
+    updateCard: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+        overflow: 'hidden',
+    },
+    updateCardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        gap: 12,
+    },
+    updateIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#dbeafe',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    updateTextContainer: {
+        flex: 1,
+    },
+    updateTitle: {
+        fontSize: 16,
+        fontFamily: 'PoppinsMedium',
+        color: '#111827',
+        marginBottom: 4,
+    },
+    updateDescription: {
+        fontSize: 13,
+        fontFamily: 'PoppinsMedium',
+        color: '#6b7280',
+        lineHeight: 18,
     },
 });
 

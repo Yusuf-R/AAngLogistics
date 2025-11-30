@@ -180,6 +180,7 @@ function BankAccountManager({ accounts, onUpdate }) {
                         </View>
 
                         {/* Bank Selection with Search */}
+                        <Text style={styles.bankInfoLabel}> Bank Name</Text>
                         <Pressable
                             style={styles.bankSelector}
                             onPress={() => setShowBankPicker(true)}
@@ -189,7 +190,7 @@ function BankAccountManager({ accounts, onUpdate }) {
                             </Text>
                             <Ionicons name="chevron-down" size={20} color="#6b7280" />
                         </Pressable>
-
+                        <Text style={styles.bankInfoLabel}> Account No (10 digits)</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Account Number (10 digits)"
@@ -199,6 +200,7 @@ function BankAccountManager({ accounts, onUpdate }) {
                             onChangeText={(text) => setFormData({ ...formData, accountNumber: text })}
                         />
 
+                        <Text style={styles.bankInfoLabel}> Account Name</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Account Holder Name (Optional)"
@@ -332,17 +334,20 @@ const styles = StyleSheet.create({
     accountName: {
         fontSize: 16,
         fontWeight: '600',
+        fontFamily: 'PoppinsBold',
         color: '#111827',
         marginBottom: 4
     },
     accountNumber: {
-        fontSize: 14,
-        color: '#6b7280',
+        fontSize: 15,
+        fontFamily: 'PoppinsBold',
+        color: 'blue',
         marginBottom: 2
     },
     bankName: {
         fontSize: 13,
-        color: '#9ca3af'
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827'
     },
     primaryBadge: {
         backgroundColor: '#10b981',
@@ -354,6 +359,7 @@ const styles = StyleSheet.create({
     primaryText: {
         fontSize: 12,
         fontWeight: '600',
+        fontFamily: 'PoppinsBold',
         color: '#fff'
     },
     accountActions: {
@@ -376,11 +382,13 @@ const styles = StyleSheet.create({
     },
     actionBtnText: {
         fontSize: 13,
+        fontFamily: 'PoppinsMedium',
         fontWeight: '500',
         color: '#6b7280'
     },
     deleteText: {
-        color: '#ef4444'
+        color: '#ef4444',
+        fontFamily: 'PoppinsBold',
     },
     addButton: {
         borderRadius: 12,
@@ -396,6 +404,7 @@ const styles = StyleSheet.create({
     addButtonText: {
         fontSize: 16,
         fontWeight: '600',
+        fontFamily: 'PoppinsBold',
         color: '#fff'
     },
     modalContainer: {
@@ -527,7 +536,15 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#fff'
-    }
+    },
+
+    bankInfoLabel: {
+        fontSize: 16,
+        fontFamily: 'PoppinsBold',
+        marginTop: 4,
+        // fontWeight: '700',
+        color: '#111827'
+    },
 });
 
 export default BankAccountManager;

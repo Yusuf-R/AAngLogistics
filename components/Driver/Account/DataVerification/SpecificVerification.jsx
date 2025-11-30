@@ -1,10 +1,15 @@
 // components/Driver/Account/Verification/SpecificVerification.js
-import React from 'react';
-import {View, Text, StyleSheet, ScrollView, TextInput, Switch} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View, Text, StyleSheet, ScrollView, TextInput, Switch, Pressable} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import SingleImageUploader from './SingleImageUploader';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 function SpecificVerification({formData, updateFormData, vehicleType, userData}) {
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [currentDateField, setCurrentDateField] = useState(null);
+    const [tempDate, setTempDate] = useState(new Date());
+
     const updateSpecificDocs = (updates) => {
         updateFormData({
             specificDocs: {...formData.specificDocs, ...updates}
@@ -25,37 +30,52 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
 
             {/* Plate Number - Not for bicycle */}
             {vehicleType !== 'bicycle' && (
+                <>
+                    <Text style={styles.inputLabel}>Plate Number *</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Plate Number: LAG123AB"
+                        placeholderTextColor="#9ca3af"
+                        value={formData.specificDocs.plateNumber}
+                        onChangeText={(text) => updateSpecificDocs({plateNumber: text.toUpperCase()})}
+                        autoCapitalize="characters"
+                    />
+                </>
+            )}
+            <View>
+                <Text style={styles.inputLabel}>Model *</Text>
                 <TextInput
                     style={styles.input}
-                    placeholder="Plate Number"
-                    value={formData.specificDocs.plateNumber}
-                    onChangeText={(text) => updateSpecificDocs({plateNumber: text.toUpperCase()})}
-                    autoCapitalize="characters"
+                    placeholder="Model (e.g., BMX, Honda, Toyota, BMW)"
+                    placeholderTextColor="#9ca3af"
+                    value={formData.specificDocs.model}
+                    onChangeText={(text) => updateSpecificDocs({model: text})}
                 />
-            )}
+            </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Model (e.g., Honda CB, Toyota Hiace)"
-                value={formData.specificDocs.model}
-                onChangeText={(text) => updateSpecificDocs({model: text})}
-            />
+            <View>
+                <Text style={styles.inputLabel}>Year *</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Year"
+                    value={formData.specificDocs.year}
+                    placeholderTextColor="#9ca3af"
+                    onChangeText={(text) => updateSpecificDocs({year: text})}
+                    keyboardType="numeric"
+                    maxLength={4}
+                />
+            </View>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Year"
-                value={formData.specificDocs.year}
-                onChangeText={(text) => updateSpecificDocs({year: text})}
-                keyboardType="numeric"
-                maxLength={4}
-            />
-
-            <TextInput
-                style={styles.input}
-                placeholder="Color"
-                value={formData.specificDocs.color}
-                onChangeText={(text) => updateSpecificDocs({color: text})}
-            />
+            <View>
+                <Text style={styles.inputLabel}>Color *</Text>
+                <TextInput
+                    style={styles.input}
+                    placeholder="Color"
+                    placeholderTextColor="#9ca3af"
+                    value={formData.specificDocs.color}
+                    onChangeText={(text) => updateSpecificDocs({color: text})}
+                />
+            </View>
 
             {renderCapacityInputs()}
         </View>
@@ -65,32 +85,41 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
         switch (vehicleType) {
             case 'bicycle':
                 return (
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Weight Capacity (kg)"
-                        value={formData.specificDocs.capacity?.weight?.toString()}
-                        onChangeText={(text) => updateSpecificDocs({
-                            capacity: {...formData.specificDocs.capacity, weight: parseInt(text) || 0}
-                        })}
-                        keyboardType="numeric"
-                    />
-                );
-
-            case 'motorcycle':
-                return (
                     <>
+                        <Text style={styles.inputLabel}>Weight Capacity (kg) *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Weight Capacity (kg)"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.capacity?.weight?.toString()}
                             onChangeText={(text) => updateSpecificDocs({
                                 capacity: {...formData.specificDocs.capacity, weight: parseInt(text) || 0}
                             })}
                             keyboardType="numeric"
                         />
+                    </>
+                );
+
+            case 'motorcycle':
+                return (
+                    <>
+                        <Text style={styles.inputLabel}>Weight Capacity (kg) *</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Weight Capacity (kg)"
+                            placeholderTextColor="#9ca3af"
+                            value={formData.specificDocs.capacity?.weight?.toString()}
+                            onChangeText={(text) => updateSpecificDocs({
+                                capacity: {...formData.specificDocs.capacity, weight: parseInt(text) || 0}
+                            })}
+                            keyboardType="numeric"
+                        />
+
+                        <Text style={styles.inputLabel}>Passenger Capacity *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Passenger Capacity"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.capacity?.passengers?.toString()}
                             onChangeText={(text) => updateSpecificDocs({
                                 capacity: {...formData.specificDocs.capacity, passengers: parseInt(text) || 0}
@@ -103,18 +132,23 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
             case 'tricycle':
                 return (
                     <>
+                        <Text style={styles.inputLabel}>Weight Capacity (kg) *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Weight Capacity (kg)"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.capacity?.weight?.toString()}
                             onChangeText={(text) => updateSpecificDocs({
                                 capacity: {...formData.specificDocs.capacity, weight: parseInt(text) || 0}
                             })}
                             keyboardType="numeric"
                         />
+
+                        <Text style={styles.inputLabel}>Passenger Capacity *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Passenger Capacity"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.capacity?.passengers?.toString()}
                             onChangeText={(text) => updateSpecificDocs({
                                 capacity: {...formData.specificDocs.capacity, passengers: parseInt(text) || 0}
@@ -129,17 +163,22 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
             case 'truck':
                 return (
                     <>
+                        <Text style={styles.inputLabel}>Weight Capacity (kg) *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Weight Capacity (kg)"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.capacity?.weight?.toString()}
                             onChangeText={(text) => updateSpecificDocs({
                                 capacity: {...formData.specificDocs.capacity, weight: parseInt(text) || 0}
                             })}
                             keyboardType="numeric"
                         />
+
+                        <Text style={styles.inputLabel}>Volume Capacity (cubic meters) *</Text>
                         <TextInput
                             style={styles.input}
+                            placeholderTextColor="#9ca3af"
                             placeholder="Volume Capacity (cubic meters)"
                             value={formData.specificDocs.capacity?.volume?.toString()}
                             onChangeText={(text) => updateSpecificDocs({
@@ -147,9 +186,12 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                             })}
                             keyboardType="decimal-pad"
                         />
+
+                        <Text style={styles.inputLabel}>Passenger Capacity *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Passenger Capacity"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.capacity?.passengers?.toString()}
                             onChangeText={(text) => updateSpecificDocs({
                                 capacity: {...formData.specificDocs.capacity, passengers: parseInt(text) || 0}
@@ -369,22 +411,22 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     <Text style={styles.cardTitle}>Driver's License</Text>
                 </View>
 
+                <Text style={styles.inputLabel}>License Number *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="License Number"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.driversLicense?.number}
                     onChangeText={(text) => updateSpecificDocs({
                         driversLicense: {...formData.specificDocs.driversLicense, number: text}
                     })}
                 />
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Expiry Date (DD/MM/YYYY)"
+                <DatePickerField
+                    label="Expiry Date"
                     value={formData.specificDocs.driversLicense?.expiryDate}
-                    onChangeText={(text) => updateSpecificDocs({
-                        driversLicense: {...formData.specificDocs.driversLicense, expiryDate: text}
-                    })}
+                    fieldPath="driversLicense.expiryDate"
+                    required={true}
                 />
 
                 <SingleImageUploader
@@ -415,9 +457,11 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                         </View>
                         <Text style={styles.cardDescription}>Required for Lagos drivers</Text>
 
+                        <Text style={styles.inputLabel}>Permit Number *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Permit Number"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.hackneyPermit?.number}
                             onChangeText={(text) => updateSpecificDocs({
                                 hackneyPermit: {...formData.specificDocs.hackneyPermit, number: text}
@@ -449,9 +493,11 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                         </View>
                         <Text style={styles.cardDescription}>Required for Lagos drivers</Text>
 
+                        <Text style={styles.inputLabel}>LASDRI Number *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="LASDRI Number"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.lasdriCard?.number}
                             onChangeText={(text) => updateSpecificDocs({
                                 lasdriCard: {...formData.specificDocs.lasdriCard, number: text}
@@ -550,18 +596,22 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     Obtained from Lagos State MVAA office
                 </Text>
 
+                <Text style={styles.inputLabel}>Card Number *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Card Number"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.ridersPermit?.cardNumber}
                     onChangeText={(text) => updateSpecificDocs({
                         ridersPermit: {...formData.specificDocs.ridersPermit, cardNumber: text}
                     })}
                 />
 
+                <Text style={styles.inputLabel}>Issuing Office *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Issuing Office"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.ridersPermit?.issuingOffice}
                     onChangeText={(text) => updateSpecificDocs({
                         ridersPermit: {...formData.specificDocs.ridersPermit, issuingOffice: text}
@@ -595,18 +645,22 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     FRSC designated - Class A for motorcycles
                 </Text>
 
+                <Text style={styles.inputLabel}>License Number *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="License Number"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.commercialLicense?.licenseNumber}
                     onChangeText={(text) => updateSpecificDocs({
                         commercialLicense: {...formData.specificDocs.commercialLicense, licenseNumber: text}
                     })}
                 />
 
+                <Text style={styles.inputLabel}>Class (e.g., A) *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Class (e.g., A)"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.commercialLicense?.class}
                     onChangeText={(text) => updateSpecificDocs({
                         commercialLicense: {...formData.specificDocs.commercialLicense, class: text}
@@ -695,22 +749,22 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     <Text style={styles.cardTitle}>Road Worthiness</Text>
                 </View>
 
+                <Text style={styles.inputLabel}>Certificate Number *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Certificate Number"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.roadWorthiness?.certificateNumber}
                     onChangeText={(text) => updateSpecificDocs({
                         roadWorthiness: {...formData.specificDocs.roadWorthiness, certificateNumber: text}
                     })}
                 />
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Expiry Date (DD/MM/YYYY)"
+                <DatePickerField
+                    label="Expiry Date"
                     value={formData.specificDocs.roadWorthiness?.expiryDate}
-                    onChangeText={(text) => updateSpecificDocs({
-                        roadWorthiness: {...formData.specificDocs.roadWorthiness, expiryDate: text}
-                    })}
+                    fieldPath="roadWorthiness.expiryDate"
+                    required={true}
                 />
 
                 <SingleImageUploader
@@ -740,22 +794,22 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                         </View>
                         <Text style={styles.cardDescription}>Required for Lagos drivers</Text>
 
+                        <Text style={styles.inputLabel}>Hackney Permit Number *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="Permit Number"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.hackneyPermit?.number}
                             onChangeText={(text) => updateSpecificDocs({
                                 hackneyPermit: {...formData.specificDocs.hackneyPermit, number: text}
                             })}
                         />
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Expiry Date (DD/MM/YYYY)"
+                        <DatePickerField
+                            label="Expiry Date"
                             value={formData.specificDocs.hackneyPermit?.expiryDate}
-                            onChangeText={(text) => updateSpecificDocs({
-                                hackneyPermit: {...formData.specificDocs.hackneyPermit, expiryDate: text}
-                            })}
+                            fieldPath="hackneyPermit.expiryDate"
+                            required={true}
                         />
 
                         <SingleImageUploader
@@ -783,22 +837,22 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                         </View>
                         <Text style={styles.cardDescription}>Required for Lagos drivers</Text>
 
+                        <Text style={styles.inputLabel}>LASDRI Number *</Text>
                         <TextInput
                             style={styles.input}
                             placeholder="LASDRI Number"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.lasdriCard?.number}
                             onChangeText={(text) => updateSpecificDocs({
                                 lasdriCard: {...formData.specificDocs.lasdriCard, number: text}
                             })}
                         />
 
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Expiry Date (DD/MM/YYYY)"
+                        <DatePickerField
+                            label="Expiry Date"
                             value={formData.specificDocs.lasdriCard?.expiryDate}
-                            onChangeText={(text) => updateSpecificDocs({
-                                lasdriCard: {...formData.specificDocs.lasdriCard, expiryDate: text}
-                            })}
+                            fieldPath="lasdriCard.expiryDate"
+                            required={true}
                         />
 
                         <SingleImageUploader
@@ -907,17 +961,21 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     <Text style={styles.cardTitle}>Valid Driver's License</Text>
                 </View>
 
+                <Text style={styles.inputLabel}>License Number *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="License Number"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.driversLicense?.number}
                     onChangeText={(text) => updateSpecificDocs({
                         driversLicense: {...formData.specificDocs.driversLicense, number: text}
                     })}
                 />
 
+                <Text style={styles.inputLabel}>License Class *</Text>
                 <TextInput
                     style={styles.input}
+                    placeholderTextColor="#9ca3af"
                     placeholder="License Class (e.g., C, D, E)"
                     value={formData.specificDocs.driversLicense?.class}
                     onChangeText={(text) => updateSpecificDocs({
@@ -925,14 +983,13 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     })}
                 />
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Expiry Date (DD/MM/YYYY)"
+                <DatePickerField
+                    label="Expiry Date"
                     value={formData.specificDocs.driversLicense?.expiryDate}
-                    onChangeText={(text) => updateSpecificDocs({
-                        driversLicense: {...formData.specificDocs.driversLicense, expiryDate: text}
-                    })}
+                    fieldPath="driversLicense.expiryDate"
+                    required={true}
                 />
+
 
                 <SingleImageUploader
                     title="License Photo"
@@ -958,8 +1015,10 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     <Text style={styles.cardTitle}>Vehicle Registration</Text>
                 </View>
 
+                <Text style={styles.inputLabel}>Registration Number *</Text>
                 <TextInput
                     style={styles.input}
+                    placeholderTextColor="#9ca3af"
                     placeholder="Registration Number"
                     value={formData.specificDocs.vehicleRegistration?.registrationNumber}
                     onChangeText={(text) => updateSpecificDocs({
@@ -967,13 +1026,11 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     })}
                 />
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Expiry Date (DD/MM/YYYY)"
+                <DatePickerField
+                    label="Expiry Date"
                     value={formData.specificDocs.vehicleRegistration?.expiryDate}
-                    onChangeText={(text) => updateSpecificDocs({
-                        vehicleRegistration: {...formData.specificDocs.vehicleRegistration, expiryDate: text}
-                    })}
+                    fieldPath="vehicleRegistration.expiryDate"
+                    required={true}
                 />
 
                 <SingleImageUploader
@@ -1000,31 +1057,33 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     <Text style={styles.cardTitle}>Vehicle Insurance</Text>
                 </View>
 
+                <Text style={styles.inputLabel}>Policy Number *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Policy Number"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.insurance?.policyNumber}
                     onChangeText={(text) => updateSpecificDocs({
                         insurance: {...formData.specificDocs.insurance, policyNumber: text}
                     })}
                 />
 
+                <Text style={styles.inputLabel}>Insurance Provider *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Insurance Provider"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.insurance?.provider}
                     onChangeText={(text) => updateSpecificDocs({
                         insurance: {...formData.specificDocs.insurance, provider: text}
                     })}
                 />
 
-                <TextInput
-                    style={styles.input}
-                    placeholder="Expiry Date (DD/MM/YYYY)"
+                <DatePickerField
+                    label="Expiry Date"
                     value={formData.specificDocs.insurance?.expiryDate}
-                    onChangeText={(text) => updateSpecificDocs({
-                        insurance: {...formData.specificDocs.insurance, expiryDate: text}
-                    })}
+                    fieldPath="insurance.expiryDate"
+                    required={true}
                 />
 
                 <SingleImageUploader
@@ -1051,9 +1110,11 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     <Text style={styles.cardTitle}>Roadworthiness Certificate</Text>
                 </View>
 
+                <Text style={styles.inputLabel}>Certificate Number *</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="Certificate Number"
+                    placeholderTextColor="#9ca3af"
                     value={formData.specificDocs.roadWorthiness?.certificateNumber}
                     onChangeText={(text) => updateSpecificDocs({
                         roadWorthiness: {...formData.specificDocs.roadWorthiness, certificateNumber: text}
@@ -1084,9 +1145,11 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                     <Text style={styles.cardTitle}>BVN Number (Optional)</Text>
                 </View>
 
+                <Text style={styles.inputLabel}>BVN Number</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="BVN Number"
+                    placeholderTextColor="#9ca3af"
                     keyboardType="numeric"
                     maxLength={11}
                     value={formData.specificDocs.bvnNumber?.number}
@@ -1108,6 +1171,7 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                         <TextInput
                             style={styles.input}
                             placeholder="Permit Number"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.hackneyPermit?.number}
                             onChangeText={(text) => updateSpecificDocs({
                                 hackneyPermit: {...formData.specificDocs.hackneyPermit, number: text}
@@ -1142,6 +1206,7 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                         <TextInput
                             style={styles.input}
                             placeholder="LASDRI Number"
+                            placeholderTextColor="#9ca3af"
                             value={formData.specificDocs.lasdriCard?.number}
                             onChangeText={(text) => updateSpecificDocs({
                                 lasdriCard: {...formData.specificDocs.lasdriCard, number: text}
@@ -1211,25 +1276,127 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
         return names[vehicleType] || 'Vehicle';
     };
 
+    const openDatePicker = (fieldPath, currentValue = null) => {
+        setCurrentDateField(fieldPath);
+
+        // Parse existing date or use current date
+        if (currentValue) {
+            try {
+                const [day, month, year] = currentValue.split('/');
+                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                setTempDate(date.isValid() ? date : new Date());
+            } catch (error) {
+                setTempDate(new Date());
+            }
+        } else {
+            setTempDate(new Date());
+        }
+
+        setShowDatePicker(true);
+    };
+
+    const handleDateSelect = (selectedDate) => {
+        if (selectedDate && currentDateField) {
+            const day = selectedDate.getDate().toString().padStart(2, '0');
+            const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+            const year = selectedDate.getFullYear();
+            const formattedDate = `${day}/${month}/${year}`;
+
+            // Update the specific field using the field path
+            updateDateField(currentDateField, formattedDate);
+        }
+        setShowDatePicker(false);
+        setCurrentDateField(null);
+    };
+
+    const updateDateField = (fieldPath, value) => {
+        const fieldParts = fieldPath.split('.');
+
+        if (fieldParts.length === 1) {
+            // Simple field (e.g., "expiryDate")
+            updateSpecificDocs({[fieldParts[0]]: value});
+        } else if (fieldParts.length === 2) {
+            // Nested field (e.g., "driversLicense.expiryDate")
+            updateSpecificDocs({
+                [fieldParts[0]]: {
+                    ...formData.specificDocs[fieldParts[0]],
+                    [fieldParts[1]]: value
+                }
+            });
+        }
+    };
+
+    const formatDateForDisplay = (dateString) => {
+        if (!dateString) return '';
+        return dateString; // Already in DD/MM/YYYY format
+    };
+
+    const DatePickerField = ({
+                                 label,
+                                 value,
+                                 fieldPath,
+                                 placeholder = "Select Date",
+                                 required = false
+                             }) => (
+        <View>
+            <Text style={styles.inputLabel}>
+                {label} {required && '*'}
+            </Text>
+            <Pressable
+                style={styles.dateInputContainer}
+                onPress={() => openDatePicker(fieldPath, value)}
+            >
+                <Ionicons name="calendar" size={20} color="#6b7280"/>
+                <Text style={[
+                    styles.dateInput,
+                    !value && styles.placeholderText
+                ]}>
+                    {value ? formatDateForDisplay(value) : placeholder}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#6b7280"/>
+            </Pressable>
+        </View>
+    );
+
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-            <Text style={styles.sectionTitle}>Vehicle-Specific Documents</Text>
-            {vehicleType && (
-                <Text style={styles.sectionSubtitle}>
-                    Required for {getVehicleTypeName()} drivers
-                    {isLagosDriver && ' (Lagos State)'}
-                </Text>
-            )}
+        <>
+            <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+                <Text style={styles.sectionTitle}>Vehicle-Specific Documents</Text>
+                {vehicleType && (
+                    <Text style={styles.sectionSubtitle}>
+                        Required for {getVehicleTypeName()} drivers
+                        {isLagosDriver && ' (Lagos State)'}
+                    </Text>
+                )}
 
-            {renderContent()}
+                {renderContent()}
 
-            <View style={styles.infoCard}>
-                <Ionicons name="information-circle" size={20} color="#3b82f6"/>
-                <Text style={styles.infoText}>
-                    All documents will be verified by our team within 24-48 hours. You'll be notified once approved.
-                </Text>
-            </View>
-        </ScrollView>
+                {/* Date Picker Modal */}
+                {showDatePicker && (
+                    <DateTimePicker
+                        value={tempDate}
+                        mode="date"
+                        display="spinner"
+                        minimumDate={new Date()}
+                        onChange={(event, selectedDate) => {
+                            if (event.type === 'set' && selectedDate) {
+                                handleDateSelect(selectedDate);
+                            } else {
+                                setShowDatePicker(false);
+                                setCurrentDateField(null);
+                            }
+                        }}
+                    />
+                )}
+
+                <View style={styles.infoCard}>
+                    <Ionicons name="information-circle" size={20} color="#3b82f6"/>
+                    <Text style={styles.infoText}>
+                        All documents will be verified by our team within 24-48 hours. You'll be notified once approved.
+                    </Text>
+                </View>
+            </ScrollView>
+        </>
     );
 }
 
@@ -1239,13 +1406,14 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 24,
-        fontWeight: '700',
+        fontFamily: 'PoppinsSemiBold',
         color: '#111827',
-        marginBottom: 8
+        marginBottom: 4
     },
     sectionSubtitle: {
         fontSize: 16,
         color: '#6b7280',
+        fontFamily: 'PoppinsMedium',
         marginBottom: 24
     },
     card: {
@@ -1267,12 +1435,13 @@ const styles = StyleSheet.create({
     },
     cardTitle: {
         fontSize: 18,
-        fontWeight: '600',
+        fontFamily: 'PoppinsSemiBold',
         color: '#111827'
     },
     cardDescription: {
         fontSize: 14,
         color: '#6b7280',
+        fontFamily: 'PoppinsMedium',
         marginBottom: 16,
         lineHeight: 20
     },
@@ -1281,7 +1450,8 @@ const styles = StyleSheet.create({
         borderColor: '#d1d5db',
         borderRadius: 12,
         padding: 16,
-        fontSize: 16,
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
         marginBottom: 16,
         color: '#111827'
     },
@@ -1359,7 +1529,33 @@ const styles = StyleSheet.create({
         color: '#6b7280',
         textAlign: 'center',
         lineHeight: 24
-    }
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#374151',
+        marginBottom: 1,
+        marginLeft: 4
+    },
+    dateInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#d1d5db',
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 16,
+        gap: 12
+    },
+    dateInput: {
+        flex: 1,
+        fontSize: 16,
+        color: '#111827',
+        fontFamily: 'PoppinsRegular'
+    },
+    placeholderText: {
+        color: '#9ca3af'
+    },
 });
 
 export default SpecificVerification;
