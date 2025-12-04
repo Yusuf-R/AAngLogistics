@@ -93,7 +93,7 @@ function DataVerification({ userData, verification, isEditMode = false, onUpdate
     });
     const [modalVisible, setModalVisible] = useState(false);
     const [modalStatus, setModalStatus] = useState('loading');
-    const [modalMessage, setModalMessage] = useState('Submitting your verification...');
+    const [modalMessage, setModalMessage] = useState("");
 
     // Define validation functions FIRST using useCallback
     const validateBasicInfo = useCallback(() => {
@@ -124,24 +124,38 @@ function DataVerification({ userData, verification, isEditMode = false, onUpdate
 
         if (!vehicleType) return false;
 
-        // Simplified validation - expand based on your requirements
+        // More comprehensive validation that accounts for existing data
         switch (vehicleType) {
             case 'bicycle':
                 return !!(
                     specificDocs.backpackEvidence &&
                     specificDocs.bicyclePictures?.front &&
                     specificDocs.bicyclePictures?.rear &&
-                    specificDocs.bicyclePictures?.side
+                    specificDocs.bicyclePictures?.side &&
+                    specificDocs.model && // Add vehicle details validation
+                    specificDocs.year &&
+                    specificDocs.color
                 );
             case 'tricycle':
             case 'motorcycle':
-                return !!(specificDocs.driversLicense);
+                return !!(
+                    specificDocs.driversLicense?.number &&
+                    specificDocs.driversLicense?.expiryDate &&
+                    specificDocs.model && // Add vehicle details validation
+                    specificDocs.year &&
+                    specificDocs.color
+                );
             case 'car':
             case 'van':
             case 'truck':
                 return !!(
-                    specificDocs.driversLicense &&
-                    specificDocs.vehicleRegistration
+                    specificDocs.driversLicense?.number &&
+                    specificDocs.driversLicense?.expiryDate &&
+                    specificDocs.vehicleRegistration?.registrationNumber &&
+                    specificDocs.insurance?.policyNumber &&
+                    specificDocs.model && // Add vehicle details validation
+                    specificDocs.year &&
+                    specificDocs.color
                 );
             default:
                 return false;
@@ -202,9 +216,27 @@ function DataVerification({ userData, verification, isEditMode = false, onUpdate
         const vehicleTypeFromServer = v?.specificVerification?.activeVerificationType || null;
         const chosenVehicleType = userData?.vehicleDetails?.type || vehicleTypeFromServer || null;
 
+        // GET VEHICLE DETAILS FROM MULTIPLE SOURCES
+        const vehicleDetails = userData?.vehicleDetails || {};
+        console.log({
+            vehicleDetails
+        })
+        const activeVehicleDetails = v?.activeData?.vehicleDetails || {};
+
         // normalize specific docs into the structure your UI expects
         const sv = v.specificVerification || {};
         const spec = {};
+
+        // ADD VEHICLE DETAILS TO SPECIFIC DOCS
+        spec.plateNumber = vehicleDetails.plateNumber || activeVehicleDetails.plateNumber || '';
+        spec.model = vehicleDetails.model || activeVehicleDetails.model || '';
+        spec.year = vehicleDetails.year || activeVehicleDetails.year || '';
+        spec.color = vehicleDetails.color || activeVehicleDetails.color || '';
+        spec.capacity = vehicleDetails.capacity || activeVehicleDetails.capacity || {
+            weight: 0,
+            volume: 0,
+            passengers: 0
+        };
 
         if (chosenVehicleType === 'bicycle') {
             const b = sv.bicycle || {};
@@ -448,15 +480,15 @@ function DataVerification({ userData, verification, isEditMode = false, onUpdate
             await SessionManager.updateUser(data?.dashboardData);
             toast.success('Verification Successful');
             setModalStatus('success');
-            setModalMessage('Submitted! Your documents are now pending review.');
+            setModalMessage('Submitted!\nYour documents are now pending review.');
             if (onUpdateSuccess) {
                 await onUpdateSuccess();
             }
         } catch (error) {
-            console.error('Submission error:', error);
-            toast.error('Error: Failed to submit verification');
+            console.log('Submission error:', error);
+            toast.error(`Error: ${error.message}`);
             setModalStatus('error');
-            setModalMessage('Submission failed. Please check your connection and try again.');
+            setModalMessage(`Error\n${error.message}`);
         } finally {
             setLoading(false);
         }
@@ -639,12 +671,15 @@ function DataVerification({ userData, verification, isEditMode = false, onUpdate
                 visible={modalVisible}
                 status={modalStatus}
                 message={modalMessage}
-                showRetryOnError={false}
+                showRetryOnError={modalStatus === 'error'}
                 onClose={() => setModalVisible(false)}
                 onFinish={() => {
                     setModalVisible(false);
-                    router.replace('/driver/account');
+                    if (modalStatus === 'success') {
+                        router.replace('/driver/account');
+                    }
                 }}
+                onRetry={handleSubmit}
             />
         </View>
     );

@@ -1410,6 +1410,60 @@ class DriverUtils {
             throw error;
         }
     }
+    
+    // Dashboard apis
+    static async getDriverWallet(){
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/dashboard/get/wallet`
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching driver wallet details:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getDriverStats(){
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/dashboard/get/stats`
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getMonthlyStats(){
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/dashboard/get/monthly-stats`
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getRecentDeliveries(){
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/driver/dashboard/get/recent-deliveries`
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
 }
 
 export default DriverUtils;

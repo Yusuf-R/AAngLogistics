@@ -172,7 +172,7 @@ export default function RootLayout() {
                         </QueryClientProvider>
                         <Toaster
                             toastOptions={{
-                                style: { backgroundColor: '#CECECE' }
+                                style: { backgroundColor: '#237ADC' }
                             }}
                         />
                     </AuthProvider>

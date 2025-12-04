@@ -1,4 +1,4 @@
-// app/(protected)/driver/dashboard/index.jsx
+// components/Driver/Dashboard/Dashboard.jsx - With Pull-to-Refresh
 import React, {useEffect, useState, useRef} from 'react';
 import {
     View,
@@ -10,12 +10,12 @@ import {
     Switch,
     Animated,
     Easing,
-    Dimensions,
-    ActivityIndicator
+    ActivityIndicator,
+    RefreshControl // Add this import
 } from 'react-native';
-import {Ionicons, MaterialCommunityIcons, FontAwesome5, Feather} from '@expo/vector-icons';
+import {Ionicons, MaterialCommunityIcons, FontAwesome5} from '@expo/vector-icons';
 import {useRouter} from "expo-router";
-import DriverUtils from "utils/DriverUtilities";
+import DriverUtils from "../../../utils/DriverUtilities";
 import AutoScrollHighlights from './AutoScrollHighlights';
 import {ProfileCompletionBanner} from "./ProfileCompletionBanner";
 import AchievementsCard from './AchievementsCard';
@@ -24,15 +24,37 @@ import {StatsBar} from "./StatsBar";
 import {WalletCard} from "./WalletCard";
 import SessionManager from "../../../lib/SessionManager";
 import {toast} from "sonner-native";
+import {useProfileCompletion} from '../../../hooks/useDriverDashboard';
+import {useInvalidateDashboard} from '../../../hooks/useQueryInvalidation';
 
-const { width } = Dimensions.get('window');
-
-
-export default function DriverDashboard({userData}) {
+function DriverDashboard({userData}) {
     const router = useRouter();
     const [isOnline, setIsOnline] = useState(userData?.availabilityStatus === 'online');
     const [currentStatus, setCurrentStatus] = useState(userData?.availabilityStatus || 'offline');
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+
+    // Get profile completion data
+    const {data: completion} = useProfileCompletion(userData);
+    const isProfileComplete = completion?.isComplete || false;
+
+    // Get query invalidation functions
+    const {refetchAll} = useInvalidateDashboard();
+
+    // Pull-to-refresh handler
+    const onRefresh = async () => {
+        setRefreshing(true);
+        try {
+            await refetchAll(userData?._id);
+            toast.success('Dashboard refreshed');
+        } catch (error) {
+            console.log('Refresh error:', error);
+            toast.error('Failed to refresh dashboard');
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
     const getCurrentDate = () => {
         const date = new Date();
         return date.toLocaleDateString('en-US', {
@@ -54,6 +76,7 @@ export default function DriverDashboard({userData}) {
         return {text: 'Offline', color: '#6B7280', icon: 'pause-circle'};
     };
     const availabilityStatus = getAvailabilityStatus();
+
     // Online Toggle
     const handleOnlineToggle = async (value) => {
         if (currentStatus === 'on-delivery') {
@@ -86,7 +109,7 @@ export default function DriverDashboard({userData}) {
                 toast.error(response.message || 'Failed to update status');
             }
         } catch (error) {
-            console.error('Status update error:', error);
+            console.log('Status update error:', error);
             // Revert on error
             setIsOnline(!value);
             setCurrentStatus(value ? 'offline' : 'online');
@@ -96,47 +119,8 @@ export default function DriverDashboard({userData}) {
             setIsUpdatingStatus(false);
         }
     };
+
     const isVerified = userData?.verification?.overallStatus === 'approved';
-    const stats = [
-        {
-            label: 'Total Deliveries',
-            value: userData?.performance?.totalDeliveries || 0,
-            icon: 'package',
-            color: '#3B82F6',
-            iconLib: 'Feather',
-        },
-        {
-            label: 'Completed',
-            value: userData?.performance?.weeklyStats?.deliveries || 0,
-            icon: 'checkmark-done-circle',
-            color: '#10B981',
-            iconLib: 'Ionicons',
-        },
-        {
-            label: 'Rating',
-            value: userData?.performance?.averageRating?.toFixed(1) || '0.0',
-            icon: 'star',
-            color: '#F59E0B',
-            iconLib: 'Ionicons',
-        },
-        {
-            label: 'This Week',
-            value: `₦${userData?.performance?.weeklyStats?.earnings?.toLocaleString() || '0'}`,
-            icon: 'trending-up',
-            color: '#8B5CF6',
-            iconLib: 'Feather',
-        },
-    ];
-
-
-    const recentDeliveries = userData?.wallet?.recentTransactions?.slice(0, 3) || [];
-
-    // Profile completion via DriverUtils
-    const {percent: profileCompletion, isComplete: isProfileComplete} =
-        DriverUtils.getProfileCompletion(userData);
-
-    // Pulse anim only when NOT complete
-    const pulse = useRef(new Animated.Value(0)).current;
 
     const highlights = [
         {
@@ -165,6 +149,9 @@ export default function DriverDashboard({userData}) {
         },
     ];
 
+    // Pulse animation for incomplete profile
+    const pulse = useRef(new Animated.Value(0)).current;
+
     useEffect(() => {
         if (!isProfileComplete) {
             const loop = Animated.loop(
@@ -186,7 +173,7 @@ export default function DriverDashboard({userData}) {
             loop.start();
             return () => loop.stop();
         } else {
-            pulse.setValue(0); // reset when completed
+            pulse.setValue(0);
         }
     }, [isProfileComplete, pulse]);
 
@@ -209,7 +196,6 @@ export default function DriverDashboard({userData}) {
         }),
     };
 
-
     return (
         <View style={styles.container}>
             {/* HEADER */}
@@ -221,7 +207,7 @@ export default function DriverDashboard({userData}) {
                 />
 
                 <View style={styles.headerOverlay}>
-                    {/* ROW 1: Avatar (left) + Greeting+Data (center) + Logo (right) */}
+                    {/* ROW 1: Avatar (left) + Greeting+Date (center) + Logo (right) */}
                     <View style={styles.rowOne}>
                         {/* Avatar */}
                         <View style={styles.avatarWrap}>
@@ -247,7 +233,7 @@ export default function DriverDashboard({userData}) {
                             </View>
                         </View>
 
-                        {/* Greeting + DATA (date) */}
+                        {/* Greeting + Date */}
                         <View style={styles.centerTexts}>
                             <Text style={styles.greeting}>
                                 {userData?.fullName
@@ -266,7 +252,6 @@ export default function DriverDashboard({userData}) {
 
                         {/* Logo (far right) */}
                         <View style={styles.logoContainer}>
-                            {/* Replace with your PNG/SVG if you have it */}
                             <Image
                                 source={require('../../../assets/images/AAngLogo.png')}
                                 style={styles.logoImg}
@@ -275,7 +260,7 @@ export default function DriverDashboard({userData}) {
                         </View>
                     </View>
 
-                    {/* ROW 2: Ready to earn today? (only thing on the row) */}
+                    {/* ROW 2: Ready to earn today? */}
                     <View style={styles.rowTwo}>
                         <Text style={styles.readyText}>Ready to earn today?</Text>
                         <View style={styles.availabilityCard}>
@@ -290,7 +275,7 @@ export default function DriverDashboard({userData}) {
                                     <View style={styles.availabilityRight}>
                                         {isUpdatingStatus ? (
                                             <View style={styles.loadingContainer}>
-                                                <ActivityIndicator size="small" color="#10B981" />
+                                                <ActivityIndicator size="small" color="#10B981"/>
                                             </View>
                                         ) : (
                                             <Switch
@@ -309,26 +294,43 @@ export default function DriverDashboard({userData}) {
                     </View>
                 </View>
             </View>
+
             {isUpdatingStatus && (
                 <View style={styles.overlay}>
                     <View style={styles.overlayContent}>
-                        <ActivityIndicator size="large" color="#3B82F6" />
+                        <ActivityIndicator size="large" color="#3B82F6"/>
                         <Text style={styles.overlayText}>Updating status...</Text>
                     </View>
                 </View>
             )}
-            {/* BODY */}
-            <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
-                {/* Wallet */}
-                <WalletCard userData={userData} />
-                {/* Stats */}
-                <StatsBar stats={stats} />
-                {/* Profile Completion */}
+
+            {/* BODY - Now with RefreshControl */}
+            <ScrollView
+                style={styles.contentContainer}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#3B82F6']} // Android
+                        tintColor="#3B82F6" // iOS
+                        title="Pull to refresh" // iOS
+                        titleColor="#6B7280" // iOS
+                    />
+                }
+            >
+                {/* Wallet Card - Uses TanStack Query */}
+                <WalletCard userData={userData}/>
+
+                {/* Stats Bar - Uses TanStack Query */}
+                <StatsBar userData={userData}/>
+
+                {/* Profile Completion - Uses TanStack Query */}
                 <ProfileCompletionBanner
-                    profileCompletion={profileCompletion}
-                    isProfileComplete={isProfileComplete}
+                    userData={userData}
                     completionAnimatedStyle={completionAnimatedStyle}
                 />
+
                 {/* Highlights */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
@@ -337,12 +339,14 @@ export default function DriverDashboard({userData}) {
                             <Text style={styles.sectionLink}>Learn More</Text>
                         </TouchableOpacity>
                     </View>
-                    <AutoScrollHighlights highlights={highlights} />
+                    <AutoScrollHighlights highlights={highlights}/>
                 </View>
-                {/* Achievement */}
-                <AchievementsCard userData={userData} />
-                {/*Mini Delivery history*/}
-                <DeliveryHistory userData={userData} />
+
+                {/* Achievement Card - Uses TanStack Query */}
+                <AchievementsCard userData={userData}/>
+
+                {/* Delivery History - Uses TanStack Query */}
+                <DeliveryHistory userData={userData}/>
             </ScrollView>
         </View>
     );
@@ -371,8 +375,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         paddingTop: 15,
     },
-
-    /* ROW 1 */
     rowOne: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -442,7 +444,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     logoImg: {width: 60, height: 60},
-    /* ROW 2 */
     rowTwo: {
         marginTop: 28,
         paddingHorizontal: 4,
@@ -478,59 +479,14 @@ const styles = StyleSheet.create({
         color: '#FFF',
         fontFamily: 'PoppinsRegular',
     },
-    availabilityStatus: {
-        fontSize: 18,
-        fontFamily: 'PoppinsBold',
-    },
     availabilityRight: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    /* BODY */
     contentContainer: {
         flex: 1,
         paddingVertical: 12,
         paddingHorizontal: 10,
-    },
-
-    emptyState: {
-        backgroundColor: '#FFF',
-        borderRadius: 16,
-        padding: 40,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    emptyStateTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#1F2937',
-        fontFamily: 'PoppinsBold',
-        marginTop: 16,
-        marginBottom: 8,
-    },
-    emptyStateText: {
-        fontSize: 14,
-        color: '#6B7280',
-        fontFamily: 'PoppinsRegular',
-        textAlign: 'center',
-        lineHeight: 20,
-        marginBottom: 20,
-    },
-    emptyStateButton: {
-        backgroundColor: '#3B82F6',
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: 12,
-    },
-    emptyStateButtonText: {
-        color: '#FFF',
-        fontSize: 14,
-        fontWeight: '600',
-        fontFamily: 'PoppinsSemiBold',
     },
     section: {
         marginBottom: 24,
@@ -541,7 +497,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 16,
     },
-    // section title
     sectionTitle: {
         fontSize: 16,
         color: '#1F2937',
@@ -552,11 +507,9 @@ const styles = StyleSheet.create({
         color: '#3B82F6',
         fontFamily: 'PoppinsMedium',
     },
-
-    // Overlay
     loadingContainer: {
-        width: 51, // Same width as Switch for consistent layout
-        height: 31, // Same height as Switch
+        width: 51,
+        height: 31,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -584,5 +537,6 @@ const styles = StyleSheet.create({
         color: '#374151',
         fontFamily: 'PoppinsMedium',
     },
-
 });
+
+export default DriverDashboard;

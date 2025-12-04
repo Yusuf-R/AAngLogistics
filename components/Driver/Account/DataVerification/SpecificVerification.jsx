@@ -9,6 +9,9 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [currentDateField, setCurrentDateField] = useState(null);
     const [tempDate, setTempDate] = useState(new Date());
+    console.log({
+        yr: formData.specificDocs.year
+    })
 
     const updateSpecificDocs = (updates) => {
         updateFormData({
@@ -58,9 +61,11 @@ function SpecificVerification({formData, updateFormData, vehicleType, userData})
                 <TextInput
                     style={styles.input}
                     placeholder="Year"
-                    value={formData.specificDocs.year}
+                    value={formData.specificDocs.year?.toString()}
                     placeholderTextColor="#9ca3af"
-                    onChangeText={(text) => updateSpecificDocs({year: text})}
+                    onChangeText={(text) => updateSpecificDocs({
+                        year: text ? parseInt(text) : '' // Convert back to number
+                    })}
                     keyboardType="numeric"
                     maxLength={4}
                 />

@@ -3,7 +3,7 @@ import Dashboard from "/components/Driver/Dashborad/Dashboard"
 import {useSessionStore} from "../../../../store/useSessionStore";
 
 
-export default function DriverDashboard() {
+function DriverDashboard() {
     const userData = useSessionStore((state) => state.user);
 
     return (
@@ -12,3 +12,5 @@ export default function DriverDashboard() {
         </>
     )
 }
+
+export default DriverDashboard;

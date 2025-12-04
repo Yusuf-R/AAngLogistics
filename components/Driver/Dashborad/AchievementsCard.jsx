@@ -1,8 +1,32 @@
+// components/Driver/Dashboard/AchievementsCard.jsx
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useDriverStats } from '../../../hooks/useDriverDashboard';
 
 const AchievementsCard = ({ userData }) => {
+    const { data: statsData, isLoading } = useDriverStats(userData?.id);
+
+    if (isLoading) {
+        return (
+            <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Achievements</Text>
+                </View>
+                <View style={styles.achievementsContainer}>
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color="#3B82F6" />
+                        <Text style={styles.loadingText}>Loading achievements...</Text>
+                    </View>
+                </View>
+            </View>
+        );
+    }
+
+    // Extract data from statsData
+    const totalDeliveries = statsData?.totalDeliveries || 0;
+    const averageRating = statsData?.averageRating || 0;
+
     const achievements = [
         {
             id: 1,
@@ -10,8 +34,8 @@ const AchievementsCard = ({ userData }) => {
             description: 'Complete your first delivery',
             icon: 'rocket',
             color: '#3B82F6',
-            completed: userData?.performance?.totalDeliveries > 0,
-            progress: userData?.performance?.totalDeliveries > 0 ? 1 : 0,
+            completed: totalDeliveries > 0,
+            progress: totalDeliveries > 0 ? 1 : 0,
             target: 1
         },
         {
@@ -20,8 +44,8 @@ const AchievementsCard = ({ userData }) => {
             description: 'Complete 10 deliveries',
             icon: 'star',
             color: '#F59E0B',
-            completed: (userData?.performance?.totalDeliveries || 0) >= 10,
-            progress: userData?.performance?.totalDeliveries || 0,
+            completed: totalDeliveries >= 10,
+            progress: Math.min(totalDeliveries, 10),
             target: 10
         },
         {
@@ -30,19 +54,19 @@ const AchievementsCard = ({ userData }) => {
             description: 'Maintain 4.5+ rating',
             icon: 'trophy',
             color: '#10B981',
-            completed: (userData?.performance?.averageRating || 0) >= 4.5,
-            progress: userData?.performance?.averageRating || 0,
+            completed: averageRating >= 4.5,
+            progress: averageRating,
             target: 4.5
         },
         {
             id: 4,
-            title: 'Weekend Warrior',
-            description: 'Complete 5 weekend deliveries',
-            icon: 'calendar',
+            title: 'Delivery Pro',
+            description: 'Complete 50 deliveries',
+            icon: 'medal',
             color: '#8B5CF6',
-            completed: false, // You'll need to track this separately
-            progress: 0,
-            target: 5
+            completed: totalDeliveries >= 50,
+            progress: Math.min(totalDeliveries, 50),
+            target: 50
         }
     ];
 
@@ -57,7 +81,13 @@ const AchievementsCard = ({ userData }) => {
 
             <View style={styles.achievementsContainer}>
                 {achievements.map((achievement, index) => (
-                    <View key={achievement.id} style={styles.achievementItem}>
+                    <View
+                        key={achievement.id}
+                        style={[
+                            styles.achievementItem,
+                            index === achievements.length - 1 && styles.lastAchievementItem
+                        ]}
+                    >
                         <View style={[styles.achievementIcon, { backgroundColor: achievement.color }]}>
                             <Ionicons
                                 name={achievement.completed ? achievement.icon : 'lock-closed'}
@@ -81,14 +111,17 @@ const AchievementsCard = ({ userData }) => {
                                             style={[
                                                 styles.progressFill,
                                                 {
-                                                    width: `${(achievement.progress / achievement.target) * 100}%`,
+                                                    width: `${Math.min((achievement.progress / achievement.target) * 100, 100)}%`,
                                                     backgroundColor: achievement.color
                                                 }
                                             ]}
                                         />
                                     </View>
                                     <Text style={styles.progressText}>
-                                        {achievement.progress}/{achievement.target}
+                                        {achievement.id === 3
+                                            ? `${achievement.progress.toFixed(1)}/${achievement.target}`
+                                            : `${achievement.progress}/${achievement.target}`
+                                        }
                                     </Text>
                                 </View>
                             )}
@@ -136,6 +169,19 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
+        minHeight: 200,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 40,
+        gap: 12,
+    },
+    loadingText: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontFamily: 'PoppinsRegular',
     },
     achievementItem: {
         flexDirection: 'row',
@@ -143,6 +189,9 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
+    },
+    lastAchievementItem: {
+        borderBottomWidth: 0,
     },
     achievementIcon: {
         width: 40,
@@ -188,7 +237,7 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: '#6B7280',
         fontFamily: 'PoppinsMedium',
-        minWidth: 30,
+        minWidth: 40,
     },
     completedBadge: {
         flexDirection: 'row',

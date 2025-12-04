@@ -289,13 +289,13 @@ function DriverAccount ({ userData }) {
                         onPress: () => goToDataVerification(),
                     })}
 
-                    {renderMenuItem({
-                        icon: 'home-outline',
-                        iconType: 'Ionicons',
-                        title: 'Utility Test',
-                        hasChevron: true,
-                        onPress: () => goToUtility(),
-                    })}
+                    {/*{renderMenuItem({*/}
+                    {/*    icon: 'home-outline',*/}
+                    {/*    iconType: 'Ionicons',*/}
+                    {/*    title: 'Utility Test',*/}
+                    {/*    hasChevron: true,*/}
+                    {/*    onPress: () => goToUtility(),*/}
+                    {/*})}*/}
 
                     {renderMenuItem({
                         icon: 'wallet-outline',
@@ -347,12 +347,12 @@ function DriverAccount ({ userData }) {
                         onPress: () => goToSupport(),
                     })}
 
-                    {renderMenuItem({
-                        icon: 'people-outline',
-                        iconType: 'Ionicons',
-                        title: 'Invite Friends',
-                        hasChevron: true
-                    })}
+                    {/*{renderMenuItem({*/}
+                    {/*    icon: 'people-outline',*/}
+                    {/*    iconType: 'Ionicons',*/}
+                    {/*    title: 'Invite Friends',*/}
+                    {/*    hasChevron: true*/}
+                    {/*})}*/}
 
                     {renderMenuItem({
                         icon: 'log-out-outline',
