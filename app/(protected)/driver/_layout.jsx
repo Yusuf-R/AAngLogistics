@@ -24,7 +24,7 @@ export default function DriverTabsLayout() {
     // 🔒 Enforce T&Cs globally for driver area
     const guard = useTCGuard({
         allowlist: ["/driver/tcs", "/driver/tcs-required", "/driver/dashboard", "/driver/support/resources"],
-        restrictedPrefixes: ["/driver/account", "/driver/discover", "/driver/notifications"]
+        restrictedPrefixes: ["/driver/account", "/driver/discover", "/driver/notifications", "/driver/finance"]
     });
 
     // ✅ Initialize Socket Connection

@@ -1,119 +1,150 @@
-import {createContext, useContext, useEffect, useState} from "react";
-import {Platform} from "react-native";
-import SecureStorage from "../lib/SecureStorage";
-import {makeRedirectUri, useAuthRequest, exchangeCodeAsync} from "expo-auth-session";
-import * as WebBrowser from "expo-web-browser";
-import {useRouter} from "expo-router";
+// context/auth.js - UPDATED VERSION
+import { createContext, useContext, useState, useEffect } from "react";
+import { Platform, Alert } from "react-native";
+import {
+    GoogleSignin,
+    statusCodes,
+    isSuccessResponse,
+    isErrorWithCode,
+} from '@react-native-google-signin/google-signin';
+import { auth } from "../lib/firebase";
+import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import ClientUtils from "../utils/ClientUtilities";
 import SessionManager from "../lib/SessionManager";
+import SecureStorage from "../lib/SecureStorage";
+import { useRouter } from "expo-router";
+import { toast } from "sonner-native";
 
-WebBrowser.maybeCompleteAuthSession();
-
-const AuthContext = createContext({
-    user: null,
-    isAuthenticated: false,
-    signInWithGoogle: () => {},
-    signOut: () => {},
+GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
+    offlineAccess: true,
+    forceCodeForRefreshToken: false,
+    scopes: ['profile', 'email'],
 });
 
-const config = {
-    clientId: "google",
-    scopes: ["openid", "profile", "email"],
-    redirectUri: makeRedirectUri(),
-};
+const AuthContext = createContext({
+    signInWithGoogle: () => {},
+    signOut: () => {},
+    isLoading: false,
+});
 
-const discovery = {
-    authorizationEndpoint: process.env.EXPO_PUBLIC_AUTHORIZE_END_POINT,
-    tokenEndpoint: process.env.EXPO_PUBLIC_TOKEN_END_POINT,
-};
-
-export const AuthProvider = ({children}) => {
+export const AuthProvider = ({ children }) => {
     const router = useRouter();
-
-    const [request, response, promptAsync] = useAuthRequest(config, discovery);
+    const [isLoading, setIsLoading] = useState(false);
 
     const signInWithGoogle = async () => {
         try {
-            if (!request) {
+            setIsLoading(true);
+
+            // 1. Check if Google Play Services available (Android only)
+            if (Platform.OS === 'android') {
+                await GoogleSignin.hasPlayServices();
+            }
+
+            // 2. Sign in with Google (NATIVE - no browser!)
+            const userInfo = await GoogleSignin.signIn();
+            if (!isSuccessResponse(userInfo)) {
+                console.log('Google Sign-In not successful:', userInfo.type);
                 return;
             }
-            await promptAsync();
-        } catch (e) {
-            console.log(e);
+            console.log('Google Sign-In Success:', userInfo);
+
+            // 3. Get ID token from Google
+            const { idToken } = userInfo;
+
+            if (!idToken) {
+                throw new Error('No ID token received from Google');
+            }
+
+            // 4. Create Firebase credential (same as before)
+            const credential = GoogleAuthProvider.credential(idToken);
+
+            // 5. Sign in to Firebase
+            const userCredential = await signInWithCredential(auth, credential);
+
+            // 6. Get Firebase ID token
+            const firebaseIdToken = await userCredential.user.getIdToken();
+
+            // 7. Get stored role
+            const storedRole = await SecureStorage.getRole();
+
+            if (!storedRole) {
+                router.replace('/(onboarding)/role-select?next=/(authentication)/signup');
+                setIsLoading(false);
+                return;
+            }
+
+            // 8. Send to your backend
+            const respData = await ClientUtils.GoogleSocialAuth({
+                firebaseIdToken,
+                provider: "Google",
+                role: storedRole,
+                email: userCredential.user.email,
+                name: userCredential.user.displayName,
+                picture: userCredential.user.photoURL,
+            });
+
+            const { accessToken, refreshToken, user, expiresIn } = respData;
+
+            // 9. Store session data
+            await SessionManager.updateToken(accessToken, expiresIn);
+            await SecureStorage.saveRefreshToken(refreshToken);
+            await SessionManager.updateUser(user);
+            await SessionManager.updateRole(user.role);
+            await SessionManager.updateOnboardingStatus(true);
+
+            // 10. Navigate to dashboard
+            router.replace(`/(protected)/${user.role}/dashboard`);
+
+        } catch (error) {
+            console.log('🔥 Google Sign-In Failed:', error);
+            console.log(error.code);
+            if (isErrorWithCode(error)) {
+                switch (error.code) {
+                    case statusCodes.IN_PROGRESS:
+                        toast.error('Sign-in already in progress');
+                        break;
+                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+                        toast.error('Google Play Services required');
+                        break;
+                    case statusCodes.SIGN_IN_CANCELLED:
+                        toast.info('Sign-in cancelled');
+                        break;
+                    case statusCodes.SIGN_IN_REQUIRED:
+                        toast.info('Please sign in to continue');
+                        break;
+                    default:
+                        toast.error('Authentication failed. Please try again.');
+                }
+            } else {
+                toast.error('Unexpected error. Check logs.');
+            }
+        } finally {
+            setIsLoading(false);
         }
     };
-
-    const finalizeGoogleSignIn = async () => {
-        if (response?.type === "success") {
-            try {
-                const {code} = response.params;
-
-                const tokenResponse = await exchangeCodeAsync(
-                    {
-                        clientId: "google",
-                        code,
-                        redirectUri: makeRedirectUri(),
-                        extraParams: {
-                            platform: Platform.OS,
-                        },
-                    },
-                    discovery
-                );
-
-                const storedRole = await SecureStorage.getRole();
-
-                const respData = await ClientUtils.GoogleSocialSignUp({
-                    tokenResponse,
-                    provider: "Google",
-                    role: storedRole,
-                });
-
-                const {accessToken, refreshToken, user, expiresIn} = respData;
-
-                await SessionManager.updateToken(accessToken, expiresIn);
-                await SessionManager.updateRefreshToken(refreshToken); // ✅ Use SessionManager
-                await SessionManager.updateUser(user);
-                await SessionManager.updateRole(user.role);
-                await SessionManager.updateOnboardingStatus(true);
-
-                router.replace(`/(protected)/${user.role}/dashboard`);
-
-            } catch (err) {
-                console.error("Error finalizing Google sign-in:", err);
-                router.replace("/(authentication)/login"); // ✅ Go to login, not root
-            }
-        } else if (response?.type === "cancel") {
-            console.log("Google sign-in cancelled");
-
-        } else if (response?.type === "error") {
-            console.error("Google sign-in error:", response.error);
-        }
-    }
 
     const signOut = async () => {
         try {
-            await SessionManager.logout(); // ✅ SessionManager handles navigation
+            // Sign out from Google
+            await GoogleSignin.signOut();
+            // Sign out from your app
+            await SessionManager.logout();
         } catch (error) {
-            console.error('[AuthProvider] Sign out error:', error);
+            console.log('[AuthProvider] Sign out error:', error);
         }
-        // ❌ Remove duplicate navigation - SessionManager.logout() already does this
     };
-
-    useEffect(() => {
-        if (response) {
-            finalizeGoogleSignIn();
-        }
-    }, [response]);
 
     return (
         <AuthContext.Provider value={{
             signInWithGoogle,
             signOut,
+            isLoading,
         }}>
             {children}
         </AuthContext.Provider>
     );
-}
+};
 
 export const useAuth = () => {
     const context = useContext(AuthContext);

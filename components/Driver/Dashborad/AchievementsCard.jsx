@@ -1,7 +1,7 @@
 // components/Driver/Dashboard/AchievementsCard.jsx
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome6 } from '@expo/vector-icons';
 import { useDriverStats } from '../../../hooks/useDriverDashboard';
 
 const AchievementsCard = ({ userData }) => {
@@ -12,6 +12,7 @@ const AchievementsCard = ({ userData }) => {
             <View style={styles.section}>
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Achievements</Text>
+
                 </View>
                 <View style={styles.achievementsContainer}>
                     <View style={styles.loadingContainer}>
@@ -75,7 +76,11 @@ const AchievementsCard = ({ userData }) => {
     return (
         <View style={styles.section}>
             <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Achievements</Text>
+                <View style={styles.titleContainer}>
+                    <Text style={styles.sectionTitle}>Achievements</Text>
+                    <FontAwesome6 name="medal" size={20} color="green" />
+                </View>
+
                 <Text style={styles.achievementCount}>{completedCount}/{achievements.length}</Text>
             </View>
 
@@ -143,6 +148,12 @@ const AchievementsCard = ({ userData }) => {
 const styles = StyleSheet.create({
     section: {
         marginBottom: 24,
+    },
+    titleContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        gap: 5
     },
     sectionHeader: {
         flexDirection: 'row',

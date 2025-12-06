@@ -11,6 +11,7 @@ export default ({config}) => ({
         ...config.ios,
         supportsTablet: true,
         bundleIdentifier: "com.AAngLogistics",
+        googleServicesFile: "./GoogleService-Info.plist",
         icon: {
             dark: "./assets/icons/ios/Dark.png",
             light: "./assets/icons/ios/Light.png",
@@ -70,6 +71,7 @@ export default ({config}) => ({
     },
     plugins: [
         "expo-router",
+        "@react-native-google-signin/google-signin",
         [
             "expo-notifications",
             {
@@ -117,7 +119,8 @@ export default ({config}) => ({
                     extraProguardRules: "-keep class com.facebook.jni.** { *; }"
                 },
                 ios: {
-                    newArchEnabled: true
+                    newArchEnabled: true,
+                    useFrameworks: "static"
                 }
             }
         ],

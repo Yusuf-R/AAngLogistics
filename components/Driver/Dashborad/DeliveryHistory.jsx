@@ -1,17 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {Ionicons} from '@expo/vector-icons';
+import {useRouter} from 'expo-router';
 import {useRecentDeliveries} from "../../../hooks/useDriverDashboard";
 import Loading from "../../Loading/Loading";
 
-const DeliveryHistory = ({ userData }) => {
+const DeliveryHistory = ({userData}) => {
     const router = useRouter();
-    const { data: deliveries, isLoading, isError } = useRecentDeliveries(userData?.id);
+    const {data: deliveries, isLoading, isError} = useRecentDeliveries(userData?.id);
 
     // ✅ Loading state
     if (isLoading) {
-        return <Loading />;
+        return <Loading/>;
     }
 
     if (isError) {
@@ -23,7 +23,7 @@ const DeliveryHistory = ({ userData }) => {
 
                 <View style={styles.deliveriesContainer}>
                     <View style={styles.errorContainer}>
-                        <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+                        <Ionicons name="alert-circle-outline" size={48} color="#EF4444"/>
                         <Text style={styles.errorText}>Failed to load delivery history</Text>
                     </View>
                 </View>
@@ -44,7 +44,7 @@ const DeliveryHistory = ({ userData }) => {
 
                 <View style={styles.emptyState}>
                     <View style={styles.emptyIcon}>
-                        <Ionicons name="cube-outline" size={48} color="#9CA3AF" />
+                        <Ionicons name="cube-outline" size={48} color="#9CA3AF"/>
                     </View>
                     <Text style={styles.emptyTitle}>No Deliveries Yet</Text>
                     <Text style={styles.emptyDescription}>
@@ -113,121 +113,129 @@ const DeliveryHistory = ({ userData }) => {
     return (
         <>
             <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recent Deliveries</Text>
-                <TouchableOpacity onPress={() => router.push('/driver/account/analytics/deliveries')}>
-                    <Text style={styles.seeAllText}>See All</Text>
-                </TouchableOpacity>
-            </View>
+                <View style={styles.sectionHeader}>
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.sectionTitle}>Recent Deliveries</Text>
+                        <Ionicons name="cube" size={20} color="blue" />
+                    </View>
 
-            <View style={styles.deliveriesSection}>
-                {deliveries.map((delivery, index) => (
                     <TouchableOpacity
-                        key={delivery.id}
-                        style={styles.deliveryCard}
-                        activeOpacity={0.7}
+                        style={styles.seeAllButton}
+                        onPress={() => router.push('/driver/account/analytics/deliveries')}
                     >
-                        {/* Header */}
-                        <View style={styles.deliveryHeader}>
-                            <View style={styles.deliveryStatus}>
-                                <Ionicons
-                                    name={getStatusIcon(delivery.status)}
-                                    size={20}
-                                    color={getStatusColor(delivery.status)}
-                                />
-                                <Text style={styles.deliveryRef}>{delivery.orderRef}</Text>
-                            </View>
-                            <Text style={styles.deliveryEarnings}>{formatCurrency(delivery.earnings)}</Text>
-                        </View>
-
-                        {/* Package Info */}
-                        <View style={styles.packageInfo}>
-                            <Ionicons
-                                name={getCategoryIcon(delivery.packageCategory)}
-                                size={18}
-                                color="#666"
-                            />
-                            <Text style={styles.packageText} numberOfLines={1}>
-                                {delivery.packageDescription || delivery.packageCategory}
-                            </Text>
-                        </View>
-
-                        {/* Route */}
-                        <View style={styles.routeContainer}>
-                            <View style={styles.routePoint}>
-                                <Ionicons name="ellipse" size={10} color="#4CAF50"/>
-                                <Text style={styles.routeText} numberOfLines={1}>
-                                    {extractLocation(delivery.pickupLocation.address)}
-                                </Text>
-                            </View>
-                            <View style={styles.routeLine}/>
-                            <View style={styles.routePoint}>
-                                <Ionicons name="location" size={10} color="#F44336"/>
-                                <Text style={styles.routeText} numberOfLines={1}>
-                                    {extractLocation(delivery.dropoffLocation.address)}
-                                </Text>
-                            </View>
-                        </View>
-
-                        {/* Stats Row */}
-                        <View style={styles.statsRow}>
-                            <View style={styles.statItem}>
-                                <Ionicons name="speedometer-outline" size={14} color="#999"/>
-                                <Text style={styles.statText}>{formatDistance(delivery.distance)}</Text>
-                            </View>
-                            <View style={styles.statItem}>
-                                <Ionicons name="time-outline" size={14} color="#999"/>
-                                <Text style={styles.statText}>{formatDuration(delivery.duration)}</Text>
-                            </View>
-                            {delivery.rating && (
-                                <View style={styles.statItem}>
-                                    <Ionicons name="star" size={14} color="#FFC107"/>
-                                    <Text style={styles.statText}>{delivery.rating}.0</Text>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Proof Indicators */}
-                        <View style={styles.proofIndicators}>
-                            {delivery.hasPickupPhotos && (
-                                <View style={styles.proofBadge}>
-                                    <Ionicons name="camera" size={12} color="#4CAF50"/>
-                                    <Text style={styles.proofText}>Pickup</Text>
-                                </View>
-                            )}
-                            {delivery.hasDeliveryPhotos && (
-                                <View style={styles.proofBadge}>
-                                    <Ionicons name="camera" size={12} color="#2196F3"/>
-                                    <Text style={styles.proofText}>Delivery</Text>
-                                </View>
-                            )}
-                            {delivery.tokenVerified && (
-                                <View style={styles.proofBadge}>
-                                    <Ionicons name="shield-checkmark" size={12} color="#9C27B0"/>
-                                    <Text style={styles.proofText}>Verified</Text>
-                                </View>
-                            )}
-                        </View>
-
-                        {/* Date */}
-                        <Text style={styles.deliveryDate}>
-                            {new Date(delivery.completedAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            })}
-                        </Text>
-
-                        {/*/!* View Details Arrow *!/*/}
-                        {/*<View style={styles.viewDetailsIndicator}>*/}
-                        {/*    <Ionicons name="chevron-forward" size={20} color="#4CAF50"/>*/}
-                        {/*</View>*/}
+                        <Text style={styles.seeAllText}>View</Text>
+                        <Ionicons name="open" size={20} color="red" />
                     </TouchableOpacity>
-                ))}
+                </View>
+
+                <View style={styles.deliveriesSection}>
+                    {deliveries.map((delivery, index) => (
+                        <TouchableOpacity
+                            key={delivery.id}
+                            style={styles.deliveryCard}
+                            activeOpacity={0.7}
+                        >
+                            {/* Header */}
+                            <View style={styles.deliveryHeader}>
+                                <View style={styles.deliveryStatus}>
+                                    <Ionicons
+                                        name={getStatusIcon(delivery.status)}
+                                        size={20}
+                                        color={getStatusColor(delivery.status)}
+                                    />
+                                    <Text style={styles.deliveryRef}>{delivery.orderRef}</Text>
+                                </View>
+                                <Text style={styles.deliveryEarnings}>{formatCurrency(delivery.earnings)}</Text>
+                            </View>
+
+                            {/* Package Info */}
+                            <View style={styles.packageInfo}>
+                                <Ionicons
+                                    name={getCategoryIcon(delivery.packageCategory)}
+                                    size={18}
+                                    color="#666"
+                                />
+                                <Text style={styles.packageText} numberOfLines={1}>
+                                    {delivery.packageDescription || delivery.packageCategory}
+                                </Text>
+                            </View>
+
+                            {/* Route */}
+                            <View style={styles.routeContainer}>
+                                <View style={styles.routePoint}>
+                                    <Ionicons name="ellipse" size={10} color="#4CAF50"/>
+                                    <Text style={styles.routeText} numberOfLines={1}>
+                                        {extractLocation(delivery.pickupLocation.address)}
+                                    </Text>
+                                </View>
+                                <View style={styles.routeLine}/>
+                                <View style={styles.routePoint}>
+                                    <Ionicons name="location" size={10} color="#F44336"/>
+                                    <Text style={styles.routeText} numberOfLines={1}>
+                                        {extractLocation(delivery.dropoffLocation.address)}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            {/* Stats Row */}
+                            <View style={styles.statsRow}>
+                                <View style={styles.statItem}>
+                                    <Ionicons name="speedometer-outline" size={14} color="#999"/>
+                                    <Text style={styles.statText}>{formatDistance(delivery.distance)}</Text>
+                                </View>
+                                <View style={styles.statItem}>
+                                    <Ionicons name="time-outline" size={14} color="#999"/>
+                                    <Text style={styles.statText}>{formatDuration(delivery.duration)}</Text>
+                                </View>
+                                {delivery.rating && (
+                                    <View style={styles.statItem}>
+                                        <Ionicons name="star" size={14} color="#FFC107"/>
+                                        <Text style={styles.statText}>{delivery.rating}.0</Text>
+                                    </View>
+                                )}
+                            </View>
+
+                            {/* Proof Indicators */}
+                            <View style={styles.proofIndicators}>
+                                {delivery.hasPickupPhotos && (
+                                    <View style={styles.proofBadge}>
+                                        <Ionicons name="camera" size={12} color="#4CAF50"/>
+                                        <Text style={styles.proofText}>Pickup</Text>
+                                    </View>
+                                )}
+                                {delivery.hasDeliveryPhotos && (
+                                    <View style={styles.proofBadge}>
+                                        <Ionicons name="camera" size={12} color="#2196F3"/>
+                                        <Text style={styles.proofText}>Delivery</Text>
+                                    </View>
+                                )}
+                                {delivery.tokenVerified && (
+                                    <View style={styles.proofBadge}>
+                                        <Ionicons name="shield-checkmark" size={12} color="#9C27B0"/>
+                                        <Text style={styles.proofText}>Verified</Text>
+                                    </View>
+                                )}
+                            </View>
+
+                            {/* Date */}
+                            <Text style={styles.deliveryDate}>
+                                {new Date(delivery.completedAt).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </Text>
+
+                            {/*/!* View Details Arrow *!/*/}
+                            {/*<View style={styles.viewDetailsIndicator}>*/}
+                            {/*    <Ionicons name="chevron-forward" size={20} color="#4CAF50"/>*/}
+                            {/*</View>*/}
+                        </TouchableOpacity>
+                    ))}
+                </View>
             </View>
-        </View>
         </>
     );
 };
@@ -236,28 +244,28 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 24,
     },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        color: '#1F2937',
-        fontFamily: 'PoppinsBold',
-    },
-    seeAllText: {
-        fontSize: 14,
-        color: '#3B82F6',
-        fontFamily: 'PoppinsMedium',
-    },
+    // sectionHeader: {
+    //     flexDirection: 'row',
+    //     justifyContent: 'space-between',
+    //     alignItems: 'center',
+    //     marginBottom: 16,
+    // },
+    // sectionTitle: {
+    //     fontSize: 18,
+    //     color: '#1F2937',
+    //     fontFamily: 'PoppinsBold',
+    // },
+    // seeAllText: {
+    //     fontSize: 14,
+    //     color: '#3B82F6',
+    //     fontFamily: 'PoppinsMedium',
+    // },
     deliveriesContainer: {
         backgroundColor: '#FFF',
         borderRadius: 16,
         padding: 16,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
@@ -348,7 +356,7 @@ const styles = StyleSheet.create({
         padding: 40,
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.05,
         shadowRadius: 8,
         elevation: 2,
@@ -385,10 +393,6 @@ const styles = StyleSheet.create({
     },
 
 
-
-
-
-
     // Deliveries Section
     deliveriesSection: {
         paddingHorizontal: 16,
@@ -401,7 +405,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         elevation: 2,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.1,
         shadowRadius: 2,
         position: 'relative',
@@ -522,6 +526,49 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         color: '#4CAF50',
+    },
+
+
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        paddingHorizontal: 4,
+    },
+    titleContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        gap: 5
+    },
+    sectionTitle: {
+        fontSize: 19,
+
+        color: '#1F2937',
+        fontFamily: 'PoppinsBold',
+        letterSpacing: -0.5,
+    },
+    deliveryCount: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontFamily: 'PoppinsRegular',
+        // marginTop: 4,
+    },
+    seeAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F3F4F6',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        gap: 6,
+    },
+    seeAllText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#3B82F6',
+        fontFamily: 'PoppinsSemiBold',
     },
 
 });

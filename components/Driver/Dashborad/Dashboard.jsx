@@ -13,7 +13,7 @@ import {
     ActivityIndicator,
     RefreshControl // Add this import
 } from 'react-native';
-import {Ionicons, MaterialCommunityIcons, FontAwesome5} from '@expo/vector-icons';
+import {Ionicons, MaterialCommunityIcons, FontAwesome5, AntDesign, FontAwesome6} from '@expo/vector-icons';
 import {useRouter} from "expo-router";
 import DriverUtils from "../../../utils/DriverUtilities";
 import AutoScrollHighlights from './AutoScrollHighlights';
@@ -75,6 +75,7 @@ function DriverDashboard({userData}) {
         }
         return {text: 'Offline', color: '#6B7280', icon: 'pause-circle'};
     };
+
     const availabilityStatus = getAvailabilityStatus();
 
     // Online Toggle
@@ -334,9 +335,18 @@ function DriverDashboard({userData}) {
                 {/* Highlights */}
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Why AAngLogistics ?</Text>
-                        <TouchableOpacity>
-                            <Text style={styles.sectionLink}>Learn More</Text>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.sectionTitle}>Why AAngLogistics</Text>
+                            <FontAwesome6 name="thumbs-up" size={20} color="green" />
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => router.push('/driver/account/support/faq')}
+                        >
+                            <View style={styles.titleContainer}>
+                                {/*<Text style={styles.sectionLink}>Learn More</Text>*/}
+                                <Ionicons name="open" size={22} color="blue" />
+                            </View>
+
                         </TouchableOpacity>
                     </View>
                     <AutoScrollHighlights highlights={highlights}/>
@@ -498,7 +508,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
     },
     sectionTitle: {
-        fontSize: 16,
+        fontSize: 18,
         color: '#1F2937',
         fontFamily: 'PoppinsBold',
     },
@@ -537,6 +547,13 @@ const styles = StyleSheet.create({
         color: '#374151',
         fontFamily: 'PoppinsMedium',
     },
+    titleContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        gap: 5
+    },
+
 });
 
 export default DriverDashboard;

@@ -87,6 +87,25 @@ class ClientUtils {
         }
     }
 
+    static async GoogleSocialAuth(obj) {
+        try {
+            const response = await axiosPublic({
+                method: "POST",
+                url: '/auth/firebase-oauth',
+                data: obj,
+            });
+
+            if (response.status === 200 || response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.data?.error || 'Authentication failed');
+            }
+        } catch (error) {
+            console.error('Google Social Auth Error:', error);
+            throw error;
+        }
+    }
+
     static async GetToken(obj) {
         try {
             const response = await axiosPrivate({

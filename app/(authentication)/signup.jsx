@@ -1,3 +1,5 @@
+// app/(authentication)/signup.jsx
+
 import React, {useState, useEffect} from 'react';
 import {
     View,
@@ -176,6 +178,8 @@ export default function SignUp() {
             <Stack.Screen
                 options={{
                     animation: "slide_from_right",
+                    // i need the back arrow to be a white color
+
                     headerShown: true,
                     headerTitle: () => <LogoTitle role={role}/>,
                     title: "Role",
@@ -184,6 +188,7 @@ export default function SignUp() {
                         elevation: 0,
                         shadowColor: 'transparent',
                     },
+                    headerTintColor: '#FFFFFF',
                 }}
             />
 

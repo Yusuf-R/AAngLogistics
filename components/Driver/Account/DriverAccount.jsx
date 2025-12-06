@@ -10,10 +10,10 @@ import {
     SafeAreaView,
     StatusBar,
     Modal,
-    Pressable, ActivityIndicator,
+    Pressable,
+    ActivityIndicator,
     Dimensions,
     Platform,
-
 } from 'react-native';
 import { Ionicons, Feather, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import SessionManager from "../../../lib/SessionManager";
