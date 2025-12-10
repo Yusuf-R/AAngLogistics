@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Animated, Pressable } from 'react-native';
 import { useLinkBuilder, useTheme } from '@react-navigation/native';
-import {Ionicons, AntDesign, FontAwesome5 } from "@expo/vector-icons";
+import {Ionicons, AntDesign, FontAwesome5, FontAwesome6 } from "@expo/vector-icons";
 import {useNotificationStore} from "../store/useNotificationStore";
 
 export function TabBar({ state, descriptors, navigation }) {
@@ -49,10 +49,10 @@ export function TabBar({ state, descriptors, navigation }) {
             filled: 'notifications-sharp',
         },
         orders: {
-            outline: <AntDesign name="CodeSandbox" size={24} color="black" />,
+            outline: <FontAwesome6 name="boxes-stacked" size={24} color="blue" />,
             filled: <FontAwesome5 name="box-open" size={24} color="black" />
         },
-        wallet: {
+        finance: {
             outline: 'wallet-outline',
             filled: 'wallet',
         },
@@ -62,7 +62,7 @@ export function TabBar({ state, descriptors, navigation }) {
         dashboard: 'Home',
         profile: 'Profile',
         orders: 'Orders',
-        wallet: 'Wallet',
+        finance: 'Finance',
         notifications: '',
     };
 
@@ -153,26 +153,18 @@ export function TabBar({ state, descriptors, navigation }) {
 const styles = StyleSheet.create({
     tabBar: {
         flexDirection: 'row',
-        // marginHorizontal: 50,
-        marginBottom: -10,
-        // paddingVertical: 10,
-        // borderRadius: 70,
+        marginBottom: -15,
+        borderRadius: 70,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
         elevation: 3,
-        // position: 'absolute',
-        // bottom: Platform.OS === 'ios' ? 20 : 0,
-        // left: 0,
-        // right: 0,
         zIndex: 1000,
         justifyContent: 'space-around',
         alignItems: 'center',
         height: 70,
         overflow: 'hidden',
-        // borderColor: 'blue',
-        // backgroundColor: '#fdfbfb',
         backgroundColor: '#FFF',
     },
     tabBarItem: {

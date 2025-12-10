@@ -101,8 +101,16 @@ class ClientUtils {
                 throw new Error(response.data?.error || 'Authentication failed');
             }
         } catch (error) {
-            console.error('Google Social Auth Error:', error);
-            throw error;
+            console.log('Google Social Auth Error:', error.response?.data || error.message);
+
+            // Re-throw with better error message
+            if (error.response?.data) {
+                const backendError = new Error(error.response.data.message || error.response.data.error);
+                backendError.response = error.response;
+                backendError.status = error.response.status;
+                throw backendError;
+            }
+
         }
     }
 
@@ -330,6 +338,96 @@ class ClientUtils {
         } catch (error) {
             console.log({error});
             throw new Error(error);
+        }
+    }
+
+
+    static async getDashboardData() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/auth/dashboard',
+            });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data?.error || 'Failed to fetch dashboard data');
+            }
+        } catch (error) {
+            console.log('Dashboard data error:', error);
+            throw error;
+        }
+    }
+
+    static async getFinancialData() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/user/financial-data',
+            });
+
+            if (response.status === 200) {
+                return response.data.financialData;
+            } else {
+                throw new Error(response.data?.error || 'Failed to fetch financial data');
+            }
+        } catch (error) {
+            console.log('Financial data error:', error);
+            // Return default data on error
+            return {
+                totalOrders: 0,
+                completedOrders: 0,
+                totalPaid: 0,
+                walletBalance: 0,
+                pendingOrders: 0,
+            };
+        }
+    }
+
+    static async getTransactionHistory(limit = 10, page = 1) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/user/transactions?limit=${limit}&page=${page}`,
+            });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data?.error || 'Failed to fetch transactions');
+            }
+        } catch (error) {
+            console.log('Transaction history error:', error);
+            // Return empty data on error
+            return {
+                transactions: [],
+                pagination: {
+                    currentPage: 1,
+                    totalPages: 0,
+                    totalTransactions: 0,
+                    hasMore: false,
+                }
+            };
+        }
+    }
+
+    static async topUpWallet(amount, paymentMethod = 'paystack') {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/user/wallet/topup',
+                data: { amount, paymentMethod },
+            });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data?.error || 'Failed to initiate top up');
+            }
+        } catch (error) {
+            console.log('Wallet top up error:', error);
+            throw error;
         }
     }
 
@@ -678,7 +776,6 @@ class ClientUtils {
                 url: '/order/all',
             });
             if (response.status === 200) {
-                console.log({axiosData: response.data});
                 return response.data;
             } else {
                 throw new Error(response.error);
@@ -793,6 +890,175 @@ class ClientUtils {
         } catch (error) {
             console.log({error});
             throw new Error(error.response?.data?.error || 'Failed to delete file');
+        }
+    }
+
+    // finance
+    /**
+     * Get comprehensive financial summary (orders + wallet)
+     */
+    static async getFinancialSummary() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/user/finance/summary'
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching financial summary:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get wallet top-up history
+     */
+    static async getTopUpHistory(params = {}) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/user/finance/topup/history',
+                params: {
+                    status: params.status || 'all',
+                    page: params.page || 1,
+                    limit: params.limit || 20
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching top-up history:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get wallet balance
+     */
+    static async getWalletBalance() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/user/wallet/balance'
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching wallet balance:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get all financial transactions (orders + wallet)
+     */
+    static async getFinancialTransactions(params = {}) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/user/finance/transactions',
+                params: {
+                    page: params.page || 1,
+                    limit: params.limit || 50,
+                    type: params.type || 'all',
+                    status: params.status || 'all'
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching financial transactions:', error);
+            const errorMessage = error.response?.data?.message ||
+                error.response?.data?.error ||
+                error.message ||
+                'Failed to load transaction history';
+            throw new Error(errorMessage);
+        }
+    }
+
+    /**
+     * Initiate wallet top-up
+     */
+    static async initiateTopUp(amount) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/user/wallet/topup/initiate',
+                data: { amount }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error initiating top-up:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Verify top-up payment
+     */
+    static async verifyTopUp(reference) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/user/wallet/topup/verify',
+                data: { reference }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error verifying top-up:', error);
+            throw error;
+        }
+    }
+
+
+
+
+
+    /**
+     * Generate reference for wallet top-up
+     */
+    static async generateTopUpReference(amount) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/user/wallet/topup/generate-reference',
+                data: { amount }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error generating top-up reference:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Verify top-up payment after Paystack
+     */
+    static async verifyTopUpPayment(reference) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/user/wallet/topup/verify',
+                data: { reference }
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Error verifying top-up:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Check status of pending top-up
+     */
+    static async checkPendingTopUp(reference) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: '/user/wallet/topup/check-pending',
+                data: { reference }
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error checking pending top-up:', error);
+            throw error;
         }
     }
 

@@ -7,7 +7,6 @@ import {
     TextInput,
     TouchableOpacity,
     StyleSheet,
-    SafeAreaView,
     StatusBar,
     ImageBackground,
     Image,
@@ -15,6 +14,7 @@ import {
     ScrollView,
     Platform,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons} from '@expo/vector-icons';
 import LottieView from 'lottie-react-native';
 import {useForm, Controller} from 'react-hook-form';
@@ -32,6 +32,7 @@ import StatusModal from '../../components/StatusModal/StatusModal';
 import img from '../../assets/images/new.jpg';
 
 const googleIcon = require('../../assets/icons/googleIcon.png');
+const loader = require("@/assets/animations/loader/spin-loader.json");
 
 const loginSchema = yup.object().shape({
     email: yup.string().email('Invalid email').required('Email is required'),
@@ -49,8 +50,9 @@ export default function Login() {
     const [modalVisible, setModalVisible] = useState(false);
     const [modalStatus, setModalStatus] = useState('loading');
     const [modalMessage, setModalMessage] = useState('Logging in...');
+
     const router = useRouter();
-    const {signInWithGoogle} = useAuth();
+    const {signInWithGoogle, isLoading: isGoogleLoading} = useAuth();
 
     const {control, handleSubmit, formState: {errors}} = useForm({
         resolver: yupResolver(loginSchema),
@@ -65,7 +67,7 @@ export default function Login() {
 
     const onLogin = async (data) => {
         setModalStatus('loading');
-        setModalMessage('Logging in..');
+        setModalMessage('Logging in...');
         setModalVisible(true);
 
         mutation.mutate(data, {
@@ -104,9 +106,32 @@ export default function Login() {
 
                 setModalStatus('error');
                 setModalMessage(errorMessage);
-                setModalVisible(true);
             },
         });
+    };
+
+    const handleGoogleSignIn = async () => {
+        setModalVisible(true);
+        setModalStatus('loading');
+        setModalMessage('Connecting to Google...');
+
+        try {
+            await signInWithGoogle(
+                // Success callback
+                () => {
+                    setModalStatus('success');
+                    setModalMessage('Successfully signed in! 🎉');
+                },
+                // Error callback
+                (errorMessage) => {
+                    setModalStatus('error');
+                    setModalMessage(errorMessage);
+                }
+            );
+        } catch (error) {
+            setModalStatus('error');
+            setModalMessage('Sign in failed. Please try again.');
+        }
     };
 
     return (
@@ -220,6 +245,7 @@ export default function Login() {
                             ]}
                             onPress={handleSubmit(onLogin)}
                             disabled={mutation.isPending}
+                            activeOpacity={0.8}
                         >
                             <Text style={styles.buttonText}>
                                 {mutation.isPending ? 'LOGGING IN...' : 'LOGIN'}
@@ -240,11 +266,27 @@ export default function Login() {
 
                         {/* Google Sign In */}
                         <TouchableOpacity
-                            style={styles.googleButton}
-                            onPress={signInWithGoogle}
+                            style={[
+                                styles.googleButton,
+                                isGoogleLoading && styles.googleButtonDisabled
+                            ]}
+                            onPress={handleGoogleSignIn}
+                            disabled={isGoogleLoading}
+                            activeOpacity={0.7}
                         >
-                            <Image source={googleIcon} style={styles.googleIcon}/>
-                            <Text style={styles.googleButtonText}>Continue with Google</Text>
+                            {isGoogleLoading ? (
+                                <LottieView
+                                    source={loader}
+                                    autoPlay
+                                    loop
+                                    style={styles.googleLoader}
+                                />
+                            ) : (
+                                <>
+                                    <Image source={googleIcon} style={styles.googleIcon}/>
+                                    <Text style={styles.googleButtonText}>Continue with Google</Text>
+                                </>
+                            )}
                         </TouchableOpacity>
 
                         {/* Sign Up Link */}
@@ -264,6 +306,10 @@ export default function Login() {
                 status={modalStatus}
                 message={modalMessage}
                 onClose={() => setModalVisible(false)}
+                onRetry={() => {
+                    setModalVisible(false);
+                    // Retry logic if needed
+                }}
             />
         </SafeAreaView>
     );
@@ -424,10 +470,18 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2,
     },
+    googleButtonDisabled: {
+        backgroundColor: 'rgba(249, 250, 251, 0.95)',
+        borderColor: '#D1D5DB',
+    },
     googleIcon: {
         width: 20,
         height: 20,
         marginRight: 10,
+    },
+    googleLoader: {
+        width: 24,
+        height: 24,
     },
     googleButtonText: {
         fontSize: 15,

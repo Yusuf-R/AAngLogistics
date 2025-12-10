@@ -6,22 +6,27 @@ import {
     Image,
     TouchableOpacity,
     ScrollView,
-    SafeAreaView,
     StatusBar,
     Modal,
     Pressable, ActivityIndicator
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {Ionicons, Feather, FontAwesome, MaterialIcons, Octicons, MaterialCommunityIcons} from '@expo/vector-icons';
 import {router} from "expo-router";
-import { useSessionStore } from "../../../../store/useSessionStore";
+import {useSessionStore} from "../../../../store/useSessionStore";
 import SessionManager from "../../../../lib/SessionManager";
 import {ROUTES} from "../../../../utils/Constant";
 import {useSafeAreaInsets} from "react-native-safe-area-context";
-import { registerForPushNotificationsAsync, checkNotificationPermission, hasAskedForPermission, markPermissionAsked } from '../../../../utils/Notification';
+import {
+    registerForPushNotificationsAsync,
+    checkNotificationPermission,
+    hasAskedForPermission,
+    markPermissionAsked
+} from '../../../../utils/Notification';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { axiosPrivate } from "../../../../utils/AxiosInstance";
+import {axiosPrivate} from "../../../../utils/AxiosInstance";
 import PushNotificationModal from "/components/PushNotificatonModal";
-import { toast } from "sonner-native";
+import {toast} from "sonner-native";
 
 function ClientProfileScreen() {
     const [logoutModalVisible, setLogoutModalVisible] = useState(false);
@@ -70,11 +75,11 @@ function ClientProfileScreen() {
         };
 
         handleNotificationFlow();
-    }, [userData]); // ✅ Add dependency
+    }, [userData]);
 
     if (!userData) {
         return (
-            <SafeAreaView style={{flex:1, backgroundColor: '#FFF', paddingTop: insets.top}}>
+            <SafeAreaView style={{flex: 1, backgroundColor: '#FFF', paddingTop: insets.top}}>
                 <ActivityIndicator size="large" color="#60a5fa"/>
             </SafeAreaView>
         );
@@ -117,14 +122,11 @@ function ClientProfileScreen() {
         router.push(ROUTES['LOCATION']);
     }
 
-    const goToPayment = () => {
-        router.push(ROUTES.PAYMENT);
+    const goToAnalytics = () => {
+        router.push(ROUTES.ANALYTICS);
     }
 
-    const goToHelpCenter = () =>
-        router.push(ROUTES['HELP-CENTER']); {
-
-    }
+    const goToHelpCenter = () => { router.push(ROUTES['HELP-CENTER']) };
 
     const renderMenuItem = ({icon, iconType, title, value, hasChevron, color, isSwitch, onPress}) => {
         const renderIcon = () => {
@@ -193,191 +195,191 @@ function ClientProfileScreen() {
     };
 
     return (
-        <SafeAreaView style={{flex:1, backgroundColor: '#FFF', paddingTop: insets.top}}>
-            <StatusBar barStyle="dark-content"/>
+            <>
+                <StatusBar barStyle="dark-content"/>
 
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerContent}>
-                    <Image
-                        source={require('../../../../assets/images/AAngLogo.png')}
-                        style={styles.logoText}
-                    />
-                    <Text style={styles.headerTitle}>Profile</Text>
-                </View>
-                <TouchableOpacity
-                    style={styles.moreButton}
-                >
-                    <Feather name="more-horizontal" size={24} color="#333"/>
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.scrollView}>
-                {/* Profile Info */}
-                <View style={styles.profileSection}>
-                    <View style={styles.profileImageContainer}>
-                        {userData?.avatar ? (
-                            <Image
-                                source={{uri: userData.avatar}}
-                                style={styles.profileImage}
-                            />
-                        ) : (
-                            <Image
-                                source={require('../../../../assets/images/avatar-1.jpg')}
-                                style={styles.profileImage}
-                            />
-                        )}
-                        <TouchableOpacity style={styles.editImageButton}
-                                          onPress={() => updateProfilePic()}
-                        >
-                            <Feather name="edit-2" size={18} color="#fff"/>
-                        </TouchableOpacity>
+                {/* Header */}
+                <View style={styles.header}>
+                    <View style={styles.headerContent}>
+                        <Image
+                            source={require('../../../../assets/images/AAngLogo.png')}
+                            style={styles.logoText}
+                        />
+                        <Text style={styles.headerTitle}>Profile</Text>
                     </View>
+                    <TouchableOpacity
+                        style={styles.moreButton}
+                    >
+                        <Feather name="more-horizontal" size={24} color="#333"/>
+                    </TouchableOpacity>
+                </View>
 
-                    {userData?.fullName ? (
-                        <Text style={styles.profileName}>
-                            Hi, {userData.fullName.split(' ')[0]}
-                        </Text>
-                    ) : (
-                        <Text style={styles.profileName}>Welcome to AAngLogistics</Text>
-                    )}
-
-                    {userData?.email && (
-                        <View style={styles.emailContainer}>
-                            <Text style={styles.profileEmail}>{userData.email}</Text>
-                            {userData.emailVerified ? (
-                                <MaterialIcons name="verified-user" size={22} color="green"/>
+                <ScrollView style={styles.scrollView}>
+                    {/* Profile Info */}
+                    <View style={styles.profileSection}>
+                        <View style={styles.profileImageContainer}>
+                            {userData?.avatar ? (
+                                <Image
+                                    source={{uri: userData.avatar}}
+                                    style={styles.profileImage}
+                                />
                             ) : (
-                                <>
-                                    <Octicons name="unverified" size={22} color="black"/>
-                                </>
+                                <Image
+                                    source={require('../../../../assets/images/avatar-1.jpg')}
+                                    style={styles.profileImage}
+                                />
                             )}
+                            <TouchableOpacity style={styles.editImageButton}
+                                              onPress={() => updateProfilePic()}
+                            >
+                                <Feather name="edit-2" size={18} color="#fff"/>
+                            </TouchableOpacity>
                         </View>
-                    )}
 
-                </View>
+                        {userData?.fullName ? (
+                            <Text style={styles.profileName}>
+                                Hi, {userData.fullName.split(' ')[0]}
+                            </Text>
+                        ) : (
+                            <Text style={styles.profileName}>Welcome to AAngLogistics</Text>
+                        )}
 
-                <View style={styles.divider}/>
+                        {userData?.email && (
+                            <View style={styles.emailContainer}>
+                                <Text style={styles.profileEmail}>{userData.email}</Text>
+                                {userData.emailVerified ? (
+                                    <MaterialIcons name="verified-user" size={22} color="green"/>
+                                ) : (
+                                    <>
+                                        <Octicons name="unverified" size={22} color="black"/>
+                                    </>
+                                )}
+                            </View>
+                        )}
 
-                {/* Menu Items */}
-                <View style={styles.menuSection}>
-                    {renderMenuItem({
-                        icon: 'person-outline',
-                        iconType: 'Ionicons',
-                        title: 'Edit Profile',
-                        hasChevron: true,
-                        onPress: () => geToEdit()
-                    })}
+                    </View>
 
-                    {renderMenuItem({
-                        icon: 'location-outline',
-                        iconType: 'Ionicons',
-                        title: 'Saved Locations',
-                        hasChevron: true,
-                        onPress: () => goToLocationSettings()
-                    })}
+                    <View style={styles.divider}/>
 
-                    {renderMenuItem({
-                        icon: 'wallet-outline',
-                        iconType: 'Ionicons',
-                        title: 'Payment',
-                        hasChevron: true,
-                        onPress: () => goToPayment()
-                    })}
+                    {/* Menu Items */}
+                    <View style={styles.menuSection}>
+                        {renderMenuItem({
+                            icon: 'person-outline',
+                            iconType: 'Ionicons',
+                            title: 'Edit Profile',
+                            hasChevron: true,
+                            onPress: () => geToEdit()
+                        })}
 
-                    {renderMenuItem({
-                        icon: 'shield-outline',
-                        iconType: 'Ionicons',
-                        title: 'Security',
-                        hasChevron: true,
-                        onPress: () => goToSecurity()
-                    })}
+                        {renderMenuItem({
+                            icon: 'location-outline',
+                            iconType: 'Ionicons',
+                            title: 'Saved Locations',
+                            hasChevron: true,
+                            onPress: () => goToLocationSettings()
+                        })}
+
+                        {renderMenuItem({
+                            icon: 'analytics-sharp',
+                            iconType: 'Ionicons',
+                            title: 'Analytics',
+                            hasChevron: true,
+                            onPress: () => goToAnalytics()
+                        })}
+
+                        {renderMenuItem({
+                            icon: 'shield-outline',
+                            iconType: 'Ionicons',
+                            title: 'Security',
+                            hasChevron: true,
+                            onPress: () => goToSecurity()
+                        })}
 
 
-                    {renderMenuItem({
-                        icon: 'handshake',
-                        iconType: 'MaterialIcons',
-                        title: 'Terms & Conditions',
-                        hasChevron: true,
-                        onPress: () => goToTC()
-                    })}
+                        {renderMenuItem({
+                            icon: 'handshake',
+                            iconType: 'MaterialIcons',
+                            title: 'Terms & Conditions',
+                            hasChevron: true,
+                            onPress: () => goToTC()
+                        })}
 
-                    {renderMenuItem({
-                        icon: 'construct-outline',
-                        iconType: 'Ionicons',
-                        title: 'Utility',
-                        hasChevron: true,
-                        onPress: () => goToUtility()
-                    })}
+                        {/*{renderMenuItem({*/}
+                        {/*    icon: 'construct-outline',*/}
+                        {/*    iconType: 'Ionicons',*/}
+                        {/*    title: 'Utility',*/}
+                        {/*    hasChevron: true,*/}
+                        {/*    onPress: () => goToUtility()*/}
+                        {/*})}*/}
 
-                    {renderMenuItem({
-                        icon: 'accessibility-outline',
-                        iconType: 'Ionicons',
-                        title: 'Help Center',
-                        hasChevron: true,
-                        onPress: () => goToHelpCenter()
-                    })}
+                        {renderMenuItem({
+                            icon: 'accessibility-outline',
+                            iconType: 'Ionicons',
+                            title: 'Help Center',
+                            hasChevron: true,
+                            onPress: () => goToHelpCenter()
+                        })}
 
-                    {renderMenuItem({
-                        icon: 'log-out-outline',
-                        iconType: 'Ionicons',
-                        title: 'Logout',
-                        color: '#FF0F00',
-                        onPress: () => setLogoutModalVisible(true)
-                    })}
-                </View>
-            </ScrollView>
+                        {renderMenuItem({
+                            icon: 'log-out-outline',
+                            iconType: 'Ionicons',
+                            title: 'Logout',
+                            color: '#FF0F00',
+                            onPress: () => setLogoutModalVisible(true)
+                        })}
+                    </View>
+                </ScrollView>
 
-            {/* Logout Modal */}
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={logoutModalVisible}
-                onRequestClose={() => setLogoutModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalView}>
-                        <View style={styles.modalIndicator}/>
+                {/* Logout Modal */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={logoutModalVisible}
+                    onRequestClose={() => setLogoutModalVisible(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalView}>
+                            <View style={styles.modalIndicator}/>
 
-                        <Text style={styles.logoutTitle}>Logout</Text>
+                            <Text style={styles.logoutTitle}>Logout</Text>
 
-                        <Text style={styles.logoutQuestion}>
-                            Are you sure you want to log out?
-                        </Text>
+                            <Text style={styles.logoutQuestion}>
+                                Are you sure you want to log out?
+                            </Text>
 
-                        <View style={styles.buttonContainer}>
-                            <Pressable
-                                style={[styles.button, styles.cancelButton]}
-                                onPress={() => setLogoutModalVisible(false)}
-                            >
-                                <Text style={styles.cancelButtonText}>Cancel</Text>
-                            </Pressable>
+                            <View style={styles.buttonContainer}>
+                                <Pressable
+                                    style={[styles.button, styles.cancelButton]}
+                                    onPress={() => setLogoutModalVisible(false)}
+                                >
+                                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                                </Pressable>
 
-                            <Pressable
-                                style={[styles.button, styles.logoutButton]}
-                                onPress={handleLogout}
-                            >
-                                <Text style={styles.logoutButtonText}>Yes, Logout</Text>
-                            </Pressable>
+                                <Pressable
+                                    style={[styles.button, styles.logoutButton]}
+                                    onPress={handleLogout}
+                                >
+                                    <Text style={styles.logoutButtonText}>Yes, Logout</Text>
+                                </Pressable>
+                            </View>
                         </View>
                     </View>
-                </View>
-            </Modal>
-            {/* Logout Progress Overlay */}
-            {isLoggingOut && (
-                <View style={styles.logoutOverlay}>
-                    <View style={styles.logoutCard}>
-                        <ActivityIndicator size="large" color="#60a5fa" />
-                        <Text style={styles.logoutText}>Logging you out...</Text>
+                </Modal>
+                {/* Logout Progress Overlay */}
+                {isLoggingOut && (
+                    <View style={styles.logoutOverlay}>
+                        <View style={styles.logoutCard}>
+                            <ActivityIndicator size="large" color="#60a5fa"/>
+                            <Text style={styles.logoutText}>Logging you out...</Text>
+                        </View>
                     </View>
-                </View>
-            )}
-            <PushNotificationModal
-                visible={showNotificationModal}
-                onEnable={handleEnableNotifications}
-                onMaybeLater={handleMaybeLater}
-            />
-        </SafeAreaView>
+                )}
+                <PushNotificationModal
+                    visible={showNotificationModal}
+                    onEnable={handleEnableNotifications}
+                    onMaybeLater={handleMaybeLater}
+                />
+            </>
     );
 };
 
@@ -386,7 +388,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 10,
+        paddingHorizontal: 15,
         paddingVertical: 5,
     },
     headerContent: {
@@ -410,7 +412,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 22,
-        fontWeight: 'bold',
+        fontFamily: 'PoppinsSemiBold',
         color: '#333',
     },
     moreButton: {
@@ -427,7 +429,6 @@ const styles = StyleSheet.create({
     },
     profileSection: {
         alignItems: 'center',
-        paddingVertical: 10,
     },
     profileImageContainer: {
         position: 'relative',
@@ -453,12 +454,12 @@ const styles = StyleSheet.create({
     },
     profileName: {
         fontSize: 22,
-        fontWeight: 'bold',
+        fontFamily: 'PoppinsSemiBold',
         color: '#333',
-        marginBottom: 5,
     },
     profileEmail: {
         fontSize: 16,
+        fontFamily: 'PoppinsSemiBold',
         color: '#777',
         marginRight: 3,
     },
@@ -489,9 +490,8 @@ const styles = StyleSheet.create({
     },
     menuItemText: {
         fontSize: 16,
-        fontWeight: 'bold',
+        fontFamily: 'PoppinsSemiBold',
         color: '#333',
-        fontFamily: 'PoppinsBlack',
     },
     menuRightContainer: {
         flexDirection: 'row',

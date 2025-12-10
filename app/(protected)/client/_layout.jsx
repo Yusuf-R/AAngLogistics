@@ -73,9 +73,9 @@ export default function ClientTabsLayout() {
                     }}
                 />
                 <Tabs.Screen
-                    name="wallet"
+                    name="finance"
                     options={{
-                        title: 'Wallets',
+                        title: 'Finance',
                     }}
                 />
                 <Tabs.Screen

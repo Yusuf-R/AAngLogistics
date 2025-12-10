@@ -1,4 +1,4 @@
-// Complete Notification System for React Native
+// components/Client/Dashboard/Header.jsx
 import {
     View,
     Text,
@@ -18,8 +18,6 @@ import { router } from 'expo-router';
 function Header ({ userData, notifications = [],  style = {} }) {
     const firstName = userData?.fullName?.split(' ')[0] || 'User';
 
-    // Calculate notification stats
-    const unreadCount = notifications.filter(n => !n.read?.status).length;
     // Determine greeting
     const currentHour = new Date().getHours();
     const greeting =
@@ -170,4 +168,3 @@ const styles = StyleSheet.create({
 
 
 export default Header;
-

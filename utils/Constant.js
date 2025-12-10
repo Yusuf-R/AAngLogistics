@@ -43,7 +43,7 @@ export const ROUTES = {
     HOME: '/client/dashboard',
     ORDERS: '/client/orders',
     PROFILE: '/client/profile',
-    WALLET: '/client/wallet',
+    FINANCE: '/client/finance',
     NOTIFICATIONS: '/client/notifications',
 
     // Nested Routes (No Tab Bar)
@@ -59,7 +59,7 @@ export const ROUTES = {
     'UPDATE-AVATAR': '/client/profile/update-avatar',
     "PRIVACY-POLICY": '/client/profile/privacy-policy',
     "LOCATION": '/client/profile/location',
-    "PAYMENT": '/client/profile/payment',
+    "ANALYTICS": '/client/profile/analytics',
     'HELP-CENTER': '/client/profile/help-center',
     'NIN-VERIFICATION': '/client/profile/nin-verification',
 
@@ -74,7 +74,7 @@ export const TAB_BAR_VISIBLE_ROUTES = [
     ROUTES.HOME,
     ROUTES.ORDERS,
     ROUTES.PROFILE,
-    ROUTES.WALLET,
+    ROUTES.FINANCE,
     ROUTES.NOTIFICATIONS,
 ];
 
@@ -87,7 +87,7 @@ export const TAB_BAR_HIDDEN_EXCEPTIONS = [
     '/client/profile/privacy-policy',
     '/client/profile/security',
     '/client/profile/nin-verification',
-    '/client/profile/payment',
+    '/client/profile/analytics',
     '/client/profile/auth-pin',
     '/client/profile/reset-pin',
     '/client/profile/help-center',

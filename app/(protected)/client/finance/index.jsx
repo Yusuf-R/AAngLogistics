@@ -1,7 +1,7 @@
 // app/(protected)/driver/finance/index.jsx
 import React, { useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
-import FloatingFinanceTabs from "../../../../components/Driver/Finance/FloatingFinanceTabs";
+import FloatingFinanceTab from "../../../../components/Client/Finance/FloatingFinanceTab";
 import { useSessionStore } from "../../../../store/useSessionStore";
 
 function FinanceScreen() {
@@ -10,7 +10,7 @@ function FinanceScreen() {
 
     return (
         <View style={styles.container}>
-            <FloatingFinanceTabs
+            <FloatingFinanceTab
                 ref={floatingTabsRef}
                 userData={userData}
             />

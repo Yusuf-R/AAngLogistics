@@ -3,7 +3,8 @@ import React, { useEffect, useRef } from 'react';
 import { usePathname, router, Slot, useSegments } from 'expo-router';
 import SessionManager from '../../lib/SessionManager';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { SafeAreaView, StatusBar, ActivityIndicator, View } from "react-native";
+import { StatusBar, ActivityIndicator, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useSessionStore } from "../../store/useSessionStore";
 
 // ProtectedLayout.js - Using isAuthorizedRoute
@@ -62,8 +63,8 @@ export default function ProtectedLayout() {
     }, [user, token, role, pathname, segments]);
 
     return (
-        <SafeAreaView style={{flex: 1, backgroundColor: '#FFF', paddingTop: insets.top}}>
-            <StatusBar barStyle="dark-content"/>
+        <SafeAreaView style={{flex: 1, backgroundColor: '#FFF'}}>
+            <StatusBar barStyle="default"/>
             <Slot/>
         </SafeAreaView>
     );

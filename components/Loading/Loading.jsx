@@ -1,3 +1,4 @@
+// components/Loading/Loading.jsx
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import LottieView from 'lottie-react-native';

@@ -11,7 +11,8 @@ import {
     Image,
     TouchableOpacity,
     StyleSheet,
-    TextInput
+    TextInput,
+    StatusBar
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useRouter, Stack} from 'expo-router';
@@ -100,7 +101,7 @@ export default function SignUp() {
         mode: 'onTouched',
     });
 
-    const {signInWithGoogle} = useAuth();
+    const {signInWithGoogle, isLoading: isGoogleLoading} = useAuth();
 
     useEffect(() => {
         async function loadRole() {
@@ -126,6 +127,8 @@ export default function SignUp() {
 
     const onSubmit = async (data) => {
         setModalVisible(true);
+        setModalStatus('loading');
+        setModalMessage('Creating your account...');
 
         mutation.mutate(data, {
             onSuccess: async (respData) => {
@@ -145,7 +148,9 @@ export default function SignUp() {
                     setModalMessage('Redirecting to your dashboard ♻️');
                 }, 2000);
 
-                router.replace(`/(protected)/${user.role}/dashboard`);
+                setTimeout(() => {
+                    router.replace(`/(protected)/${user.role}/dashboard`);
+                }, 3500);
             },
 
             onError: async (error) => {
@@ -159,13 +164,37 @@ export default function SignUp() {
 
                 setModalStatus('error');
                 setModalMessage(errorMessage);
-                setModalVisible(true);
             }
         });
     };
 
+    const handleGoogleSignIn = async () => {
+        setModalVisible(true);
+        setModalStatus('loading');
+        setModalMessage('Connecting to Google...');
+
+        try {
+            await signInWithGoogle(
+                // Success callback
+                () => {
+                    setModalStatus('success');
+                    setModalMessage('Successfully signed in! 🎉');
+                },
+                // Error callback
+                (errorMessage) => {
+                    setModalStatus('error');
+                    setModalMessage(errorMessage);
+                }
+            );
+        } catch (error) {
+            setModalStatus('error');
+            setModalMessage('Sign in failed. Please try again.');
+        }
+    };
+
     return (
         <SafeAreaView style={styles.safeArea} edges={['top']}>
+            <StatusBar barStyle="light-content"/>
             {/* Lightweight gradient background instead of heavy image */}
             <LinearGradient
                 colors={['#1e3a8a', '#3b82f6', '#60a5fa']}
@@ -174,12 +203,9 @@ export default function SignUp() {
                 end={{x: 1, y: 1}}
             />
 
-
             <Stack.Screen
                 options={{
                     animation: "slide_from_right",
-                    // i need the back arrow to be a white color
-
                     headerShown: true,
                     headerTitle: () => <LogoTitle role={role}/>,
                     title: "Role",
@@ -339,14 +365,30 @@ export default function SignUp() {
 
                         {/* Social Sign In */}
                         <TouchableOpacity
-                            style={styles.googleButton}
-                            onPress={signInWithGoogle}
+                            style={[
+                                styles.googleButton,
+                                isGoogleLoading && styles.googleButtonDisabled
+                            ]}
+                            onPress={handleGoogleSignIn}
+                            disabled={isGoogleLoading}
+                            activeOpacity={0.7}
                         >
-                            <Image
-                                source={googleIcon}
-                                style={styles.googleIcon}
-                            />
-                            <Text style={styles.googleButtonText}>Continue with Google</Text>
+                            {isGoogleLoading ? (
+                                <LottieView
+                                    source={loader}
+                                    autoPlay
+                                    loop
+                                    style={styles.googleLoader}
+                                />
+                            ) : (
+                                <>
+                                    <Image
+                                        source={googleIcon}
+                                        style={styles.googleIcon}
+                                    />
+                                    <Text style={styles.googleButtonText}>Continue with Google</Text>
+                                </>
+                            )}
                         </TouchableOpacity>
 
                         {/* Login Link */}
@@ -365,6 +407,10 @@ export default function SignUp() {
                 status={modalStatus}
                 message={modalMessage}
                 onClose={() => setModalVisible(false)}
+                onRetry={() => {
+                    setModalVisible(false);
+                    // Retry logic if needed
+                }}
             />
         </SafeAreaView>
     );
@@ -400,7 +446,7 @@ const styles = StyleSheet.create({
     },
     keyboardView: {
         flex: 1,
-        paddingTop: 80, // Account for transparent header
+        paddingTop: 80,
     },
     scrollView: {
         flex: 1,
@@ -544,10 +590,18 @@ const styles = StyleSheet.create({
         borderWidth: 1.5,
         borderColor: '#E5E7EB',
     },
+    googleButtonDisabled: {
+        backgroundColor: '#F9FAFB',
+        borderColor: '#D1D5DB',
+    },
     googleIcon: {
         width: 20,
         height: 20,
         marginRight: 12,
+    },
+    googleLoader: {
+        width: 24,
+        height: 24,
     },
     googleButtonText: {
         fontSize: 15,
