@@ -1,4 +1,5 @@
-// AnalyticsManagement.jsx - COMPLETELY REDESIGNED
+// components/Driver/Account/Analytics/AnalyticsManagement.jsx
+
 import React, {useState} from 'react';
 import {
     View,

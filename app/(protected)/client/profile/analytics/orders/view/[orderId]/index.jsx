@@ -1,19 +1,17 @@
-// app/(protected)/driver/account/analytics/deliveries/view/[orderId]/index.jsx
-
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import DriverUtils from '../../../../../../../../utils/DriverUtilities';
-import DeliveryDetails from '../../../../../../../../components/Driver/Account/Analytics/DeliveryDetails';
+import ClientUtils from '../../../../../../../../utils/ClientUtilities';
+import DeliveryDetails from '../../../../../../../../components/Client/Profile/Analytics/DeliveryDetails';
 import { Ionicons } from '@expo/vector-icons';
 
 function ViewDelivery() {
     const { orderId } = useLocalSearchParams();
 
     const { data, isLoading, error, isError, refetch } = useQuery({
-        queryKey: ['SingleDelivery', orderId],
-        queryFn: () => DriverUtils.getSingleDelivery(orderId),
+        queryKey: ['SingleDelivery'],
+        queryFn: () => ClientUtils.getSingleDelivery(orderId),
         retry: 2,
         retryDelay: 1000,
         refetchOnWindowFocus: false,

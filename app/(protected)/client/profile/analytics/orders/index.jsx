@@ -1,17 +1,17 @@
-// app/(protected)/driver/account/analytics/earnings/index.jsx
-import React from 'react';
-import Earnings from "components/Driver/Account/Analytics/Earnings"
+// app/(protected)/driver/account/analytics/deliveries/index.jsx
+import Orders from "components/Client/Profile/Analytics/Orders"
+import {ActivityIndicator, StyleSheet, Text, View} from "react-native";
 import {useSessionStore} from "../../../../../../store/useSessionStore";
 import {useQuery} from "@tanstack/react-query";
-import DriverUtils from "../../../../../../utils/DriverUtilities";
-import {ActivityIndicator, StyleSheet, Text, View} from "react-native";
+import React from "react";
+import ClientUtils from "../../../../../../utils/ClientUtilities";
 
-function AllEarnings() {
 
+function AllOrders() {
     const userData = useSessionStore((state) => state.user);
     const { data, isLoading, error, isError, refetch } = useQuery({
-        queryKey: ['DriverEarningsAnalytics'],
-        queryFn: DriverUtils.getEarningsAnalytics,
+        queryKey: ['ClientDeliveryAnalytics'],
+        queryFn: ClientUtils.getDeliveryAnalytics,
         retry: 3,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
         refetchOnWindowFocus: false,
@@ -42,17 +42,17 @@ function AllEarnings() {
             </View>
         );
     }
+
     return (
         <>
-            <Earnings
-                earningAnalytics={data?.data}
+            <Orders
+                orderAnalytics={data?.data}
                 userData={userData}
                 refetch={refetch}
             />
         </>
     );
 }
-
 
 const styles = StyleSheet.create({
     container: {
@@ -86,5 +86,4 @@ const styles = StyleSheet.create({
     },
 });
 
-
-export default AllEarnings;
+export default AllOrders;

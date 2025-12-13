@@ -29,6 +29,7 @@ import {useMutation} from "@tanstack/react-query";
 import {stateAndLGA} from '../../../../../utils/Constant';
 import StatusModal from "../../../../StatusModal/StatusModal";
 import SessionManager from "../../../../../lib/SessionManager";
+import CustomHeader from "../../../../CustomHeader";
 
 
 // Colors
@@ -319,7 +320,7 @@ export default function EditProfile({userData = null}) {
     // );
 
     // Update your renderLGAItem function
-    const renderLGAItem = ({ item }) => (
+    const renderLGAItem = ({item}) => (
         <TouchableOpacity
             style={styles.modalItem}
             onPress={() => {
@@ -329,406 +330,409 @@ export default function EditProfile({userData = null}) {
         >
             <Text style={styles.modalItemText}>{item}</Text>
             {watch('lga') === item && (
-                <Ionicons name="checkmark" size={20} color={COLORS.primary} />
+                <Ionicons name="checkmark" size={20} color={COLORS.primary}/>
             )}
         </TouchableOpacity>
     );
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <ScrollView
-                style={styles.scrollView}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+        <>
+            <CustomHeader onBackPress={()=> router.back()} title="Profile"/>
+            <KeyboardAvoidingView
+                style={styles.container}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
-                {/* Profile Image Section */}
-                <View style={styles.profileImageContainer}>
-                    <TouchableOpacity
-                        onPress={handleImagePicker}
-                        disabled={imageLoading}
-                        style={styles.profileImageButton}
-                    >
-                        <View style={styles.profileImageWrapper}>
-                            {profileImage || userData?.avatar ? (
-                                <Image
-                                    source={{uri: profileImage || userData?.avatar}}
-                                    style={styles.profileImage}
-                                />
-                            ) : (
-                                <View style={styles.profileImagePlaceholder}>
-                                    <Ionicons name="person" size={40} color={COLORS.muted}/>
-                                </View>
-                            )}
-                            {imageLoading && (
-                                <View style={styles.profileImageOverlay}>
-                                    <ActivityIndicator color="white"/>
-                                </View>
+                <ScrollView
+                    style={styles.scrollView}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    {/* Profile Image Section */}
+                    <View style={styles.profileImageContainer}>
+                        <TouchableOpacity
+                            onPress={handleImagePicker}
+                            disabled={imageLoading}
+                            style={styles.profileImageButton}
+                        >
+                            <View style={styles.profileImageWrapper}>
+                                {profileImage || userData?.avatar ? (
+                                    <Image
+                                        source={{uri: profileImage || userData?.avatar}}
+                                        style={styles.profileImage}
+                                    />
+                                ) : (
+                                    <View style={styles.profileImagePlaceholder}>
+                                        <Ionicons name="person" size={40} color={COLORS.muted}/>
+                                    </View>
+                                )}
+                                {imageLoading && (
+                                    <View style={styles.profileImageOverlay}>
+                                        <ActivityIndicator color="white"/>
+                                    </View>
+                                )}
+                            </View>
+                            <View style={styles.cameraIcon}>
+                                <Ionicons name="camera" size={16} color="white"/>
+                            </View>
+                        </TouchableOpacity>
+                        <Text style={styles.profileImageHint}>Tap to change profile picture</Text>
+                    </View>
+
+                    {/* Form Fields */}
+                    <View style={styles.formContainer}>
+                        {/* Full Name */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Full Name</Text>
+                            <Controller
+                                name="fullName"
+                                control={control}
+                                render={({field: {value, onChange, onBlur}}) => (
+                                    <TextInput
+                                        style={[
+                                            styles.input,
+                                            errors.fullName && styles.inputError
+                                        ]}
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        placeholder="Enter your full name"
+                                        placeholderTextColor={COLORS.muted}
+                                        autoCapitalize="words"
+                                    />
+                                )}
+                            />
+                            {errors.fullName && (
+                                <Text style={styles.errorText}>
+                                    {errors.fullName.message}
+                                </Text>
                             )}
                         </View>
-                        <View style={styles.cameraIcon}>
-                            <Ionicons name="camera" size={16} color="white"/>
-                        </View>
-                    </TouchableOpacity>
-                    <Text style={styles.profileImageHint}>Tap to change profile picture</Text>
-                </View>
 
-                {/* Form Fields */}
-                <View style={styles.formContainer}>
-                    {/* Full Name */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Full Name</Text>
-                        <Controller
-                            name="fullName"
-                            control={control}
-                            render={({field: {value, onChange, onBlur}}) => (
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        errors.fullName && styles.inputError
-                                    ]}
-                                    value={value}
-                                    onChangeText={onChange}
-                                    onBlur={onBlur}
-                                    placeholder="Enter your full name"
-                                    placeholderTextColor={COLORS.muted}
-                                    autoCapitalize="words"
-                                />
-                            )}
-                        />
-                        {errors.fullName && (
-                            <Text style={styles.errorText}>
-                                {errors.fullName.message}
-                            </Text>
-                        )}
-                    </View>
-
-                    {/* Email (Read-only) */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Email Address</Text>
-                        <View style={styles.disabledInput}>
-                            <Text style={styles.disabledInputText}>
-                                {userData?.email || 'andrew_ainsley@yourdomain.com'}
-                            </Text>
-                            <Ionicons name="lock-closed" size={16} color={COLORS.muted}/>
-                        </View>
-                        <Text style={styles.disabledHint}>
-                            Email cannot be changed for security reasons
-                        </Text>
-                    </View>
-
-                    {/* Phone Number */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Phone Number</Text>
-                        <Controller
-                            name="phoneNumber"
-                            control={control}
-                            render={({field: {value, onChange, onBlur}}) => (
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        errors.phoneNumber && styles.inputError
-                                    ]}
-                                    value={value}
-                                    onChangeText={onChange}
-                                    onBlur={onBlur}
-                                    placeholder="+234 800 000 0000"
-                                    placeholderTextColor={COLORS.muted}
-                                    keyboardType="phone-pad"
-                                />
-                            )}
-                        />
-                        {errors.phoneNumber && (
-                            <Text style={styles.errorText}>
-                                {errors.phoneNumber.message}
-                            </Text>
-                        )}
-                    </View>
-
-                    {/* Date of Birth */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Date of Birth</Text>
-                        <Controller
-                            name="dob"
-                            control={control}
-                            render={({field: {value}}) => (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.input,
-                                        styles.dateInput,
-                                        errors.dob && styles.inputError
-                                    ]}
-                                    onPress={() => setShowDatePicker(true)}
-                                >
-                                    <Text style={styles.dateText}>
-                                        {formatDate(value)}
-                                    </Text>
-                                    <Ionicons name="calendar-outline" size={20} color={COLORS.muted}/>
-                                </TouchableOpacity>
-                            )}
-                        />
-                        {errors.dob && (
-                            <Text style={styles.errorText}>
-                                {errors.dob.message}
-                            </Text>
-                        )}
-                    </View>
-
-                    {/* Gender */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Gender</Text>
-                        <Controller
-                            name="gender"
-                            control={control}
-                            render={({field: {value, onChange}}) => (
-                                <View style={styles.genderContainer}>
-                                    {['Male', 'Female'].map((gender) => (
-                                        <TouchableOpacity
-                                            key={gender}
-                                            style={[
-                                                styles.genderButton,
-                                                value === gender && styles.genderButtonActive
-                                            ]}
-                                            onPress={() => onChange(gender)}
-                                        >
-                                            <Text style={[
-                                                styles.genderButtonText,
-                                                value === gender && styles.genderButtonTextActive
-                                            ]}>
-                                                {gender}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            )}
-                        />
-                        {errors.gender && (
-                            <Text style={styles.errorText}>
-                                {errors.gender.message}
-                            </Text>
-                        )}
-                    </View>
-
-                    {/* Nationality (Fixed) */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Nationality</Text>
-                        <View style={styles.disabledInput}>
-                            <Text style={styles.disabledInputText}>
-                                🇳🇬 Nigeria
-                            </Text>
-                            <Ionicons name="lock-closed" size={16} color={COLORS.muted}/>
-                        </View>
-                    </View>
-
-                    {/* State */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>State</Text>
-                        <Controller
-                            name="state"
-                            control={control}
-                            render={({field: {value}}) => (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.input,
-                                        styles.selectInput,
-                                        errors.state && styles.inputError
-                                    ]}
-                                    onPress={() => setShowStateModal(true)}
-                                >
-                                    <Text style={value ? styles.selectText : styles.selectPlaceholder}>
-                                        {value || 'Select State'}
-                                    </Text>
-                                    <Ionicons name="chevron-down" size={20} color={COLORS.muted}/>
-                                </TouchableOpacity>
-                            )}
-                        />
-                        {errors.state && (
-                            <Text style={styles.errorText}>
-                                {errors.state.message}
-                            </Text>
-                        )}
-                    </View>
-
-                    {/* LGA */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Local Government Area</Text>
-                        <Controller
-                            name="lga"
-                            control={control}
-                            render={({field: {value}}) => (
-                                <TouchableOpacity
-                                    style={[
-                                        styles.input,
-                                        styles.selectInput,
-                                        errors.lga && styles.inputError,
-                                        !watchedState && styles.disabledSelect
-                                    ]}
-                                    onPress={() => watchedState && setShowLGAModal(true)}
-                                    disabled={!watchedState}
-                                >
-                                    <Text style={value ? styles.selectText : styles.selectPlaceholder}>
-                                        {value || 'Select LGA'}
-                                    </Text>
-                                    <Ionicons name="chevron-down" size={20} color={COLORS.muted}/>
-                                </TouchableOpacity>
-                            )}
-                        />
-                        {errors.lga && (
-                            <Text style={styles.errorText}>
-                                {errors.lga.message}
-                            </Text>
-                        )}
-                        {!watchedState && (
+                        {/* Email (Read-only) */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Email Address</Text>
+                            <View style={styles.disabledInput}>
+                                <Text style={styles.disabledInputText}>
+                                    {userData?.email || 'andrew_ainsley@yourdomain.com'}
+                                </Text>
+                                <Ionicons name="lock-closed" size={16} color={COLORS.muted}/>
+                            </View>
                             <Text style={styles.disabledHint}>
-                                Please select a state first
+                                Email cannot be changed for security reasons
                             </Text>
-                        )}
-                    </View>
+                        </View>
 
-                    {/* Address */}
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Address</Text>
-                        <Controller
-                            name="address"
-                            control={control}
-                            render={({field: {value, onChange, onBlur}}) => (
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        styles.multilineInput,
-                                        errors.address && styles.inputError
-                                    ]}
-                                    value={value}
-                                    onChangeText={onChange}
-                                    onBlur={onBlur}
-                                    placeholder="Enter your full address"
-                                    placeholderTextColor={COLORS.muted}
-                                    multiline
-                                    numberOfLines={3}
-                                    textAlignVertical="top"
-                                />
+                        {/* Phone Number */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Phone Number</Text>
+                            <Controller
+                                name="phoneNumber"
+                                control={control}
+                                render={({field: {value, onChange, onBlur}}) => (
+                                    <TextInput
+                                        style={[
+                                            styles.input,
+                                            errors.phoneNumber && styles.inputError
+                                        ]}
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        placeholder="+234 800 000 0000"
+                                        placeholderTextColor={COLORS.muted}
+                                        keyboardType="phone-pad"
+                                    />
+                                )}
+                            />
+                            {errors.phoneNumber && (
+                                <Text style={styles.errorText}>
+                                    {errors.phoneNumber.message}
+                                </Text>
                             )}
+                        </View>
+
+                        {/* Date of Birth */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Date of Birth</Text>
+                            <Controller
+                                name="dob"
+                                control={control}
+                                render={({field: {value}}) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.input,
+                                            styles.dateInput,
+                                            errors.dob && styles.inputError
+                                        ]}
+                                        onPress={() => setShowDatePicker(true)}
+                                    >
+                                        <Text style={styles.dateText}>
+                                            {formatDate(value)}
+                                        </Text>
+                                        <Ionicons name="calendar-outline" size={20} color={COLORS.muted}/>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            {errors.dob && (
+                                <Text style={styles.errorText}>
+                                    {errors.dob.message}
+                                </Text>
+                            )}
+                        </View>
+
+                        {/* Gender */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Gender</Text>
+                            <Controller
+                                name="gender"
+                                control={control}
+                                render={({field: {value, onChange}}) => (
+                                    <View style={styles.genderContainer}>
+                                        {['Male', 'Female'].map((gender) => (
+                                            <TouchableOpacity
+                                                key={gender}
+                                                style={[
+                                                    styles.genderButton,
+                                                    value === gender && styles.genderButtonActive
+                                                ]}
+                                                onPress={() => onChange(gender)}
+                                            >
+                                                <Text style={[
+                                                    styles.genderButtonText,
+                                                    value === gender && styles.genderButtonTextActive
+                                                ]}>
+                                                    {gender}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+                            />
+                            {errors.gender && (
+                                <Text style={styles.errorText}>
+                                    {errors.gender.message}
+                                </Text>
+                            )}
+                        </View>
+
+                        {/* Nationality (Fixed) */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Nationality</Text>
+                            <View style={styles.disabledInput}>
+                                <Text style={styles.disabledInputText}>
+                                    🇳🇬 Nigeria
+                                </Text>
+                                <Ionicons name="lock-closed" size={16} color={COLORS.muted}/>
+                            </View>
+                        </View>
+
+                        {/* State */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>State</Text>
+                            <Controller
+                                name="state"
+                                control={control}
+                                render={({field: {value}}) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.input,
+                                            styles.selectInput,
+                                            errors.state && styles.inputError
+                                        ]}
+                                        onPress={() => setShowStateModal(true)}
+                                    >
+                                        <Text style={value ? styles.selectText : styles.selectPlaceholder}>
+                                            {value || 'Select State'}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={20} color={COLORS.muted}/>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            {errors.state && (
+                                <Text style={styles.errorText}>
+                                    {errors.state.message}
+                                </Text>
+                            )}
+                        </View>
+
+                        {/* LGA */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Local Government Area</Text>
+                            <Controller
+                                name="lga"
+                                control={control}
+                                render={({field: {value}}) => (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.input,
+                                            styles.selectInput,
+                                            errors.lga && styles.inputError,
+                                            !watchedState && styles.disabledSelect
+                                        ]}
+                                        onPress={() => watchedState && setShowLGAModal(true)}
+                                        disabled={!watchedState}
+                                    >
+                                        <Text style={value ? styles.selectText : styles.selectPlaceholder}>
+                                            {value || 'Select LGA'}
+                                        </Text>
+                                        <Ionicons name="chevron-down" size={20} color={COLORS.muted}/>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                            {errors.lga && (
+                                <Text style={styles.errorText}>
+                                    {errors.lga.message}
+                                </Text>
+                            )}
+                            {!watchedState && (
+                                <Text style={styles.disabledHint}>
+                                    Please select a state first
+                                </Text>
+                            )}
+                        </View>
+
+                        {/* Address */}
+                        <View style={styles.inputGroup}>
+                            <Text style={styles.label}>Address</Text>
+                            <Controller
+                                name="address"
+                                control={control}
+                                render={({field: {value, onChange, onBlur}}) => (
+                                    <TextInput
+                                        style={[
+                                            styles.input,
+                                            styles.multilineInput,
+                                            errors.address && styles.inputError
+                                        ]}
+                                        value={value}
+                                        onChangeText={onChange}
+                                        onBlur={onBlur}
+                                        placeholder="Enter your full address"
+                                        placeholderTextColor={COLORS.muted}
+                                        multiline
+                                        numberOfLines={3}
+                                        textAlignVertical="top"
+                                    />
+                                )}
+                            />
+                            {errors.address && (
+                                <Text style={styles.errorText}>
+                                    {errors.address.message}
+                                </Text>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Update Button */}
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity
+                            style={[
+                                styles.button,
+                            ]}
+                            onPress={handleSubmit(onSubmit)}
+                        >
+                            <Text style={styles.buttonText}>
+                                Update Profile
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+
+                {/* Date Picker */}
+                {showDatePicker && (
+                    <DateTimePicker
+                        value={watch('dob')}
+                        mode="date"
+                        display="default"
+                        onChange={handleDateChange}
+                    />
+                )}
+
+                {/* State Modal */}
+                <Modal
+                    visible={showStateModal}
+                    animationType="slide"
+                    presentationStyle="pageSheet"
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Select State</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowStateModal(false)}
+                                style={styles.modalCloseButton}
+                            >
+                                <Ionicons name="close" size={24} color={COLORS.text}/>
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={NIGERIAN_STATES}
+                            keyExtractor={(item) => item.value}
+                            renderItem={renderStateItem}
                         />
-                        {errors.address && (
-                            <Text style={styles.errorText}>
-                                {errors.address.message}
-                            </Text>
-                        )}
                     </View>
-                </View>
+                </Modal>
 
-                {/* Update Button */}
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={[
-                            styles.button,
-                        ]}
-                        onPress={handleSubmit(onSubmit)}
-                    >
-                        <Text style={styles.buttonText}>
-                            Update Profile
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
+                {/* LGA Modal */}
+                {/*<Modal*/}
+                {/*    visible={showLGAModal}*/}
+                {/*    animationType="slide"*/}
+                {/*    presentationStyle="pageSheet"*/}
+                {/*>*/}
+                {/*    <View style={styles.modalContainer}>*/}
+                {/*        <View style={styles.modalHeader}>*/}
+                {/*            <Text style={styles.modalTitle}>Select LGA</Text>*/}
+                {/*            <TouchableOpacity*/}
+                {/*                onPress={() => setShowLGAModal(false)}*/}
+                {/*                style={styles.modalCloseButton}*/}
+                {/*            >*/}
+                {/*                <Ionicons name="close" size={24} color={COLORS.text}/>*/}
+                {/*            </TouchableOpacity>*/}
+                {/*        </View>*/}
+                {/*        <FlatList*/}
+                {/*            data={watchedState ? stateAndLGA[watchedState] || [] : []}*/}
+                {/*            keyExtractor={(item) => item}*/}
+                {/*            renderItem={renderLGAItem}*/}
+                {/*        />*/}
+                {/*    </View>*/}
+                {/*</Modal>*/}
 
-            {/* Date Picker */}
-            {showDatePicker && (
-                <DateTimePicker
-                    value={watch('dob')}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
+                <Modal
+                    visible={showLGAModal}
+                    animationType="slide"
+                    presentationStyle="pageSheet"
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>
+                                Select LGA ({watchedState || 'No State Selected'})
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => setShowLGAModal(false)}
+                                style={styles.modalCloseButton}
+                            >
+                                <Ionicons name="close" size={24} color={COLORS.text}/>
+                            </TouchableOpacity>
+                        </View>
+                        <FlatList
+                            data={lgas}  // Use the lgas state instead of direct lookup
+                            keyExtractor={(item) => item}
+                            renderItem={renderLGAItem}
+                            ListEmptyComponent={
+                                <Text style={styles.modalItemText}>
+                                    No LGAs available for {watchedState}
+                                </Text>
+                            }
+                        />
+                    </View>
+                </Modal>
+
+                <StatusModal
+                    visible={modalVisible}
+                    status={modalStatus}
+                    message={modalMessage}
+                    onClose={() => setModalVisible(false)}
                 />
-            )}
-
-            {/* State Modal */}
-            <Modal
-                visible={showStateModal}
-                animationType="slide"
-                presentationStyle="pageSheet"
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>Select State</Text>
-                        <TouchableOpacity
-                            onPress={() => setShowStateModal(false)}
-                            style={styles.modalCloseButton}
-                        >
-                            <Ionicons name="close" size={24} color={COLORS.text}/>
-                        </TouchableOpacity>
-                    </View>
-                    <FlatList
-                        data={NIGERIAN_STATES}
-                        keyExtractor={(item) => item.value}
-                        renderItem={renderStateItem}
-                    />
-                </View>
-            </Modal>
-
-            {/* LGA Modal */}
-            {/*<Modal*/}
-            {/*    visible={showLGAModal}*/}
-            {/*    animationType="slide"*/}
-            {/*    presentationStyle="pageSheet"*/}
-            {/*>*/}
-            {/*    <View style={styles.modalContainer}>*/}
-            {/*        <View style={styles.modalHeader}>*/}
-            {/*            <Text style={styles.modalTitle}>Select LGA</Text>*/}
-            {/*            <TouchableOpacity*/}
-            {/*                onPress={() => setShowLGAModal(false)}*/}
-            {/*                style={styles.modalCloseButton}*/}
-            {/*            >*/}
-            {/*                <Ionicons name="close" size={24} color={COLORS.text}/>*/}
-            {/*            </TouchableOpacity>*/}
-            {/*        </View>*/}
-            {/*        <FlatList*/}
-            {/*            data={watchedState ? stateAndLGA[watchedState] || [] : []}*/}
-            {/*            keyExtractor={(item) => item}*/}
-            {/*            renderItem={renderLGAItem}*/}
-            {/*        />*/}
-            {/*    </View>*/}
-            {/*</Modal>*/}
-
-            <Modal
-                visible={showLGAModal}
-                animationType="slide"
-                presentationStyle="pageSheet"
-            >
-                <View style={styles.modalContainer}>
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>
-                            Select LGA ({watchedState || 'No State Selected'})
-                        </Text>
-                        <TouchableOpacity
-                            onPress={() => setShowLGAModal(false)}
-                            style={styles.modalCloseButton}
-                        >
-                            <Ionicons name="close" size={24} color={COLORS.text}/>
-                        </TouchableOpacity>
-                    </View>
-                    <FlatList
-                        data={lgas}  // Use the lgas state instead of direct lookup
-                        keyExtractor={(item) => item}
-                        renderItem={renderLGAItem}
-                        ListEmptyComponent={
-                            <Text style={styles.modalItemText}>
-                                No LGAs available for {watchedState}
-                            </Text>
-                        }
-                    />
-                </View>
-            </Modal>
-
-            <StatusModal
-                visible={modalVisible}
-                status={modalStatus}
-                message={modalMessage}
-                onClose={() => setModalVisible(false)}
-            />
-        </KeyboardAvoidingView>
+            </KeyboardAvoidingView>
+        </>
     );
 }
 

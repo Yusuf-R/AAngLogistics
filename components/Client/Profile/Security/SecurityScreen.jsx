@@ -4,10 +4,10 @@ import {
     StyleSheet,
     TouchableOpacity,
     Switch,
-    SafeAreaView,
     StatusBar,
     Alert,
 } from 'react-native';
+import {SafeAreaView} from "react-native-safe-area-context";
 import {Ionicons} from '@expo/vector-icons';
 import {router} from "expo-router"; // or react-native-vector-icons
 import {ROUTES} from "../../../../utils/Constant";
@@ -276,7 +276,6 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        paddingTop: 24,
     },
     optionRow: {
         flexDirection: 'row',

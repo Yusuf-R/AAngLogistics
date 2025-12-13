@@ -1,4 +1,4 @@
-// app/(protected)/driver/account/analytics/earnings/view/[id]/index.jsx
+// components/Driver/Account/Analytics/EarningDetails.jsx
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';

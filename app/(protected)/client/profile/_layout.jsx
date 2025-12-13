@@ -1,5 +1,4 @@
 import {Stack} from 'expo-router';
-import {Text} from "react-native";
 
 export default function ProfileLayout() {
     return (
@@ -28,6 +27,15 @@ export default function ProfileLayout() {
                 name="edit-profile"
                 options={{
                     title: 'Edit Profile',
+                    headerShown: false
+                }}
+            />
+
+            <Stack.Screen
+                name="analytics"
+                options={{
+                    title: 'Analytics',
+                    headerShown: false
                 }}
             />
 

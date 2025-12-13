@@ -1,4 +1,4 @@
-// AxiosInstance.js
+// utils/AxiosInstance
 import axios from "axios";
 import SecureStorage from "../lib/SecureStorage";
 import SessionManager  from "../lib/SessionManager"; // ✅ now our central sync engine
@@ -32,7 +32,7 @@ axiosPrivate.interceptors.request.use(async (config) => {
         }
         return config;
     } catch (error) {
-        console.error('[Axios Request Error]', error);
+       console.log('[Axios Request Error]', error);
         return Promise.reject(error);
     }
 }, (error) => Promise.reject(error));
@@ -65,7 +65,7 @@ axiosPrivate.interceptors.response.use(
                 originalRequest.headers.Authorization = `Bearer ${token}`;
                 return axiosPrivate(originalRequest);
             } catch (err) {
-                console.error("[Axios Retry] ❌", err.message);
+               console.log("[Axios Retry] ❌", err.message);
                 return Promise.reject(err);
             }
         }

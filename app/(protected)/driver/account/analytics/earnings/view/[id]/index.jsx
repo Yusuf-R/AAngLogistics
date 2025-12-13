@@ -1,4 +1,4 @@
-// components/Driver/Account/Analytics/EarningDetails.jsx
+// app/(protected)/driver/account/analytics/earnings/view/[id]/index.jsx
 
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';

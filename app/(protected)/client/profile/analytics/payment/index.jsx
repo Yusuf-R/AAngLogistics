@@ -1,17 +1,17 @@
-// app/(protected)/driver/account/analytics/earnings/index.jsx
+// app/(protected)/client/account/analytics/earnings/index.jsx
 import React from 'react';
-import Earnings from "components/Driver/Account/Analytics/Earnings"
+import Payments from "components/Client/Profile/Analytics/Payments"
 import {useSessionStore} from "../../../../../../store/useSessionStore";
 import {useQuery} from "@tanstack/react-query";
-import DriverUtils from "../../../../../../utils/DriverUtilities";
+import ClientUtils from "../../../../../../utils/ClientUtilities";
 import {ActivityIndicator, StyleSheet, Text, View} from "react-native";
 
-function AllEarnings() {
+function AllPaymentScreen() {
 
     const userData = useSessionStore((state) => state.user);
     const { data, isLoading, error, isError, refetch } = useQuery({
-        queryKey: ['DriverEarningsAnalytics'],
-        queryFn: DriverUtils.getEarningsAnalytics,
+        queryKey: ['ClientPaymentAnalytics'],
+        queryFn: ClientUtils.getPaymentsAnalytics,
         retry: 3,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
         refetchOnWindowFocus: false,
@@ -44,15 +44,14 @@ function AllEarnings() {
     }
     return (
         <>
-            <Earnings
-                earningAnalytics={data?.data}
+            <Payments
+                paymentAnalytics={data?.data}
                 userData={userData}
                 refetch={refetch}
             />
         </>
     );
 }
-
 
 const styles = StyleSheet.create({
     container: {
@@ -86,5 +85,4 @@ const styles = StyleSheet.create({
     },
 });
 
-
-export default AllEarnings;
+export default AllPaymentScreen;

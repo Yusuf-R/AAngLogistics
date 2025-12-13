@@ -3,7 +3,7 @@ import React from "react";
 import {useLocalSearchParams} from "expo-router";
 import {useSessionStore} from "../../../../store/useSessionStore";
 import VerifyFirst from "../../../../components/Client/Profile/Security/AuthPinSecurity/VerifyFirst";
-import {SafeAreaView} from "react-native";
+import {SafeAreaView} from "react-native-safe-area-context";
 
 function PinVerificationEmailScreen() {
     const { reqType } = useLocalSearchParams();

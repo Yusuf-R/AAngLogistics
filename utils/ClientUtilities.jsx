@@ -1007,10 +1007,6 @@ class ClientUtils {
         }
     }
 
-
-
-
-
     /**
      * Generate reference for wallet top-up
      */
@@ -1061,6 +1057,80 @@ class ClientUtils {
             throw error;
         }
     }
+
+
+    // Analytics
+    static async getAnalytics() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/user/analytics'
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Something went wrong:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getPaymentsAnalytics() {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/user/payment/analytics'
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Something went wrong:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getSinglePayment(txId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/user/payment/${txId}`
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getDeliveryAnalytics() {
+        const queryParams = {
+            month: 1,
+            year: 2025,
+            status: 'all'
+        }
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: '/user/delivery/analytics',
+                params: queryParams
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Something went wrong:', error);
+            throw new Error(error);
+        }
+    }
+
+    static async getSingleDelivery(orderId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/user/delivery/${orderId}`,
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Error fetching delivery:', error);
+            throw new Error(error);
+        }
+    }
+
 
 }
 

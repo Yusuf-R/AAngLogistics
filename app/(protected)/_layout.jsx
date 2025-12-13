@@ -1,4 +1,4 @@
-// ProtectedLayout.js - BALANCED APPROACH
+// app/(protected)/_layout.jsx
 import React, { useEffect, useRef } from 'react';
 import { usePathname, router, Slot, useSegments } from 'expo-router';
 import SessionManager from '../../lib/SessionManager';

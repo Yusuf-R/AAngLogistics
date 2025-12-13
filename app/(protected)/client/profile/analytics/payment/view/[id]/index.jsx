@@ -1,24 +1,22 @@
-// app/(protected)/driver/account/analytics/deliveries/view/[orderId]/index.jsx
+// components/Client/Account/Analytics/PaymentDetails.jsx
 
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import DriverUtils from '../../../../../../../../utils/DriverUtilities';
-import DeliveryDetails from '../../../../../../../../components/Driver/Account/Analytics/DeliveryDetails';
+import ClientUtils from '../../../../../../../../utils/ClientUtilities';
+import PaymentDetails from '../../../../../../../../components/Client/Profile/Analytics/PaymentDetails';
 import { Ionicons } from '@expo/vector-icons';
 
-function ViewDelivery() {
-    const { orderId } = useLocalSearchParams();
+function ViewPayment() {
+    const { id } = useLocalSearchParams(); // transaction ID
 
-    const { data, isLoading, error, isError, refetch } = useQuery({
-        queryKey: ['SingleDelivery', orderId],
-        queryFn: () => DriverUtils.getSingleDelivery(orderId),
+    const { data, isLoading, error, refetch, isError } = useQuery({
+        queryKey: ['SinglePayment'],
+        queryFn: () => ClientUtils.getSinglePayment(id),
         retry: 2,
         retryDelay: 1000,
-        refetchOnWindowFocus: false,
-        refetchOnMount: true,
-        enabled: !!orderId,
+        enabled: !!id,
     });
 
     if (isLoading) {
@@ -45,8 +43,8 @@ function ViewDelivery() {
     }
 
     return (
-        <DeliveryDetails
-            delivery={data?.data}
+        <PaymentDetails
+            data={data?.data}
             refetch={refetch}
         />
     );
@@ -86,4 +84,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ViewDelivery;
+export default ViewPayment;
