@@ -1,3 +1,4 @@
+// components/Client/Orders/OrdersHub.jsx
 import React, {useState, useRef, useEffect} from 'react';
 import {
     View,
@@ -42,28 +43,17 @@ import {
 import {router} from "expo-router";
 import CustomAlert from "./CustomAlert";
 import {useOrderStore} from "../../../store/useOrderStore";
+import {
+    getShipmentProgress,
+    getStatusDisplay,
+    formatOrderDate,
+    getStatusIcon,
+    getStatusColor
+} from "../../../utils/Client/orderHelpers";
+import useNavigationStore from "../../../store/Client/useNavigationStore";
+import {Ionicons} from "@expo/vector-icons";
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
-
-// Recent Order Mocks (can be dynamic later)
-const recentOrders = [
-    {
-        id: '1',
-        orderType: 'instant',
-        package: {category: 'document', description: 'Legal documents'},
-        pickup: {address: 'Home'},
-        dropoff: {address: 'Law Office'},
-        createdAt: new Date(Date.now() - 86400000)
-    },
-    {
-        id: '2',
-        orderType: 'scheduled',
-        package: {category: 'parcel', description: 'Birthday gift'},
-        pickup: {address: 'Shopping Mall'},
-        dropoff: {address: 'Friend\'s House'},
-        createdAt: new Date(Date.now() - 172800000)
-    }
-];
 
 const OrdersHub = ({
                        userData,
@@ -87,10 +77,13 @@ const OrdersHub = ({
         title: '',
         message: '',
     });
+    const [navigationLoading, setNavigationLoading] = useState(null);
 
     const {
         setTrackingOrder,
     } = useOrderStore();
+
+    const { setLastRoute } = useNavigationStore();
 
     // render today's data as Day, Month, Year
     const today = new Date();
@@ -149,54 +142,12 @@ const OrdersHub = ({
             title: 'History',
             icon: History,
             colors: ['#F43F5E', '#B91C1C'],
-            action: () => router.push('/client/orders/create')
-        }
-    ];
-
-    // we use the top most recent orders and show their current tracking history status
-    // if no recent orders, we show a friendly empty state
-    const mockTrackingHistory = recentOrders.length > 0 ? recentOrders : [
-        {
-            id: '1',
-            title: 'Macbook Pro M1 2023',
-            trackingId: 'N88817649',
-            status: 'delivered',
-            date: '2 hours ago',
-            destination: 'Victoria Island, Lagos',
-            icon: '📦'
-        },
-        {
-            id: '2',
-            title: 'Macbook Pro M1 2023',
-            trackingId: 'N88817648',
-            status: 'in_transit',
-            date: 'Yesterday',
-            destination: 'Ikeja, Lagos',
-            icon: '📦'
-        }
-    ];
-
-    // we show top 3 draft package where the user can quickly resume from  -- no deletion here
-    // if we have no draft, we show a friendly empty state
-    const mockCurrentShipments = [
-        {
-            id: '1',
-            title: 'Macbook pro M2',
-            trackingId: 'HI23135461235',
-            status: 'in_progress',
-            progress: 65,
-            destination: 'Lekki Phase 1, Lagos',
-            estimatedDelivery: 'Today, 3:00 PM'
+            action: () => router.push('/client/orders/history')
         }
     ];
 
     const handleCardPress = async (cardId, action) => {
-        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        setActiveCard(cardId);
-        setTimeout(() => {
-            setActiveCard(null);
-            if (action) action();
-        }, 150);
+        handleNavigateWithLoading(cardId, action);
     };
 
     const validateAndFindOrder = (trackingNumber, allOrderData) => {
@@ -240,16 +191,10 @@ const OrdersHub = ({
             return;
         }
 
-        // ✅ Show full-screen loading overlay
         setIsLoading(true);
-
-        // Optional haptic feedback
         await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-        // Set order in Zustand
         setTrackingOrder(result.matchedOrder);
 
-        // Navigate after short delay for UX smoothness
         setTimeout(() => {
             setIsLoading(false);
             router.push('/client/orders/track'); // No params needed — Zustand has the data
@@ -263,21 +208,29 @@ const OrdersHub = ({
         }
     };
 
-    const headerOpacity = scrollY.interpolate({
-        inputRange: [0, 100],
-        outputRange: [1, 0.8],
-        extrapolate: 'clamp',
-    });
+    const navigateToOrderDetails = (orderId) => {
+        setLastRoute('order-details', '/client/orders');
+        setTimeout(() => {
+            router.push(`/client/profile/analytics/orders/view/${orderId}`);
+        }, 10);
+    };
 
-    const headerTranslateY = scrollY.interpolate({
-        inputRange: [0, 100],
-        outputRange: [0, -20],
-        extrapolate: 'clamp',
-    });
+    const handleNavigateWithLoading = async (loadingKey, navigationAction, hapticFeedback = true) => {
+        if (navigationLoading) return;
+        setNavigationLoading(loadingKey);
+
+        if (hapticFeedback) {
+            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+
+        setTimeout(() => {
+            navigationAction();
+            setTimeout(() => setNavigationLoading(null), 300);
+        }, 150);
+    };
 
     return (
         <>
-
             <View style={styles.container}>
                 {/*Header*/}
                 <Animated.View>
@@ -413,10 +366,10 @@ const OrdersHub = ({
 
                                 <View style={styles.searchContainer}>
                                     <View style={styles.searchInputContainer}>
-                                        <Package size={28} color="#FFF" style={styles.packageIcon}/>
+                                        <Package size={22} color="#FFF" style={styles.packageIcon}/>
                                         <TextInput
                                             style={styles.searchInput}
-                                            placeholder="Order refernce number"
+                                            placeholder="ORD-XXX"
                                             placeholderTextColor="#9CA3AF"
                                             value={trackingNumber}
                                             onChangeText={setTrackingNumber}
@@ -469,82 +422,233 @@ const OrdersHub = ({
                     </View>
 
                     {/* Current Shipment */}
-                    {mockCurrentShipments.length > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Current Shipment</Text>
-                            <View style={styles.currentShipmentContainer}>
-                                {mockCurrentShipments.map((shipment, index) => (
-                                    <View key={shipment.id} style={styles.currentShipmentCard}>
-                                        <View style={styles.shipmentHeader}>
-                                            <View style={styles.shipmentIcon}>
-                                                <Text style={styles.shipmentEmoji}>📦</Text>
-                                            </View>
-                                            <View style={styles.shipmentInfo}>
-                                                <Text style={styles.shipmentTitle}>{shipment.title}</Text>
-                                                <Text style={styles.shipmentTrackingId}>
-                                                    #{shipment.trackingId}
-                                                </Text>
-                                            </View>
-                                            <Pressable style={styles.shipmentMenu}>
-                                                <Text style={styles.menuDots}>⋯</Text>
-                                            </Pressable>
-                                        </View>
+                    {(() => {
+                        const activeStatuses = [
+                            'submitted', 'admin_review', 'admin_approved', 'pending', 'broadcast',
+                            'assigned', 'en_route_pickup', 'arrived_pickup', 'picked_up',
+                            'en_route_dropoff', 'arrived_dropoff'
+                        ];
 
-                                        <View style={styles.progressContainer}>
-                                            <View style={styles.progressBar}>
-                                                <View
-                                                    style={[
-                                                        styles.progressFill,
-                                                        {width: `${shipment.progress}%`}
-                                                    ]}
-                                                />
-                                            </View>
-                                            <Text style={styles.progressText}>{shipment.progress}%</Text>
-                                        </View>
+                        const activeOrders = allOrderData
+                            .filter(order => activeStatuses.includes(order.status))
+                            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                            .slice(0, 50);
 
-                                        <View style={styles.shipmentDetails}>
-                                            <View style={styles.shipmentDetailRow}>
-                                                <MapPin size={14} color="#6B7280"/>
-                                                <Text style={styles.shipmentDetailText}>{shipment.destination}</Text>
-                                            </View>
-                                            <View style={styles.shipmentDetailRow}>
-                                                <Clock size={14} color="#6B7280"/>
-                                                <Text
-                                                    style={styles.shipmentDetailText}>Est. {shipment.estimatedDelivery}</Text>
-                                            </View>
-                                        </View>
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                    )}
-
-                    {/* Tracking History */}
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Tracking History</Text>
-                            <Pressable>
-                                <Text style={styles.seeAll}>See all</Text>
-                            </Pressable>
-                        </View>
-                        <View style={styles.historyContainer}>
-                            {mockTrackingHistory.map((order, index) => (
-                                <Pressable key={order.id} style={styles.historyCard}>
-                                    <View style={styles.historyIcon}>
-                                        <Text style={styles.historyEmoji}>{order.icon}</Text>
-                                    </View>
-                                    <View style={styles.historyContent}>
-                                        <Text style={styles.historyTitle}>{order.title}</Text>
-                                        <Text style={styles.historyTrackingId}>
-                                            Tracking ID: {order.trackingId}
+                        if (activeOrders.length === 0) {
+                            return (
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Current Shipments</Text>
+                                    <View style={styles.emptyState}>
+                                        <Text style={styles.emptyStateEmoji}>📦</Text>
+                                        <Text style={styles.emptyStateTitle}>No Active Shipments</Text>
+                                        <Text style={styles.emptyStateText}>
+                                            Your active orders will appear here
                                         </Text>
                                     </View>
-                                    <ChevronRight size={20} color="#9CA3AF"/>
-                                </Pressable>
-                            ))}
-                        </View>
-                    </View>
+                                </View>
+                            );
+                        }
 
+                        return (
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <Text style={styles.sectionTitle}>Current Shipments</Text>
+                                    {activeOrders.length >= 10 && (
+                                        <Pressable
+                                            onPress={() => handleNavigateWithLoading(
+                                                'current-shipments-all',
+                                                () => router.push('/client/orders/current-shipments')
+                                            )}
+                                            disabled={navigationLoading === 'current-shipments-all'}
+                                        >
+                                            {navigationLoading === 'current-shipments-all' ? (
+                                                <ActivityIndicator size="small" color="#4CAF50" />
+                                            ) : (
+                                                <Ionicons name="open" size={24} color="#4CAF50"/>
+                                            )}
+                                        </Pressable>
+                                    )}
+                                </View>
+                                <View style={styles.currentShipmentContainer}>
+                                    {activeOrders.map((order) => {
+                                        const progress = getShipmentProgress(order.status);
+                                        const statusDisplay = getStatusDisplay(order.status);
+                                        const driverName = order.driverAssignment?.driverInfo?.name;
+                                        const eta = order.driverAssignment?.estimatedArrival?.dropoff;
+
+                                        return (
+                                            <Pressable
+                                                key={order._id}
+                                                style={styles.currentShipmentCard}
+                                                // onPress={() => handleNavigateWithLoading(
+                                                //     `shipment-${order._id}`,
+                                                //     () => navigateToOrderDetails(order._id)
+                                                // )}
+                                                // disabled={navigationLoading === `shipment-${order._id}`}
+                                            >
+                                                <View style={styles.shipmentHeader}>
+                                                    <View style={styles.shipmentIcon}>
+                                                        {navigationLoading === `shipment-${order._id}` ? (
+                                                            <ActivityIndicator size="small" color="#3B82F6" />
+                                                        ) : (
+                                                            <Text style={styles.shipmentEmoji}>
+                                                                {order.package.category === 'document' ? '📄' : '📦'}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                    <View style={styles.shipmentInfo}>
+                                                        <Text style={styles.shipmentTitle} numberOfLines={1}>
+                                                            {order.package.description || 'Package'}
+                                                        </Text>
+                                                        <Text style={styles.shipmentTrackingId}>
+                                                            {order.orderRef}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+
+                                                <View style={styles.progressContainer}>
+                                                    <View style={styles.progressBar}>
+                                                        <View
+                                                            style={[
+                                                                styles.progressFill,
+                                                                { width: `${progress}%` }
+                                                            ]}
+                                                        />
+                                                    </View>
+                                                    <Text style={styles.progressText}>{progress}%</Text>
+                                                </View>
+
+                                                <View style={styles.statusBadge}>
+                                                    <View style={styles.statusDot} />
+                                                    <Text style={styles.statusText}>{statusDisplay}</Text>
+                                                </View>
+
+                                                <View style={styles.shipmentDetails}>
+                                                    {driverName && (
+                                                        <View style={styles.shipmentDetailRow}>
+                                                            <Text style={styles.detailIcon}>🚗</Text>
+                                                            <Text style={styles.shipmentDetailText}>{driverName}</Text>
+                                                        </View>
+                                                    )}
+                                                    <View style={styles.shipmentDetailRow}>
+                                                        <Text style={styles.detailIcon}>📍</Text>
+                                                        <Text style={styles.shipmentDetailText} numberOfLines={1}>
+                                                            {order.location.dropOff.address}
+                                                        </Text>
+                                                    </View>
+                                                    {eta && (
+                                                        <View style={styles.shipmentDetailRow}>
+                                                            <Text style={styles.detailIcon}>⏱️</Text>
+                                                            <Text style={styles.shipmentDetailText}>
+                                                                Est. {formatOrderDate(eta)}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </Pressable>
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        );
+                    })()}
+
+                    {/* Order History */}
+                    {(() => {
+                        const completedStatuses = ['delivered', 'failed', 'cancelled', 'returned'];
+
+                        const historyOrders = allOrderData
+                            .filter(order => completedStatuses.includes(order.status))
+                            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                            .slice(0, 10);
+
+                        if (historyOrders.length === 0) {
+                            return (
+                                <View style={styles.section}>
+                                    <Text style={styles.sectionTitle}>Order History</Text>
+                                    <View style={styles.emptyState}>
+                                        <Text style={styles.emptyStateEmoji}>📋</Text>
+                                        <Text style={styles.emptyStateTitle}>No Order History</Text>
+                                        <Text style={styles.emptyStateText}>
+                                            Completed orders will appear here
+                                        </Text>
+                                    </View>
+                                </View>
+                            );
+                        }
+
+                        return (
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <Text style={styles.sectionTitle}>Order History</Text>
+                                    <Pressable
+                                        onPress={() => handleNavigateWithLoading(
+                                            'history-all',
+                                            () => router.push('/client/orders/history')
+                                        )}
+                                        disabled={navigationLoading === 'history-all'}
+                                    >
+                                        {navigationLoading === 'history-all' ? (
+                                            <ActivityIndicator size="small" color="#4CAF50" />
+                                        ) : (
+                                            <Ionicons name="open" size={24} color="#4CAF50"/>
+                                        )}
+                                    </Pressable>
+                                </View>
+                                <View style={styles.historyContainer}>
+                                    {historyOrders.map((order) => (
+                                        <Pressable
+                                            key={order._id}
+                                            style={styles.historyCard}
+                                            onPress={() => handleNavigateWithLoading(
+                                                `history-${order._id}`,
+                                                () => navigateToOrderDetails(order._id)
+                                            )}
+                                            disabled={navigationLoading === `history-${order._id}`}
+                                        >
+                                            <View style={styles.historyIcon}>
+                                                {navigationLoading === `history-${order._id}` ? (
+                                                    <ActivityIndicator size="small" color="#3B82F6" />
+                                                ) : (
+                                                    <Text style={styles.historyEmoji}>
+                                                        {getStatusIcon(order.status)}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                            <View style={styles.historyContent}>
+                                                <Text style={styles.historyTitle} numberOfLines={1}>
+                                                    {order.package.description || 'Package'}
+                                                </Text>
+                                                <Text style={styles.historyTrackingId}>
+                                                    {order.orderRef}
+                                                </Text>
+                                                <View style={[
+                                                    styles.historyStatusBadge,
+                                                    { backgroundColor: `${getStatusColor(order.status)}15` }
+                                                ]}>
+                                                    <Text style={[
+                                                        styles.historyStatusText,
+                                                        { color: getStatusColor(order.status) }
+                                                    ]}>
+                                                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <View style={styles.historyMeta}>
+                                                {navigationLoading === `history-${order._id}` ? (
+                                                    <ActivityIndicator size="small" color="#3B82F6" />
+                                                ) : (
+                                                    <Text style={styles.historyDate}>
+                                                        {formatOrderDate(order.updatedAt)}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        </Pressable>
+                                    ))}
+                                </View>
+                            </View>
+                        );
+                    })()}
 
                     {/* Bottom Spacing */}
                     <View style={styles.bottomSpacing}/>
@@ -554,13 +658,21 @@ const OrdersHub = ({
                 <View style={[styles.fabContainer, {bottom: insets.bottom + 20}]}>
                     <Pressable
                         style={styles.fab}
-                        onPress={() => router.push('/client/orders/create')}
+                        onPress={() => handleNavigateWithLoading(
+                            'create-order',
+                            () => router.push('/client/orders/create')
+                        )}
+                        disabled={navigationLoading === 'create-order'}
                     >
                         <LinearGradient
                             colors={['#3B82F6', '#1D4ED8']}
                             style={styles.fabGradient}
                         >
-                            <Plus size={24} color="#ffffff"/>
+                            {navigationLoading === 'create-order' ? (
+                                <ActivityIndicator size="small" color="#ffffff" />
+                            ) : (
+                                <Plus size={24} color="#ffffff"/>
+                            )}
                         </LinearGradient>
                     </Pressable>
                 </View>
@@ -911,19 +1023,18 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 20,
         color: '#1f2937',
-        marginBottom: 16,
         fontFamily: 'PoppinsSemiBold',
     },
     sectionHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 8,
     },
     seeAll: {
         fontSize: 14,
         color: '#3b82f6',
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
     },
     historyContainer: {
         gap: 12,
@@ -960,13 +1071,14 @@ const styles = StyleSheet.create({
     },
     historyTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#1F2937',
         marginBottom: 4,
     },
     historyTrackingId: {
         fontSize: 13,
         color: '#6B7280',
+        fontFamily: 'PoppinsRegular',
     },
     currentShipmentContainer: {
         gap: 16,
@@ -1006,12 +1118,13 @@ const styles = StyleSheet.create({
     },
     shipmentTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#1F2937',
         marginBottom: 2,
     },
     shipmentTrackingId: {
         fontSize: 12,
+        fontFamily: 'PoppinsSemiBold',
         color: '#6B7280',
     },
     shipmentMenu: {
@@ -1042,7 +1155,7 @@ const styles = StyleSheet.create({
     },
     progressText: {
         fontSize: 12,
-        fontWeight: '600',
+        fontFamily: 'PoppinsSemiBold',
         color: '#10B981',
         minWidth: 35,
         textAlign: 'right',
@@ -1058,6 +1171,7 @@ const styles = StyleSheet.create({
     shipmentDetailText: {
         fontSize: 14,
         color: '#6B7280',
+        fontFamily: 'PoppinsSemiBold',
         flex: 1,
     },
     fabContainer: {
@@ -1100,6 +1214,76 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsMedium',
         color: '#374151',
         textAlign: 'center',
+    },
+    emptyState: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 40,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    emptyStateEmoji: {
+        fontSize: 48,
+        marginBottom: 16,
+    },
+    emptyStateTitle: {
+        fontSize: 18,
+        fontFamily: 'PoppinsMedium',
+        color: '#111827',
+        marginBottom: 8,
+    },
+    emptyStateText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        backgroundColor: '#EBF4FF',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        marginBottom: 12,
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#3B82F6',
+        marginRight: 6,
+    },
+    statusText: {
+        fontSize: 12,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#3B82F6',
+    },
+    detailIcon: {
+        fontSize: 14,
+    },
+    historyStatusBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+    },
+    historyStatusText: {
+        fontSize: 11,
+        fontFamily: 'PoppinsSemiBold',
+    },
+    historyMeta: {
+        alignItems: 'flex-end',
+    },
+    historyDate: {
+        fontSize: 12,
+        color: '#9CA3AF',
+        fontFamily: 'PoppinsRegular',
     },
 });
 

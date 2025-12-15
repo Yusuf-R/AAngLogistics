@@ -839,11 +839,32 @@ class ClientUtils {
         }
     }
 
-    static async GetOrderHistory() {
+    static async GetOrderHistory(month = null, year = null, limit = 50, skip = 0) {
+        try {
+            let url = `/order/history?limit=${limit}&skip=${skip}`;
+            if (month) url += `&month=${month}`;
+            if (year) url += `&year=${year}`;
+
+            const response = await axiosPrivate({
+                method: "GET",
+                url,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
+    static async SearchOrderHistory(searchQuery) {
         try {
             const response = await axiosPrivate({
                 method: "GET",
-                url: '/order/history',
+                url: `/order/history/search?searchQuery=${encodeURIComponent(searchQuery)}`,
             });
             if (response.status === 200) {
                 return response.data;

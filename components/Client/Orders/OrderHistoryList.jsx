@@ -1,0 +1,234 @@
+// components/Client/Orders/OrderHistoryList.jsx
+
+import React from 'react';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
+import { router } from 'expo-router';
+import { getStatusIcon, getStatusColor, formatOrderDate } from '../../../utils/Client/orderHelpers';
+
+const OrderHistoryList = ({
+                              orders,
+                              selectedStatus,
+                              onLoadMore,
+                              hasMore,
+                              isLoadingMore
+                          }) => {
+    // Client-side status filtering
+    const filteredOrders = selectedStatus === 'all'
+        ? orders
+        : orders.filter(order => order.status === selectedStatus);
+
+    if (filteredOrders.length === 0) {
+        return (
+            <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>📋</Text>
+                <Text style={styles.emptyStateTitle}>No Orders Found</Text>
+                <Text style={styles.emptyStateText}>
+                    {selectedStatus !== 'all'
+                        ? 'Try selecting a different status filter'
+                        : 'No orders for this period'}
+                </Text>
+            </View>
+        );
+    }
+
+    return (
+        <View style={styles.ordersContainer}>
+            {filteredOrders.map(order => (
+                <Pressable
+                    key={order._id}
+                    style={styles.orderCard}
+                    onPress={() => router.push(`/client/profile/analytics/orders/view/${order._id}`)}
+                >
+                    <View style={styles.orderCardHeader}>
+                        <View style={styles.orderIcon}>
+                            <Text style={styles.orderEmoji}>
+                                {getStatusIcon(order.status)}
+                            </Text>
+                        </View>
+                        <View style={styles.orderInfo}>
+                            <Text style={styles.orderTitle} numberOfLines={1}>
+                                {order.package.description || 'Package'}
+                            </Text>
+                            <Text style={styles.orderRef}>{order.orderRef}</Text>
+                        </View>
+                        <ChevronRight size={20} color="#9CA3AF" />
+                    </View>
+
+                    <View style={styles.orderDetails}>
+                        <View style={styles.orderDetailRow}>
+                            <Text style={styles.orderDetailLabel}>Status:</Text>
+                            <View style={[
+                                styles.statusBadge,
+                                { backgroundColor: `${getStatusColor(order.status)}15` }
+                            ]}>
+                                <Text style={[
+                                    styles.statusText,
+                                    { color: getStatusColor(order.status) }
+                                ]}>
+                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={styles.orderDetailRow}>
+                            <Text style={styles.orderDetailLabel}>Date:</Text>
+                            <Text style={styles.orderDetailValue}>
+                                {formatOrderDate(order.updatedAt)}
+                            </Text>
+                        </View>
+
+                        <View style={styles.orderDetailRow}>
+                            <Text style={styles.orderDetailLabel}>Amount:</Text>
+                            <Text style={styles.orderDetailValue}>
+                                ₦{order.pricing.totalAmount.toLocaleString()}
+                            </Text>
+                        </View>
+                    </View>
+                </Pressable>
+            ))}
+
+            {hasMore && !isLoadingMore && (
+                <Pressable style={styles.loadMoreButton} onPress={onLoadMore}>
+                    <Text style={styles.loadMoreText}>Load More</Text>
+                </Pressable>
+            )}
+
+            {isLoadingMore && (
+                <View style={styles.loadingMore}>
+                    <Text style={styles.loadingMoreText}>Loading more...</Text>
+                </View>
+            )}
+        </View>
+    );
+};
+
+const styles = StyleSheet.create({
+    ordersContainer: {
+        padding: 20,
+        gap: 12,
+    },
+    orderCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    orderCardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    orderIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F9FAFB',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    orderEmoji: {
+        fontSize: 20,
+    },
+    orderInfo: {
+        flex: 1,
+    },
+    orderTitle: {
+        fontSize: 16,
+        fontFamily: 'PoppinsMedium',
+        color: '#111827',
+        marginBottom: 2,
+    },
+    orderRef: {
+        fontSize: 12,
+        fontFamily: 'PoppinsRegular',
+        color: '#9CA3AF',
+    },
+    orderDetails: {
+        gap: 8,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6',
+    },
+    orderDetailRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    orderDetailLabel: {
+        fontSize: 14,
+        fontFamily: 'PoppinsMedium',
+        color: '#6B7280',
+    },
+    orderDetailValue: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#111827',
+    },
+    statusBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    statusText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    loadMoreButton: {
+        backgroundColor: '#3B82F6',
+        paddingVertical: 14,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        alignItems: 'center',
+        marginTop: 16,
+    },
+    loadMoreText: {
+        fontSize: 16,
+        fontFamily: 'PoppinsMedium',
+        color: '#FFFFFF',
+    },
+    loadingMore: {
+        paddingVertical: 16,
+        alignItems: 'center',
+    },
+    loadingMoreText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    emptyState: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 40,
+        margin: 20,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    emptyStateEmoji: {
+        fontSize: 48,
+        marginBottom: 16,
+    },
+    emptyStateTitle: {
+        fontSize: 18,
+        fontFamily: 'PoppinsBold',
+        color: '#111827',
+        marginBottom: 8,
+    },
+    emptyStateText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+});
+
+export default OrderHistoryList;

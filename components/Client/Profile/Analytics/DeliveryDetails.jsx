@@ -1,5 +1,5 @@
 // components/Client/Account/Analytics/DeliveryDetails.jsx
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -14,11 +14,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from "../../../CustomHeader";
 import SmartImage from "../../../SmartImage";
-import { router } from "expo-router";
+import {router, useLocalSearchParams} from "expo-router";
+import useNavigationStore from "../../../../store/Client/useNavigationStore";
 
 const { width } = Dimensions.get('window');
 
 const DeliveryDetails = ({ delivery, refetch }) => {
+    const { getLastRoute, clearLastRoute } = useNavigationStore();
+
     const [refreshing, setRefreshing] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [showImageModal, setShowImageModal] = useState(false);
@@ -107,10 +110,19 @@ const DeliveryDetails = ({ delivery, refetch }) => {
             </>
         );
     }
+    const handleBack = useCallback(() => {
+        const backRoute = getLastRoute('order-details', true); // true = clear after getting
+        console.log('Back route from store:', backRoute);
+        if (backRoute) {
+            router.push(backRoute);
+        } else {
+            router.back();
+        }
+    }, [getLastRoute, router]);
 
     return (
         <>
-            <CustomHeader title="Delivery Details" onBackPress={() => router.back()} />
+            <CustomHeader title="Delivery Details" onBackPress={() => handleBack()} />
 
             <ScrollView
                 style={styles.container}

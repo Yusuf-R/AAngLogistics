@@ -1,6 +1,6 @@
 // hooks/useInitializeOrders.ts
 import { useEffect } from 'react';
-import { useOrdersStore } from '../store/useOrdersStore';
+import { useOrdersStore } from '../store/useOrderStore';
 import { useQuery } from '@tanstack/react-query';
 import ClientUtilities from "../utils/ClientUtilities";
 

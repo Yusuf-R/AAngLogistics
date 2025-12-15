@@ -1,14 +1,16 @@
+// app/(protected)/client/orders/index.jsx
+
 import React, {useState, useEffect} from 'react';
 import {
     Text,
     StyleSheet,
     View,
-    SafeAreaView,
     Alert,
     StatusBar,
     ActivityIndicator,
     Pressable
 } from "react-native";
+import {SafeAreaView} from "react-native-safe-area-context";
 import OrdersHub from "../../../../components/Client/Orders/OrdersHub";
 import {useSessionStore} from "../../../../store/useSessionStore";
 import {useQuery} from "@tanstack/react-query";

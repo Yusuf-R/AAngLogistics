@@ -20,7 +20,7 @@ function WalletCard({userData, financialData}) {
     };
 
     const onTopUp = () => {
-        router.push('/client/finance/payout');
+        router.push('/client/finance');
     };
 
     const analyticsItems = [

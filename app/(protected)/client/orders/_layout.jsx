@@ -29,6 +29,13 @@ export default function OrdersLayout() {
                 />
 
                 <Stack.Screen
+                    name="history"
+                    options={{
+                        headerShown: false
+                    }}
+                />
+
+                <Stack.Screen
                     name="manage"
                     options={{
                         headerShown: false
