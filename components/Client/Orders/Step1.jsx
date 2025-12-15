@@ -301,7 +301,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
                             >
                                 <Text style={styles.sectionType}>Type *</Text>
                                 <AntDesign
-                                    name={showCategorySelection ? "downcircle" : "upcircle"}
+                                    name={showCategorySelection ? "caret-down" : "caret-up"}
                                     size={18}
                                     color="black"
                                 />

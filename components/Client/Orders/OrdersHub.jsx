@@ -123,13 +123,13 @@ const OrdersHub = ({
             colors: ['#7C3AED', '#5B21B6'],
             action: () => router.push('/client/orders/create')
         },
-        {
-            id: 'rates',
-            title: 'Rates',
-            icon: BarChart3,
-            colors: ['#10A1A6', '#5E5AE4'],
-            action: () => router.push('/client/orders/manage')
-        },
+        // {
+        //     id: 'rates',
+        //     title: 'Rates',
+        //     icon: BarChart3,
+        //     colors: ['#10A1A6', '#5E5AE4'],
+        //     action: () => router.push('/client/orders/manage')
+        // },
         {
             id: 'pickup',
             title: 'Manage',
@@ -209,7 +209,7 @@ const OrdersHub = ({
     };
 
     const navigateToOrderDetails = (orderId) => {
-        setLastRoute('order-details', '/client/orders');
+        setLastRoute('order-details-from-orders', '/client/orders');
         setTimeout(() => {
             router.push(`/client/profile/analytics/orders/view/${orderId}`);
         }, 10);
@@ -580,7 +580,7 @@ const OrdersHub = ({
                         return (
                             <View style={styles.section}>
                                 <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>Order History</Text>
+                                    <Text style={styles.sectionTitle}>Recent Order History</Text>
                                     <Pressable
                                         onPress={() => handleNavigateWithLoading(
                                             'history-all',
@@ -639,7 +639,7 @@ const OrdersHub = ({
                                                     <ActivityIndicator size="small" color="#3B82F6" />
                                                 ) : (
                                                     <Text style={styles.historyDate}>
-                                                        {formatOrderDate(order.updatedAt)}
+                                                        {formatOrderDate(order.deliveryConfirmation.verifiedAt)}
                                                     </Text>
                                                 )}
                                             </View>

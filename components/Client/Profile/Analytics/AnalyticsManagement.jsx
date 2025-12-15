@@ -195,7 +195,7 @@ function AnalyticsManagement({analytics, orders, wallet, refetch, userData}) {
     };
 
     const onBackPress = () => {
-        router.back();
+        router.replace('/client/profile');
     };
 
     return (

@@ -111,12 +111,15 @@ const DeliveryDetails = ({ delivery, refetch }) => {
         );
     }
     const handleBack = useCallback(() => {
-        const backRoute = getLastRoute('order-details', true); // true = clear after getting
+        const backRoute =
+            getLastRoute('order-details-from-history', true) ||
+            getLastRoute('order-details-from-orders', true);
+
         console.log('Back route from store:', backRoute);
         if (backRoute) {
-            router.push(backRoute);
+            router.replace(backRoute);
         } else {
-            router.back();
+            router.replace('/client/profile/analytics/orders');
         }
     }, [getLastRoute, router]);
 

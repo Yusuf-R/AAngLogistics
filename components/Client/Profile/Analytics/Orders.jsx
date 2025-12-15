@@ -125,7 +125,7 @@ const Orders = ({orderAnalytics, userData, refetch}) => {
 
     const {summary, charts, orders, pagination, filters, lifetimeStats} = orderAnalytics;
     const onBackPress = () => {
-        router.back();
+        router.push('/client/profile/analytics');
     };
 
     return (

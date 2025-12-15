@@ -19,7 +19,6 @@ function ClientAnalytics() {
             try {
                 return await ClientUtils.getAnalytics();
             } catch (err) {
-                // If it's a 404 error (no analytics found), return empty analytics
                 if (err.response?.status === 404) {
                     return {
                         data: {
@@ -69,7 +68,6 @@ function ClientAnalytics() {
         data?.data?.isNewClient ||
         (error?.response?.status === 404);
 
-    // If new client, show onboarding state
     if (isNewClient) {
         return (
             <>

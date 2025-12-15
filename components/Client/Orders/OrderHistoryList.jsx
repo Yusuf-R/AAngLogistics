@@ -1,10 +1,9 @@
-// components/Client/Orders/OrderHistoryList.jsx
-
-import React from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react'; // ✅ Add useState
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'; // ✅ Add ActivityIndicator
 import { ChevronRight } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { getStatusIcon, getStatusColor, formatOrderDate } from '../../../utils/Client/orderHelpers';
+import useNavigationStore from "../../../store/Client/useNavigationStore";
 
 const OrderHistoryList = ({
                               orders,
@@ -13,7 +12,10 @@ const OrderHistoryList = ({
                               hasMore,
                               isLoadingMore
                           }) => {
-    // Client-side status filtering
+    const { setLastRoute } = useNavigationStore();
+    const [loadingOrderId, setLoadingOrderId] = useState(null);
+    const [isNavigating, setIsNavigating] = useState(false);
+
     const filteredOrders = selectedStatus === 'all'
         ? orders
         : orders.filter(order => order.status === selectedStatus);
@@ -32,76 +34,125 @@ const OrderHistoryList = ({
         );
     }
 
+    const navigateToOrderDetails = async (orderId) => {
+        if (isNavigating) return;
+
+        setIsNavigating(true);
+        setLoadingOrderId(orderId);
+
+        try {
+            setLastRoute('order-details-from-history', '/client/orders/history');
+            await new Promise(resolve => setTimeout(resolve, 300));
+            router.push(`/client/profile/analytics/orders/view/${orderId}`);
+        } catch (error) {
+            console.error('Navigation error:', error);
+        } finally {
+            setTimeout(() => {
+                setLoadingOrderId(null);
+                setIsNavigating(false);
+            }, 1000);
+        }
+    };
+
     return (
         <View style={styles.ordersContainer}>
-            {filteredOrders.map(order => (
-                <Pressable
-                    key={order._id}
-                    style={styles.orderCard}
-                    onPress={() => router.push(`/client/profile/analytics/orders/view/${order._id}`)}
-                >
-                    <View style={styles.orderCardHeader}>
-                        <View style={styles.orderIcon}>
-                            <Text style={styles.orderEmoji}>
-                                {getStatusIcon(order.status)}
-                            </Text>
-                        </View>
-                        <View style={styles.orderInfo}>
-                            <Text style={styles.orderTitle} numberOfLines={1}>
-                                {order.package.description || 'Package'}
-                            </Text>
-                            <Text style={styles.orderRef}>{order.orderRef}</Text>
-                        </View>
-                        <ChevronRight size={20} color="#9CA3AF" />
-                    </View>
+            {filteredOrders.map(order => {
+                const isLoading = loadingOrderId === order._id;
 
-                    <View style={styles.orderDetails}>
-                        <View style={styles.orderDetailRow}>
-                            <Text style={styles.orderDetailLabel}>Status:</Text>
-                            <View style={[
-                                styles.statusBadge,
-                                { backgroundColor: `${getStatusColor(order.status)}15` }
-                            ]}>
-                                <Text style={[
-                                    styles.statusText,
-                                    { color: getStatusColor(order.status) }
-                                ]}>
-                                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                return (
+                    <Pressable
+                        key={order._id}
+                        style={[
+                            styles.orderCard,
+                            isLoading && styles.orderCardLoading
+                        ]}
+                        onPress={() => navigateToOrderDetails(order._id)}
+                        disabled={isNavigating}
+                    >
+                        <View style={styles.orderCardHeader}>
+                            <View style={styles.orderIcon}>
+                                {isLoading ? (
+                                    <ActivityIndicator size="small" color="#3B82F6" />
+                                ) : (
+                                    <Text style={styles.orderEmoji}>
+                                        {getStatusIcon(order.status)}
+                                    </Text>
+                                )}
+                            </View>
+                            <View style={styles.orderInfo}>
+                                <Text style={styles.orderTitle} numberOfLines={1}>
+                                    {order.package.description || 'Package'}
                                 </Text>
+                                <Text style={styles.orderRef}>{order.orderRef}</Text>
+                            </View>
+                            <View style={styles.rightSection}>
+                                {isLoading ? (
+                                    <Text style={styles.loadingText}>Loading...</Text>
+                                ) : null}
+                                <ChevronRight
+                                    size={20}
+                                    color={isLoading ? "#9CA3AF80" : "#9CA3AF"}
+                                />
                             </View>
                         </View>
 
-                        <View style={styles.orderDetailRow}>
-                            <Text style={styles.orderDetailLabel}>Date:</Text>
-                            <Text style={styles.orderDetailValue}>
-                                {formatOrderDate(order.updatedAt)}
-                            </Text>
-                        </View>
+                        <View style={[
+                            styles.orderDetails,
+                            isLoading && styles.orderDetailsLoading
+                        ]}>
+                            <View style={styles.orderDetailRow}>
+                                <Text style={styles.orderDetailLabel}>Status:</Text>
+                                <View style={[
+                                    styles.statusBadge,
+                                    { backgroundColor: `${getStatusColor(order.status)}15` }
+                                ]}>
+                                    <Text style={[
+                                        styles.statusText,
+                                        { color: getStatusColor(order.status) }
+                                    ]}>
+                                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                    </Text>
+                                </View>
+                            </View>
 
-                        <View style={styles.orderDetailRow}>
-                            <Text style={styles.orderDetailLabel}>Amount:</Text>
-                            <Text style={styles.orderDetailValue}>
-                                ₦{order.pricing.totalAmount.toLocaleString()}
-                            </Text>
+                            <View style={styles.orderDetailRow}>
+                                <Text style={styles.orderDetailLabel}>Date:</Text>
+                                <Text style={styles.orderDetailValue}>
+                                    {formatOrderDate(order.deliveryConfirmation.verifiedAt)}
+                                </Text>
+                            </View>
+
+                            <View style={styles.orderDetailRow}>
+                                <Text style={styles.orderDetailLabel}>Amount:</Text>
+                                <Text style={styles.orderDetailValue}>
+                                    ₦{order.pricing.totalAmount.toLocaleString()}
+                                </Text>
+                            </View>
                         </View>
-                    </View>
-                </Pressable>
-            ))}
+                    </Pressable>
+                );
+            })}
 
             {hasMore && !isLoadingMore && (
-                <Pressable style={styles.loadMoreButton} onPress={onLoadMore}>
+                <Pressable
+                    style={styles.loadMoreButton}
+                    onPress={onLoadMore}
+                    disabled={isNavigating}
+                >
                     <Text style={styles.loadMoreText}>Load More</Text>
                 </Pressable>
             )}
 
             {isLoadingMore && (
                 <View style={styles.loadingMore}>
+                    <ActivityIndicator size="small" color="#3B82F6" />
                     <Text style={styles.loadingMoreText}>Loading more...</Text>
                 </View>
             )}
         </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     ordersContainer: {
@@ -192,10 +243,6 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsMedium',
         color: '#FFFFFF',
     },
-    loadingMore: {
-        paddingVertical: 16,
-        alignItems: 'center',
-    },
     loadingMoreText: {
         fontSize: 14,
         fontFamily: 'PoppinsRegular',
@@ -228,6 +275,36 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsRegular',
         color: '#6B7280',
         textAlign: 'center',
+    },
+    //
+    orderCardLoading: {
+        opacity: 0.7,
+        backgroundColor: '#F9FAFB',
+    },
+
+    rightSection: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+
+    loadingText: {
+        fontSize: 12,
+        fontFamily: 'PoppinsRegular',
+        color: '#3B82F6',
+    },
+
+    orderDetailsLoading: {
+        opacity: 0.8,
+    },
+
+    // ✅ Update loadingMore for better visual
+    loadingMore: {
+        paddingVertical: 16,
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 8,
     },
 });
 
