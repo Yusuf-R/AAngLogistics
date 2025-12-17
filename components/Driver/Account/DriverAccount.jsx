@@ -289,13 +289,13 @@ function DriverAccount ({ userData }) {
                         onPress: () => goToDataVerification(),
                     })}
 
-                    {/*{renderMenuItem({*/}
-                    {/*    icon: 'home-outline',*/}
-                    {/*    iconType: 'Ionicons',*/}
-                    {/*    title: 'Utility Test',*/}
-                    {/*    hasChevron: true,*/}
-                    {/*    onPress: () => goToUtility(),*/}
-                    {/*})}*/}
+                    {renderMenuItem({
+                        icon: 'home-outline',
+                        iconType: 'Ionicons',
+                        title: 'Utility Test',
+                        hasChevron: true,
+                        onPress: () => goToUtility(),
+                    })}
 
                     {renderMenuItem({
                         icon: 'wallet-outline',

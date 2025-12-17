@@ -51,6 +51,7 @@ export default function ProfileLayout() {
                 name="security"
                 options={{
                     title: 'Security',
+                    headerShown: false
                 }}
             />
 
@@ -65,8 +66,7 @@ export default function ProfileLayout() {
                 name="tcs"
                 options={{
                     title: 'Terms & Conditions',
-                    // make it at the center
-                    headerTitleAlign: 'center',
+                    headerShown: false
                 }}
             />
 
@@ -74,6 +74,7 @@ export default function ProfileLayout() {
                 name="privacy-policy"
                 options={{
                     title: 'Privacy Policy',
+                    headerShown: false
                 }}
             />
 
@@ -81,6 +82,7 @@ export default function ProfileLayout() {
                 name="verify-email"
                 options={{
                     title: 'Verify Email',
+                    headerShown: false
                 }}
             />
 
@@ -88,6 +90,7 @@ export default function ProfileLayout() {
                 name="update-password"
                 options={{
                     title: 'Update Password',
+                    headerShown: false
                 }}
             />
 
@@ -102,6 +105,7 @@ export default function ProfileLayout() {
                 name="auth-pin"
                 options={{
                     title: 'Set Pin',
+                    headerShown: false
                 }}
             />
 
@@ -148,6 +152,7 @@ export default function ProfileLayout() {
                 name="help-center"
                 options={{
                     title: 'Help & Support',
+                    headerShown: false
                 }}
             />
 
@@ -155,6 +160,7 @@ export default function ProfileLayout() {
                 name="nin-verification"
                 options={{
                     title: 'NIN Verification',
+                    headerShown: false
                 }}
             />
 

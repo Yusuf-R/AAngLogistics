@@ -1,0 +1,427 @@
+// screens/support/SupportHomeScreen.jsx
+import React from 'react';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    ScrollView,
+    StyleSheet,
+    Platform,
+    Pressable,
+    RefreshControl,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {
+    MessageCircle,
+    Mail,
+    BookOpen,
+    Clock,
+    Shield,
+    Zap,
+    FileText,
+    ChevronRight,
+    Headphones,
+    AlertCircle, ShieldCheck, DollarSign
+} from 'lucide-react-native';
+
+import {useRouter} from 'expo-router';
+import {Ionicons, MaterialCommunityIcons} from "@expo/vector-icons";
+
+function HomeScreen() {
+    const router = useRouter()
+
+    const onBackPress = () => {
+        router.replace('/client/profile');
+    };
+
+    return (
+        <>
+            <ScrollView style={styles.container}>
+                <View style={styles.headerTitleContainer}>
+                    <View style={styles.headerIconBox}>
+                        <Pressable onPress={onBackPress}>
+                            <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                        </Pressable>
+                    </View>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.headerTitle}>Help Center</Text>
+                        <Text style={styles.headerSubtitle}> Get help with your account and orders</Text>
+                    </View>
+                </View>
+                <View style={styles.cardsContainer}>
+                    {/* Help Resources Card */}
+                    <TouchableOpacity
+                        style={[styles.card, styles.resourcesCard]}
+                        onPress={() => router.push('/client/profile/help-center/faq')}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardContent}>
+                            <View style={[styles.cardIcon, styles.resourcesIcon]}>
+                                <BookOpen color="#FFFFFF" size={28} strokeWidth={2}/>
+                            </View>
+                            <View style={styles.cardTextContainer}>
+                                <Text style={styles.cardTitle}>Help Resources</Text>
+                                <Text style={styles.cardDescription}>
+                                    Browse FAQs, guides, and tutorials
+                                </Text>
+
+                                <View style={styles.cardFeatures}>
+                                    <View style={styles.feature}>
+                                        <FileText color="#10B981" size={16} strokeWidth={2}/>
+                                        <Text style={styles.featureText}>Self-service</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <ChevronRight color="#94A3B8" size={24} strokeWidth={2}/>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Live Chat Card */}
+                    <TouchableOpacity
+                        style={[styles.card, styles.chatCard]}
+                        onPress={() => router.push('/client/profile/help-center/chat')}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardContent}>
+                            <View style={[styles.cardIcon, styles.chatIcon]}>
+                                <MessageCircle color="#FFFFFF" size={28} strokeWidth={2}/>
+                            </View>
+                            <View style={styles.cardTextContainer}>
+                                <View style={styles.cardTitleRow}>
+                                    <Text style={styles.cardTitle}>Live Chat Support</Text>
+                                    <Zap color="#FCD34D" size={20} strokeWidth={2}/>
+                                </View>
+                                <Text style={styles.cardDescription}>
+                                    Get instant help from our support team
+                                </Text>
+
+                                <View style={styles.cardFeatures}>
+                                    <View style={styles.feature}>
+                                        <Clock color="#10B981" size={16} strokeWidth={2}/>
+                                        <Text style={styles.featureText}>Real-time</Text>
+                                    </View>
+                                    <View style={styles.feature}>
+                                        <Shield color="#3B82F6" size={16} strokeWidth={2}/>
+                                        <Text style={styles.featureText}>Secure</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <ChevronRight color="#94A3B8" size={24} strokeWidth={2}/>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Send Message Card */}
+                    <TouchableOpacity
+                        style={[styles.card, styles.messageCard]}
+                        onPress={() => router.push('/client/profile/help-center/ticket')}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.cardContent}>
+                            <View style={[styles.cardIcon, styles.messageIcon]}>
+                                <Mail color="#FFFFFF" size={28} strokeWidth={2}/>
+                            </View>
+                            <View style={styles.cardTextContainer}>
+                                <Text style={styles.cardTitle}>Send Us a Message</Text>
+                                <Text style={styles.cardDescription}>
+                                    Describe your issue in detail with attachments
+                                </Text>
+
+                                <View style={styles.cardFeatures}>
+                                    <View style={styles.feature}>
+                                        <Clock color="#A855F7" size={16} strokeWidth={2}/>
+                                        <Text style={styles.featureText}>2-4 hours</Text>
+                                    </View>
+                                    <View style={styles.feature}>
+                                        <FileText color="#64748B" size={16} strokeWidth={2}/>
+                                        <Text style={styles.featureText}>Detailed</Text>
+                                    </View>
+                                </View>
+                            </View>
+                            <ChevronRight color="#94A3B8" size={24} strokeWidth={2}/>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+        </>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FFF',
+        paddingHorizontal: 10,
+        paddingVertical: 10
+    },
+    header: {
+        backgroundColor: 'white',
+        marginVertical: 6,
+        borderRadius: 16,
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        marginBottom: 20
+    },
+    headerContent: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+    },
+    statusContainer: {
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        gap: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f8f9ff',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#e8edff',
+    },
+    statusIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 8,
+    },
+    statusOnline: {
+        backgroundColor: '#10b981',
+    },
+    statusLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#10b981',
+    },
+    statusDivider: {
+        width: 1,
+        height: 16,
+        backgroundColor: '#e2e8f0',
+        marginRight: 12,
+    },
+    statusDetail: {
+        fontSize: 14,
+        color: '#64748b',
+        fontWeight: '500',
+    },
+    supportHours: {
+        fontSize: 13,
+        color: '#94a3b8',
+        fontWeight: '400',
+    },
+    iconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#3B82F6',
+                shadowOffset: {width: 0, height: 4},
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 8,
+            },
+        }),
+    },
+    title: {
+        fontSize: 28,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#0F172A',
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: '#64748B',
+        marginBottom: 16,
+        fontFamily: 'PoppinsRegular',
+    },
+    statusText: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#047857',
+    },
+    cardsContainer: {
+        gap: 30,
+        marginTop: 10,
+        paddingHorizontal: 5,
+    },
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: {width: 0, height: 2},
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
+    },
+    chatCard: {
+        borderLeftWidth: 4,
+        borderLeftColor: '#3B82F6',
+    },
+    messageCard: {
+        borderLeftWidth: 4,
+        borderLeftColor: '#A855F7',
+    },
+    resourcesCard: {
+        borderLeftWidth: 4,
+        borderLeftColor: '#10B981',
+    },
+    cardContent: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+    },
+    cardIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+    },
+    chatIcon: {
+        backgroundColor: '#3B82F6',
+    },
+    messageIcon: {
+        backgroundColor: '#A855F7',
+    },
+    resourcesIcon: {
+        backgroundColor: '#10B981',
+    },
+    cardTextContainer: {
+        flex: 1,
+    },
+    cardTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    cardTitle: {
+        fontSize: 18,
+        fontFamily: 'PoppinsMedium',
+        color: '#0F172A',
+        marginRight: 8,
+    },
+    cardDescription: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#64748B',
+        marginBottom: 12,
+        lineHeight: 20,
+    },
+    cardFeatures: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    feature: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    featureText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#475569',
+    },
+    infoBanner: {
+        backgroundColor: '#FEF3C7',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 24,
+        borderLeftWidth: 4,
+        borderLeftColor: '#F59E0B',
+    },
+    infoBannerTitle: {
+        fontSize: 15,
+        fontFamily: 'PoppinsMedium',
+        fontWeight: 'bold',
+        color: '#92400E',
+        marginBottom: 8,
+    },
+    infoBannerText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#78350F',
+        lineHeight: 20,
+    },
+    tcsCard: {
+        backgroundColor: '#FFFFFF',
+        borderLeftWidth: 4,
+        borderLeftColor: '#3B82F6',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+    },
+
+    tcsIcon: {
+        backgroundColor: '#3B82F6',
+        shadowColor: '#3B82F6',
+        shadowOffset: {width: 0, height: 4},
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+
+    // New
+    backButton: {
+        backgroundColor: '#4F628E',
+        borderRadius: 5,
+        padding: 2,
+    },
+    headerMainTitle: {
+        fontSize: 24,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#1A1A1A',
+    },
+
+    // XXXX
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 6,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
+        flex: 1,
+    },
+
+});
+
+export default HomeScreen;

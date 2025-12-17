@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
     Alert,
     Animated,
-    Dimensions,
+    Dimensions, Pressable,
     SafeAreaView,
     StatusBar,
     StyleSheet,
@@ -13,7 +13,7 @@ import {
     View
 } from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 import {router} from 'expo-router';
 import { navigate } from "expo-router/build/global-state/routing";
 import PinSecurity from "../../../../../assets/images/pin-security.svg"
@@ -60,9 +60,24 @@ function AuthPinSecurity({userData}) {
         }
     };
 
+    const onBackPress = () => {
+        router.back();
+    };
+
     return (
         <>
             <StatusBar barStyle="light-content" backgroundColor="#1F2937"/>
+            <View style={styles.headerTitleContainer}>
+                <View style={styles.headerIconBox}>
+                    <Pressable onPress={onBackPress}>
+                        <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                    </Pressable>
+                </View>
+                <View style={styles.headerTextContainer}>
+                    <Text style={styles.headerTitle}>Authorization Pin Manager</Text>
+                    <Text style={styles.headerSubtitle}> Set or update your Authorization PIN </Text>
+                </View>
+            </View>
             <LinearGradient
                 colors={['#F5F5F5', '#F5F5F5', '#F5F5F5']}
                 start={{x: 0, y: 0}}
@@ -672,6 +687,40 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#2F2F2F',
     },
+
+
+    // header
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFF',
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
+        flex: 1,
+    },
+
+
 });
 
 export default AuthPinSecurity;

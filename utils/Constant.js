@@ -1152,7 +1152,7 @@ Continued use of our services after notification constitutes acceptance of the u
 ];
 
 // FAQ Constants
-export const faqData = {
+export const oldfaqData = {
     General: [
         {
             question: "How does the delivery platform work?",
@@ -1349,6 +1349,262 @@ export const faqData = {
             answer: "Location data is only used for delivery matching and tracking. We never sell or share your precise location data with third parties."
         }
     ]
+};
+
+export const clientFaqData = {
+    'Getting Started': {
+        icon: 'rocket-launch',
+        iconFamily: 'MaterialIcons',
+        color: '#3B82F6',
+        questions: [
+            {
+                question: "How do I start using the delivery platform?",
+                answer: "Download our app from Google Play Store or Apple App Store, register with your phone number, complete identity verification (KYC) using your NIN or BVN, add a payment method, and you're ready to create your first delivery request. The entire setup takes about 5-10 minutes."
+            },
+            {
+                question: "What information do I need to sign up?",
+                answer: "You'll need: (1) Active Nigerian phone number for verification, (2) Valid government-issued ID (NIN or BVN), (3) Email address for account recovery, (4) Profile photo for security, (5) Delivery addresses (home/work/regular locations). All information is encrypted and protected under Nigeria Data Protection Regulation (NDPR)."
+            },
+            {
+                question: "Is there a registration fee for clients?",
+                answer: "No, creating a client account is completely free. You only pay for the deliveries you request. There are no monthly fees, subscription charges, or hidden costs. Payment is only charged when you confirm a delivery request."
+            },
+            {
+                question: "Can I use the platform without downloading the app?",
+                answer: "Yes, we have a web version at deliveryplatform.com that offers full functionality. However, the mobile app provides better experience with push notifications, real-time GPS tracking, and instant chat features. We recommend the app for regular users."
+            },
+            {
+                question: "How long does account verification take?",
+                answer: "Identity verification typically completes instantly using our automated NIN/BVN verification system. In some cases (network issues, data mismatch), verification may take up to 24 hours. You'll receive SMS/email notifications once your account is fully verified and ready to use."
+            },
+            {
+                question: "What happens after I complete registration?",
+                answer: "Once verified, you can immediately: Create delivery requests, Set up favorite addresses, Save payment methods, Access customer support, Track active deliveries. We recommend completing your profile and setting up your payment method before your first delivery request."
+            }
+        ]
+    },
+    'Creating Deliveries': {
+        icon: 'add-circle',
+        iconFamily: 'MaterialIcons',
+        color: '#10B981',
+        questions: [
+            {
+                question: "How do I create a delivery request?",
+                answer: "Creating a request is simple: (1) Tap 'New Delivery' in the app, (2) Enter pickup and drop-off addresses, (3) Specify package details (size, weight, type), (4) Set delivery urgency (standard or express), (5) Review auto-calculated price, (6) Confirm and send to nearby drivers. Drivers receive notifications and can accept within 60 seconds."
+            },
+            {
+                question: "What information should I include in my delivery request?",
+                answer: "For best results, include: Clear pickup/drop-off addresses with landmarks, Accurate package dimensions and weight, Type of item (documents, electronics, fragile, etc.), Special instructions (gate codes, floor numbers, recipient details), Preferred delivery timeframe, Contact numbers for both pickup and delivery locations. Complete requests get accepted faster."
+            },
+            {
+                question: "How does the pricing system work?",
+                answer: "Our algorithm calculates prices based on: Distance between pickup and drop-off, Package weight and dimensions, Delivery urgency (express costs more), Time of day (peak hours may have surge pricing), Current driver availability, Package type (fragile items may cost more). You see the total price before confirming, with no hidden charges."
+            },
+            {
+                question: "Can I schedule deliveries in advance?",
+                answer: "Yes! You can schedule deliveries up to 7 days in advance. Scheduled requests are queued and sent to drivers 2 hours before pickup time. You can modify or cancel scheduled deliveries up to 1 hour before pickup without penalty. Advance scheduling is perfect for important deliveries, regular shipments, or business needs."
+            },
+            {
+                question: "What happens if no driver accepts my request?",
+                answer: "If no driver accepts within 2 minutes, the system automatically: Increases the price by 10-20% to attract more drivers, Expands the search radius for available drivers, Sends priority notifications to top-rated drivers. You'll be notified and can choose to accept the new price or cancel. Most requests are accepted within 1-3 minutes."
+            },
+            {
+                question: "Can I send multiple packages in one request?",
+                answer: "Each delivery request should be for one package or a consolidated package. For multiple items going to different locations, create separate requests. If sending multiple items to the same location, list all items in the package description and ensure the total weight/size doesn't exceed platform limits."
+            }
+        ]
+    },
+    'Delivery Tracking & Communication': {
+        icon: 'location-on',
+        iconFamily: 'MaterialIcons',
+        color: '#F59E0B',
+        questions: [
+            {
+                question: "How do I track my delivery in real-time?",
+                answer: "Once a driver accepts your request: (1) Open the active delivery in your app, (2) View real-time GPS location of your driver and package, (3) See estimated arrival time updated continuously, (4) Receive notifications at key milestones (pickup, en route, nearby, delivered), (5) Monitor route and traffic conditions. Share tracking link with recipients if needed."
+            },
+            {
+                question: "How do I communicate with my driver?",
+                answer: "Use our secure in-app communication: (1) In-app chat for text messages (preserved for records), (2) Voice call through the app (protects phone numbers), (3) Share photos if needed (package condition, location details). All communication is encrypted and monitored for quality and safety. Never share personal contact information outside the app."
+            },
+            {
+                question: "What notifications will I receive during delivery?",
+                answer: "You'll receive push notifications for: Driver assigned to your request, Driver en route to pickup, Package picked up successfully, Driver en route to drop-off, Driver approaching destination, Delivery completed with OTP confirmation. Enable notifications to stay informed and respond quickly if needed."
+            },
+            {
+                question: "Can I change delivery details after driver acceptance?",
+                answer: "Minor changes (recipient phone number, gate codes) can be updated via in-app chat with the driver. For major changes (different drop-off address, package changes), you must cancel the request (charges may apply) and create a new request. Contact support immediately for urgent changes."
+            },
+            {
+                question: "What is the OTP delivery confirmation system?",
+                answer: "For security, every delivery requires a 6-digit One-Time Password (OTP) generated by our system. The recipient must provide this OTP to the driver for delivery completion. The OTP is sent to the recipient's phone number provided in the request. This ensures only the intended recipient receives the package."
+            },
+            {
+                question: "How do I know when my delivery is successfully completed?",
+                answer: "You'll receive: (1) Push notification confirming delivery completion, (2) Email receipt with delivery details and photo proof, (3) In-app confirmation with timestamps and driver details, (4) Request for rating the driver. Check that the OTP was used and photo proof matches your package before finalizing."
+            }
+        ]
+    },
+    'Payments & Pricing': {
+        icon: 'attach-money',
+        iconFamily: 'MaterialIcons',
+        color: '#EF4444',
+        questions: [
+            {
+                question: "What payment methods are accepted?",
+                answer: "We accept: Debit/Credit cards (Visa, Mastercard, Verve), Bank transfers via secure gateways (Paystack, Flutterwave), Digital wallets (OPay, PalmPay, Kuda), USSD codes for major banks. All payments are processed securely with PCI-DSS compliance. Your payment information is encrypted and never stored on our servers."
+            },
+            {
+                question: "When am I charged for a delivery?",
+                answer: "Payment is authorized when you confirm a delivery request, but funds are only captured after: (1) Driver accepts the request, (2) Successful pickup confirmation, (3) Delivery completed with OTP verification. Funds are held in escrow until all conditions are met, ensuring your money is protected throughout the process."
+            },
+            {
+                question: "What happens if my payment fails?",
+                answer: "Common reasons for payment failure include: Insufficient funds, Expired card, Bank authorization issues, Network problems. If payment fails: (1) Try a different payment method, (2) Contact your bank to authorize the transaction, (3) Ensure your card supports online transactions, (4) Check your internet connection. Failed payments automatically cancel the delivery request."
+            },
+            {
+                question: "Are there any additional fees or hidden charges?",
+                answer: "No hidden charges. The price shown includes: Base delivery fee, Platform service charge, VAT (7.5% as required by Nigerian law), Insurance (if selected). Any additional charges (waiting time, return trip, overweight) require your approval through the app before being applied. You see the complete breakdown before confirming."
+            },
+            {
+                question: "How do refunds work?",
+                answer: "Refunds are processed automatically for: Cancellations before driver acceptance, Failed deliveries (driver doesn't show up), Customer service-approved refunds. Refunds return to your original payment method within 3-7 business days depending on your bank. You'll receive email confirmation once refund is initiated."
+            },
+            {
+                question: "Can I tip my driver and how does it work?",
+                answer: "Yes! After successful delivery, you can tip your driver through the app. Tips are optional but appreciated for exceptional service. Tips go directly to the driver (no platform commission) and help recognize good service. You can tip any amount, with suggested amounts based on delivery value and distance."
+            }
+        ]
+    },
+    'Safety & Security': {
+        icon: 'shield',
+        color: '#8B5CF6',
+        questions: [
+            {
+                question: "How are drivers verified for safety?",
+                answer: "All drivers undergo: NIN/BVN verification for identity, FRSC license validation, Vehicle registration and roadworthiness checks, Criminal background screening, Reference verification, Driving history review. Only drivers passing all checks are approved. Ongoing monitoring includes customer ratings and periodic re-verification."
+            },
+            {
+                question: "What safety features protect my deliveries?",
+                answer: "Multiple layers of protection: Real-time GPS tracking, OTP verification for delivery confirmation, Photo proof at pickup and delivery, Escrow payment protection, In-app emergency button, 24/7 security monitoring, Package value declaration, Optional insurance coverage, Driver rating system, Secure communication channels."
+            },
+            {
+                question: "What should I do if I feel unsafe during a delivery?",
+                answer: "If you feel unsafe: (1) Use the emergency button in the app to alert our security team, (2) Cancel the delivery immediately (no penalty for safety concerns), (3) Contact our 24/7 security hotline, (4) Provide details through the incident reporting system. We investigate all safety reports and take immediate action against violators."
+            },
+            {
+                question: "How is my personal information protected?",
+                answer: "We comply with Nigeria Data Protection Regulation (NDPR) with: AES-256 encryption for all data, Secure payment processing (PCI-DSS compliant), Limited data sharing (drivers only see necessary information), Regular security audits, Two-factor authentication option, Data breach response protocol, Right to data deletion upon request."
+            },
+            {
+                question: "What items are prohibited from delivery?",
+                answer: "Prohibited items include: Illegal drugs and substances, Weapons and ammunition, Hazardous/flammable materials, Live animals (except pre-approved pet transport), Perishable food without proper packaging, Cash and negotiable instruments, Items exceeding weight/size limits. Violations lead to immediate account suspension and legal reporting."
+            }
+        ]
+    },
+    'Insurance & Protection': {
+        icon: 'security',
+        iconFamily: 'MaterialIcons',
+        color: '#EC4899',
+        questions: [
+            {
+                question: "Do I need insurance for my deliveries?",
+                answer: "Insurance is optional but recommended for valuable items. Basic platform protection covers up to ₦5,000 per delivery. For items worth more, purchase additional insurance coverage during request creation. Insurance costs 2-5% of declared value depending on item type and distance."
+            },
+            {
+                question: "What does the insurance cover?",
+                answer: "Insurance covers: Loss during transit, Theft with police report, Accidental damage, Water damage, Fire damage. Not covered: Improper packaging, Prohibited items, Perishable goods, Pre-existing damage, Delays without physical damage, Acts of war or terrorism. Review full terms in the insurance policy document."
+            },
+            {
+                question: "How do I file an insurance claim?",
+                answer: "To file a claim: (1) Report immediately through the app (within 24 hours), (2) Provide photos/videos of damage, (3) Submit purchase receipt or value proof, (4) Complete claim form with details, (5) Provide police report for theft cases. Claims are processed within 14 business days. Maximum payout is the declared value or ₦100,000, whichever is lower."
+            },
+            {
+                question: "What items cannot be insured?",
+                answer: "Uninsurable items: Cash and currency, Jewelry and precious stones, Antiques and collectibles, Perishable goods, Illegal/prohibited items, Electronic data loss, Sentimental value items, Items without proof of value, Animals and plants, Fragile items without proper packaging."
+            },
+            {
+                question: "How are insurance payouts calculated?",
+                answer: "Payout calculation: Actual cash value of item (depreciated), Maximum coverage limit (₦100,000), Deductible amount (₦2,000 per claim), Proof of value requirement (receipt or valuation), Condition assessment by adjuster. Payouts are made to your registered bank account within 5 business days of claim approval."
+            }
+        ]
+    },
+    'Problem Resolution': {
+        icon: 'help-circle',
+        color: '#6366F1',
+        questions: [
+            {
+                question: "What should I do if my driver doesn't show up?",
+                answer: "If driver doesn't arrive within 15 minutes of pickup time: (1) Contact driver via in-app chat/call, (2) If no response after 5 minutes, use the 'Report Issue' button, (3) Select 'Driver No Show' and provide details, (4) Support will cancel the request and issue full refund, (5) You can create a new request immediately. Drivers with frequent no-shows are penalized."
+            },
+            {
+                question: "What happens if my package is damaged during delivery?",
+                answer: "If you notice damage: (1) Do not accept the delivery (withhold OTP), (2) Document damage with photos/videos, (3) Contact support immediately through the app, (4) File a formal complaint with details, (5) If you have insurance, file a claim. We investigate and may compensate based on findings and insurance coverage."
+            },
+            {
+                question: "How do I cancel a delivery request?",
+                answer: "Cancellation options: Before driver acceptance: Cancel anytime for full refund, After acceptance but before pickup: Cancel within 30 seconds for full refund, After pickup: Cannot cancel normally (contact support for emergencies). Cancellation fees may apply for late cancellations. Frequent cancellations may affect your account standing."
+            },
+            {
+                question: "What if the recipient refuses to accept the package?",
+                answer: "If recipient refuses: (1) Driver will contact you via in-app communication, (2) You can provide alternative instructions or recipient, (3) If no resolution, driver returns package to pickup location (return fee applies), (4) You're charged for completed distance plus return fee. Ensure recipients are informed and available."
+            },
+            {
+                question: "How do I report a problem with a driver?",
+                answer: "Report issues through: (1) 'Report Driver' button in delivery history, (2) In-app customer support chat, (3) Email complaints to support@deliveryplatform.com, (4) Call customer service hotline. Provide: Delivery ID, Driver details, Timestamp, Photos/evidence, Description of issue. We investigate and take appropriate action."
+            }
+        ]
+    },
+    'Account Management': {
+        icon: 'person',
+        iconFamily: 'MaterialIcons',
+        color: '#14B8A6',
+        questions: [
+            {
+                question: "How do I update my profile information?",
+                answer: "Update profile through: App Settings > Profile. You can change: Phone number (requires re-verification), Email address, Profile photo, Saved addresses, Payment methods, Notification preferences. Some changes (NIN/BVN, legal name) require contacting support with documentation."
+            },
+            {
+                question: "Can I have multiple delivery addresses saved?",
+                answer: "Yes, save unlimited addresses as favorites: Home, Office, Frequent locations, Friends/family addresses. Saved addresses speed up request creation and ensure accuracy. You can label addresses for easy identification and set a default pickup/drop-off location."
+            },
+            {
+                question: "What happens if I can't access my account?",
+                answer: "If locked out: Use 'Forgot Password' for reset, Contact support with account details, Provide identity verification (NIN/BVN last digits), Wait for account recovery instructions. For security, we may require additional verification for account recovery. Recovery typically takes 1-2 business days."
+            },
+            {
+                question: "How do I delete my account permanently?",
+                answer: "To delete account: (1) Settle any pending payments or deliveries, (2) Go to Settings > Account > Delete Account, (3) Confirm deletion request, (4) Receive confirmation email. Account deletion is permanent and irreversible. All data is removed within 30 days per NDPR requirements."
+            },
+            {
+                question: "Can I use one account for both personal and business deliveries?",
+                answer: "Yes, one account supports all your delivery needs. However, for business use with multiple users, invoicing needs, or API integration, consider upgrading to a Business Account for additional features like user management, billing reports, and dedicated support."
+            }
+        ]
+    },
+    'Business & Corporate': {
+        icon: 'business',
+        iconFamily: 'MaterialIcons',
+        color: '#F97316',
+        questions: [
+            {
+                question: "Do you offer business/corporate accounts?",
+                answer: "Yes! Our Business Accounts include: Multiple user access with role permissions, Consolidated billing and invoicing, Volume discounts (10-30% based on monthly volume), Dedicated account manager, Custom reporting and analytics, API integration for logistics automation, Priority support, Custom delivery solutions. Contact sales@deliveryplatform.com for pricing."
+            },
+            {
+                question: "What are the benefits of a business account?",
+                answer: "Business benefits: Monthly invoicing instead of per-transaction payments, User management dashboard, Delivery analytics and reporting, Custom approval workflows, Branded delivery notifications, Integration with existing systems, Dedicated support team, SLA guarantees for high-volume clients, Training for your team."
+            },
+            {
+                question: "Can I integrate your service with my business systems?",
+                answer: "Yes, we offer API integration for: Automated delivery requests, Real-time tracking in your systems, Automatic status updates, Bulk delivery management, Custom reporting. Our API documentation is available for enterprise clients. We provide technical support for integration and custom development services."
+            },
+            {
+                question: "What volume discounts are available?",
+                answer: "Discount tiers based on monthly delivery volume: 50-100 deliveries: 10% discount, 101-500 deliveries: 15% discount, 501-1000 deliveries: 20% discount, 1000+ deliveries: 25-30% discount (negotiable). Discounts apply to base delivery fees. Additional savings for annual contracts and prepaid packages."
+            }
+        ]
+    }
 };
 
 // Dashboard Constants

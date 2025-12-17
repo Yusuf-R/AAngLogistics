@@ -1,5 +1,5 @@
-// components/Driver/Account/Support/DriverSupportHub.jsx
-import React, {useState} from 'react';
+// components/Client/Account/Support/ClientSupportHub.jsx
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -7,32 +7,20 @@ import {
     ScrollView,
     StyleSheet, Pressable,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {MessageCircle, Package, ArrowLeft, Shield} from 'lucide-react-native';
-import {router} from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ArrowLeft, Headphones, Truck } from 'lucide-react-native';
+import { router } from 'expo-router';
 import ChatScreen from './ChatScreen';
 import {MaterialCommunityIcons} from "@expo/vector-icons";
 
-const DriverSupportHub = ({userData, chatData, onRefresh}) => {
+const ClientSupportHub = ({ userData, chatData, onRefresh }) => {
     const [selectedConversation, setSelectedConversation] = useState(null);
 
-    const {supportConversation, clientConversations, summary} = chatData;
+    const { supportConversation, driverConversations, summary } = chatData;
 
     const handleRefresh = () => {
         onRefresh();
     };
-
-    // If only support chat exists, go straight to it
-    if (clientConversations.length === 0 && !selectedConversation) {
-        return (
-            <ChatScreen
-                userData={userData}
-                conversationData={supportConversation}
-                onBack={() => router.back()}
-                onRefresh={handleRefresh}
-            />
-        );
-    }
 
     // If conversation selected, show chat screen
     if (selectedConversation) {
@@ -46,6 +34,18 @@ const DriverSupportHub = ({userData, chatData, onRefresh}) => {
         );
     }
 
+    // If only support chat exists (no driver chats), go straight to it
+    if (driverConversations.length === 0 && !selectedConversation) {
+        return (
+            <ChatScreen
+                userData={userData}
+                conversationData={supportConversation}
+                onBack={() => router.back()}
+                onRefresh={handleRefresh}
+            />
+        );
+    }
+
     const onBackPress = () => {
         router.back();
     };
@@ -54,6 +54,7 @@ const DriverSupportHub = ({userData, chatData, onRefresh}) => {
     return (
         <>
             {/* Header */}
+
             <View style={styles.headerTitleContainer}>
                 <View style={styles.headerIconBox}>
                     <Pressable onPress={onBackPress}>
@@ -73,57 +74,57 @@ const DriverSupportHub = ({userData, chatData, onRefresh}) => {
                     activeOpacity={0.7}
                 >
                     <View style={styles.cardIconContainer}>
-                        <Shield color="#3B82F6" size={24}/>
+                        <Headphones color="#3B82F6" size={24} />
                     </View>
                     <View style={styles.cardContent}>
                         <Text style={styles.cardTitle}>Support Admin</Text>
                         <Text style={styles.cardSubtitle}>
-                            {supportConversation.adminInfo?.fullName || 'Customer Support'}
+                            {supportConversation?.adminInfo?.fullName || 'Support Team'}
                         </Text>
-                        {supportConversation.messages.length > 0 && (
+                        {supportConversation?.messages?.length > 0 && (
                             <Text style={styles.lastMessage} numberOfLines={1}>
                                 {supportConversation.messages[supportConversation.messages.length - 1].body}
                             </Text>
                         )}
                     </View>
-                    {supportConversation.isNew && (
+                    {supportConversation?.isNew && (
                         <View style={styles.newBadge}>
                             <Text style={styles.newBadgeText}>New</Text>
                         </View>
                     )}
                 </TouchableOpacity>
 
-                {/* Client Conversations */}
-                {clientConversations.length > 0 && (
+                {/* Driver Conversations (Active Orders) */}
+                {driverConversations.length > 0 && (
                     <>
-                        <Text style={styles.sectionTitle}>Active Orders</Text>
-                        {clientConversations.map((clientChat) => (
+                        <Text style={styles.sectionTitle}>Active Deliveries</Text>
+                        {driverConversations.map((driverChat) => (
                             <TouchableOpacity
-                                key={clientChat.conversation._id}
+                                key={driverChat.conversation._id}
                                 style={styles.conversationCard}
-                                onPress={() => setSelectedConversation(clientChat)}
+                                onPress={() => setSelectedConversation(driverChat)}
                                 activeOpacity={0.7}
                             >
-                                <View style={[styles.cardIconContainer, styles.clientIcon]}>
-                                    <Package color="#10B981" size={24}/>
+                                <View style={[styles.cardIconContainer, styles.driverIcon]}>
+                                    <Truck color="#F59E0B" size={24} />
                                 </View>
                                 <View style={styles.cardContent}>
                                     <Text style={styles.cardTitle}>
-                                        {clientChat.clientInfo?.fullName || 'Client'}
+                                        {driverChat.driverInfo?.fullName || 'Your Driver'}
                                     </Text>
                                     <Text style={styles.cardSubtitle}>
-                                        Order: {clientChat.orderInfo?.orderRef || 'N/A'}
+                                        Order: {driverChat.orderInfo?.orderRef || 'N/A'}
                                     </Text>
-                                    {clientChat.messages.length > 0 && (
+                                    {driverChat.messages.length > 0 && (
                                         <Text style={styles.lastMessage} numberOfLines={1}>
-                                            {clientChat.messages[clientChat.messages.length - 1].body}
+                                            {driverChat.messages[driverChat.messages.length - 1].body}
                                         </Text>
                                     )}
                                 </View>
-                                {clientChat.unreadCount > 0 && (
+                                {driverChat.unreadCount > 0 && (
                                     <View style={styles.unreadBadge}>
                                         <Text style={styles.unreadText}>
-                                            {clientChat.unreadCount > 9 ? '9+' : clientChat.unreadCount}
+                                            {driverChat.unreadCount > 9 ? '9+' : driverChat.unreadCount}
                                         </Text>
                                     </View>
                                 )}
@@ -131,6 +132,14 @@ const DriverSupportHub = ({userData, chatData, onRefresh}) => {
                         ))}
                     </>
                 )}
+
+                {/* Info Section */}
+                <View style={styles.infoSection}>
+                    <Text style={styles.infoTitle}>💬 Need Help?</Text>
+                    <Text style={styles.infoText}>
+                        Chat with customer support or your delivery driver for real-time assistance.
+                    </Text>
+                </View>
             </ScrollView>
         </>
     );
@@ -173,7 +182,7 @@ const styles = StyleSheet.create({
         padding: 16,
         marginBottom: 12,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3,
@@ -187,8 +196,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginRight: 12,
     },
-    clientIcon: {
-        backgroundColor: '#D1FAE5',
+    driverIcon: {
+        backgroundColor: '#FEF3C7',
     },
     cardContent: {
         flex: 1,
@@ -201,8 +210,8 @@ const styles = StyleSheet.create({
     },
     cardSubtitle: {
         fontSize: 13,
-        fontFamily: 'PoppinsRegular',
         color: '#64748B',
+        fontFamily: 'PoppinsRegular',
         marginBottom: 4,
     },
     lastMessage: {
@@ -235,7 +244,24 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#FFFFFF',
     },
-
+    infoSection: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 8,
+    },
+    infoTitle: {
+        fontSize: 16,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#0F172A',
+        marginBottom: 8,
+    },
+    infoText: {
+        fontSize: 14,
+        fontFamily: 'PoppinsRegular',
+        color: '#64748B',
+        lineHeight: 20,
+    },
 
     headerTitleContainer: {
         flexDirection: 'row',
@@ -268,4 +294,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default DriverSupportHub;
+export default ClientSupportHub;

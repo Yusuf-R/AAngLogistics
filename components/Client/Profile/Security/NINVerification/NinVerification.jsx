@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image } from 'react-native';
-import { MaterialIcons, AntDesign, FontAwesome } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
-import { useSessionStore } from '../../../../../store/useSessionStore';
+import React, {useState} from 'react';
+import {View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Pressable} from 'react-native';
+import {MaterialIcons, AntDesign, FontAwesome, MaterialCommunityIcons} from '@expo/vector-icons';
+import Animated, {FadeIn, FadeInDown, FadeOut} from 'react-native-reanimated';
+import {useSessionStore} from '../../../../../store/useSessionStore';
+import {router} from "expo-router";
 
-function NinVerification({ userData }) {
+function NinVerification({userData}) {
     const [nin, setNin] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -25,13 +26,17 @@ function NinVerification({ userData }) {
             await new Promise(resolve => setTimeout(resolve, 1500));
 
             // Mock verification success
-            updateUser({ ninVerified: true, ninNumber: nin });
+            updateUser({ninVerified: true, ninNumber: nin});
             setSuccess(true);
         } catch (err) {
             setError('Verification failed. Please check your NIN and try again.');
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const onBackPress = () => {
+        router.back();
     };
 
     if (userData?.ninVerified || success) {
@@ -42,7 +47,7 @@ function NinVerification({ userData }) {
             >
                 <View style={styles.successContainer}>
                     <View style={styles.iconCircle}>
-                        <AntDesign name="checkcircle" size={48} color="#4BB543" />
+                        <AntDesign name="checkcircle" size={48} color="#4BB543"/>
                     </View>
 
                     <Text style={styles.successTitle}>NIN Verified Successfully</Text>
@@ -56,7 +61,7 @@ function NinVerification({ userData }) {
                     </View>
 
                     <View style={styles.verifiedBadge}>
-                        <MaterialIcons name="verified" size={20} color="#4BB543" />
+                        <MaterialIcons name="verified" size={20} color="#4BB543"/>
                         <Text style={styles.verifiedText}>Identity Verified</Text>
                     </View>
                 </View>
@@ -65,78 +70,92 @@ function NinVerification({ userData }) {
     }
 
     return (
-        <Animated.View
-            entering={FadeInDown.duration(500)}
-            style={styles.container}
-        >
-            <View style={styles.header}>
-                <Text className="font-poppinsExtraBold text-3xl mb-4 text-black">Verify Your Identity</Text>
-                <Text className="font-poppinsLight text-lg text-gray-950">
-                    For security and compliance, we need to verify your National Identification Number (NIN)
-                </Text>
+        <>
+            <View style={styles.headerTitleContainer}>
+                <View style={styles.headerIconBox}>
+                    <Pressable onPress={onBackPress}>
+                        <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                    </Pressable>
+                </View>
+                <View style={styles.headerTextContainer}>
+                    <Text style={styles.headerTitle}>NIN</Text>
+                    <Text style={styles.headerSubtitle}>National Identity Number</Text>
+                </View>
             </View>
-
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter 11-digit NIN"
-                    placeholderTextColor="#999"
-                    value={nin}
-                    onChangeText={(text) => {
-                        setNin(text);
-                        setError('');
-                    }}
-                    keyboardType="numeric"
-                    maxLength={11}
-                    autoFocus
-                />
-
-                {error && (
-                    <Animated.View
-                        entering={FadeIn.duration(300)}
-                        exiting={FadeOut.duration(200)}
-                        style={styles.errorContainer}
-                    >
-                        <MaterialIcons name="error-outline" size={18} color="#FF3B30" />
-                        <Text style={styles.errorText}>{error}</Text>
-                    </Animated.View>
-                )}
-            </View>
-
-            <View style={styles.infoBox}>
-                <FontAwesome name="info-circle" size={18} color="#007AFF" />
-                <Text style={styles.infoText}>
-                    Your NIN is the 11-digit number on your National ID card, NIN slip, or NIMC mobile app.
-                </Text>
-            </View>
-
-            <TouchableOpacity
-                style={[styles.button, isLoading && styles.buttonDisabled]}
-                onPress={handleVerify}
-                disabled={isLoading}
-                activeOpacity={0.8}
+            <Animated.View
+                entering={FadeInDown.duration(500)}
+                style={styles.container}
             >
-                {isLoading ? (
-                    <ActivityIndicator color="#fff" />
-                ) : (
-                    <Text style={styles.buttonText}>Verify NIN</Text>
-                )}
-            </TouchableOpacity>
+                <View style={styles.header}>
+                    <Text className="font-poppinsExtraBold text-3xl mb-4 text-black">Verify Your Identity</Text>
+                    <Text className="font-poppinsLight text-lg text-gray-950">
+                        For security and compliance, we need to verify your National Identification Number (NIN)
+                    </Text>
+                </View>
 
-            <View style={styles.securityNote}>
-                <MaterialIcons name="security" size={16} color="#666" />
-                <Text style={styles.securityText}>
-                    Your information is secured with bank-level encryption and complies with NDPR regulations.
-                </Text>
-            </View>
-        </Animated.View>
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter 11-digit NIN"
+                        placeholderTextColor="#999"
+                        value={nin}
+                        onChangeText={(text) => {
+                            setNin(text);
+                            setError('');
+                        }}
+                        keyboardType="numeric"
+                        maxLength={11}
+                        autoFocus
+                    />
+
+                    {error && (
+                        <Animated.View
+                            entering={FadeIn.duration(300)}
+                            exiting={FadeOut.duration(200)}
+                            style={styles.errorContainer}
+                        >
+                            <MaterialIcons name="error-outline" size={18} color="#FF3B30"/>
+                            <Text style={styles.errorText}>{error}</Text>
+                        </Animated.View>
+                    )}
+                </View>
+
+                <View style={styles.infoBox}>
+                    <FontAwesome name="info-circle" size={18} color="#007AFF"/>
+                    <Text style={styles.infoText}>
+                        Your NIN is the 11-digit number on your National ID card, NIN slip, or NIMC mobile app.
+                    </Text>
+                </View>
+
+                <TouchableOpacity
+                    style={[styles.button, isLoading && styles.buttonDisabled]}
+                    onPress={handleVerify}
+                    disabled={isLoading}
+                    activeOpacity={0.8}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator color="#fff"/>
+                    ) : (
+                        <Text style={styles.buttonText}>Verify NIN</Text>
+                    )}
+                </TouchableOpacity>
+
+                <View style={styles.securityNote}>
+                    <MaterialIcons name="security" size={16} color="#666"/>
+                    <Text style={styles.securityText}>
+                        Your information is secured with bank-level encryption and complies with NDPR regulations.
+                    </Text>
+                </View>
+            </Animated.View>
+        </>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 24,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         backgroundColor: '#fff',
     },
     header: {
@@ -209,7 +228,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: '#007AFF',
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: {width: 0, height: 4},
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 4,
@@ -292,6 +311,37 @@ const styles = StyleSheet.create({
         color: '#4BB543',
         marginLeft: 8,
         fontWeight: '600',
+    },
+
+    // header
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFF',
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
+        flex: 1,
     },
 });
 

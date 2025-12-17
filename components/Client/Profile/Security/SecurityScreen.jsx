@@ -5,15 +5,15 @@ import {
     TouchableOpacity,
     Switch,
     StatusBar,
-    Alert,
+    Alert, Pressable,
 } from 'react-native';
 import {SafeAreaView} from "react-native-safe-area-context";
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 import {router} from "expo-router"; // or react-native-vector-icons
 import {ROUTES} from "../../../../utils/Constant";
 import {useRouter} from 'expo-router';
 import {useNavigation} from '@react-navigation/native';
-import {useLayoutEffect} from 'react';
+import React, {useLayoutEffect} from 'react';
 import {useEffect, useState} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {axiosPrivate} from "../../../../utils/AxiosInstance";
@@ -155,11 +155,25 @@ const SecurityScreen = () => {
         return unsubscribe;
     }, []);
 
+    const onBackPress = () => {
+        router.back();
+    };
+
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#ffffff"/>
+        <>
             {/* Security Options */}
             <View style={styles.content}>
+                <View style={styles.headerTitleContainer}>
+                    <View style={styles.headerIconBox}>
+                        <Pressable onPress={onBackPress}>
+                            <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                        </Pressable>
+                    </View>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.headerTitle}>Security</Text>
+                        <Text style={styles.headerSubtitle}>Manage your account security</Text>
+                    </View>
+                </View>
                 {/*Push Notifications */}
                 <View style={styles.optionRow}>
                     <View style={styles.subText}>
@@ -248,7 +262,7 @@ const SecurityScreen = () => {
                     </TouchableOpacity>
                 </View>
             </View>
-        </SafeAreaView>
+        </>
     );
 };
 
@@ -269,11 +283,6 @@ const styles = StyleSheet.create({
         marginRight: 16,
         padding: 4,
     },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#000000',
-    },
     content: {
         flex: 1,
     },
@@ -288,7 +297,7 @@ const styles = StyleSheet.create({
     optionText: {
         fontSize: 16,
         color: '#000000',
-        fontWeight: '400',
+        fontFamily: 'PoppinsMedium',
     },
     buttonContainer: {
         paddingHorizontal: 20,
@@ -304,11 +313,13 @@ const styles = StyleSheet.create({
     },
     actionButtonText: {
         fontSize: 16,
+        fontFamily: 'PoppinsMedium',
         fontWeight: '600',
         color: '#FFF',
     },
     helperText: {
         fontSize: 12,
+        fontFamily: 'PoppinsMedium',
         color: '#999',
         marginTop: 4,
         fontStyle: 'italic',
@@ -317,6 +328,37 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'column',
         alignItems: "flex-start"
+    },
+
+    // header
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFF',
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
+        flex: 1,
     },
 });
 

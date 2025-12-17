@@ -7,7 +7,7 @@ import {
     ScrollView,
     StyleSheet,
     StatusBar,
-    Platform,
+    Platform, Pressable,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
@@ -23,18 +23,27 @@ import {
     AlertCircle, ShieldCheck, DollarSign
 } from 'lucide-react-native';
 import CustomHeader from '../../../CustomHeader';
-import { useRouter } from 'expo-router';
+import {router, useRouter} from 'expo-router';
+import {MaterialCommunityIcons} from "@expo/vector-icons";
 
 function HomeScreen({navigation}) {
     const router = useRouter()
+    const onBackPress = () => {
+        router.back();
+    };
     return (
         <>
-            <CustomHeader
-                title=""
-                onBackPress={() => router.back()}
-            />
-            <SafeAreaView style={styles.container} edges={['top']}>
-                <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF"/>
+            <View style={styles.headerTitleContainer}>
+                <View style={styles.headerIconBox}>
+                    <Pressable onPress={onBackPress}>
+                        <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                    </Pressable>
+                </View>
+                <View style={styles.headerTextContainer}>
+                    <Text style={styles.headerTitle}>Support Center</Text>
+                    <Text style={styles.headerSubtitle}>Get instant help from our support team</Text>
+                </View>
+            </View>
                 <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
@@ -43,7 +52,6 @@ function HomeScreen({navigation}) {
                     {/* Header */}
                     <View style={styles.header}>
                         <View style={styles.headerContent}>
-                            <Text style={styles.title}>Support Center</Text>
 
                             <View style={styles.statusContainer}>
                                 <View style={styles.statusBadge}>
@@ -209,7 +217,6 @@ function HomeScreen({navigation}) {
                     {/*    </Text>*/}
                     {/*</View>*/}
                 </ScrollView>
-            </SafeAreaView>
         </>
     );
 };
@@ -451,6 +458,36 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 6,
+    },
+
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFF',
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
+        flex: 1,
     },
 });
 

@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import {View, Text, StyleSheet, TouchableOpacity, Pressable} from 'react-native';
+import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 import UpdatePassword from "../../../../components/Client/Profile/Security/PasswordSecurity/UpdatePassword";
 import { useSessionStore } from "../../../../store/useSessionStore";
+import {router} from "expo-router";
 
 // Component for users who can't change password
 const PasswordChangeRestricted = ({ userData }) => {
@@ -125,8 +126,23 @@ function UpdatePasswordScreen() {
 
     const passwordChangeAllowed = canChangePassword();
 
+    const onBackPress = () => {
+        router.back();
+    };
+
     return (
         <>
+            <View style={styles.headerTitleContainer}>
+                <View style={styles.headerIconBox}>
+                    <Pressable onPress={onBackPress}>
+                        <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                    </Pressable>
+                </View>
+                <View style={styles.headerTextContainer}>
+                    <Text style={styles.headerTitle}>Password Manager</Text>
+                    <Text style={styles.headerSubtitle}>Set or Rest your password</Text>
+                </View>
+            </View>
             {passwordChangeAllowed ? (
                 <UpdatePassword userData={userData} />
             ) : (
@@ -213,6 +229,37 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsRegular',
         color: '#374151',
         marginLeft: 12,
+        flex: 1,
+    },
+
+    // header
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFF',
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
         flex: 1,
     },
 });

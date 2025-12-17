@@ -1,43 +1,3 @@
-import * as Device from 'expo-device';
-import * as Network from 'expo-network';
-import {Shield, Users, Zap} from "lucide-react-native";
-
-export const COLORS = {
-    primary: '#4361EE',
-    secondary: '#3A0CA3',
-    accent: '#7209B7',
-    background: '#F8F9FA',
-    card: '#FFFFFF',
-    text: '#212529',
-    muted: '#6C757D',
-    error: '#DC3545',
-    success: '#28A745',
-    warning: '#FFC107',
-    border: '#DEE2E6',
-    light: '#F8F9FA',
-    dark: '#495057',
-};
-
-export const LOCATION_ICONS = {
-    residential: 'home-outline',
-    commercial: 'business-outline',
-    office: 'briefcase-outline',
-    mall: 'storefront-outline',
-    hospital: 'medical-outline',
-    school: 'school-outline',
-    other: 'location-outline'
-};
-
-export const LOCATION_COLORS = {
-    residential: '#28A745',
-    commercial: '#007BFF',
-    office: '#6F42C1',
-    mall: '#FD7E14',
-    hospital: '#DC3545',
-    school: '#20C997',
-    other: '#6C757D'
-};
-
 export const ROUTES = {
     // Tab Bar Routes
     HOME: '/driver/dashboard',
@@ -51,8 +11,6 @@ export const ROUTES = {
     ANALYTICS: '/driver/account/analytics',
     LOCATION: '/driver/account/location',
 }
-
-// States and LGA data
 export const stateAndLGA = {
     Abia: [
         "Aba North",
@@ -4788,8 +4746,6 @@ export const NIGERIAN_BANKS =  [
         "updatedAt": "2025-11-07T14:05:36.000Z"
     }
 ]
-
-// Terms and Conditions Constants
 export const tcs = [
     {
         id: 'definitions',
@@ -4995,7 +4951,6 @@ export const tcs = [
 • Force majeure events relieve the Platform from liability for service interruptions`
     }
 ];
-
 export const driverFaqData = {
     'Getting Started': {
         icon: 'rocket-launch',

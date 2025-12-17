@@ -1,7 +1,7 @@
 import React from 'react';
-import {View, Text, ScrollView, StyleSheet, Linking, TouchableOpacity} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import {View, Text, ScrollView, StyleSheet, Linking, TouchableOpacity, Pressable} from 'react-native';
+import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
+import {router, useRouter} from 'expo-router';
 
 // Reuse your existing colors
 const COLORS = {
@@ -28,17 +28,29 @@ function PrivacyPolicy() {
         Linking.openURL('https://www.aanglogistics.com/privacy');
     };
 
+    const onBackPress = () => {
+        router.back();
+    };
+
     return (
         <View style={styles.container}>
+            <View style={styles.headerTitleContainer}>
+                <View style={styles.headerIconBox}>
+                    <Pressable onPress={onBackPress}>
+                        <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                    </Pressable>
+                </View>
+                <View style={styles.headerTextContainer}>
+                    <Text style={styles.headerTitle}>Privacy Policy</Text>
+                    <Text style={styles.lastUpdated}>Last Updated: May 2025</Text>
+                </View>
+            </View>
             <ScrollView
                 style={styles.scrollContainer}
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Introduction */}
-                <Text style={styles.lastUpdated}>Last Updated: May 2025</Text>
-                {/*<Text style={styles.lastUpdated}>Effective Date: June 1, 2025</Text>*/}
-
                 <Text style={styles.sectionTitle}>1. Introduction</Text>
                 <Text style={styles.paragraph}>
                     AAng Logistics Limited ("AAng Logistics", "we", "our", or "us") respects your privacy and is committed to protecting your personal data. This Privacy Policy explains how we collect, use, process, store, and disclose your information when you use our mobile application, website, and logistics services (collectively, "Services").
@@ -379,7 +391,7 @@ const styles = StyleSheet.create({
     lastUpdated: {
         fontSize: 12,
         color: COLORS.muted,
-        textAlign: 'right',
+        textAlign: 'left',
         marginBottom: 4,
         fontFamily: 'PoppinsRegular',
     },
@@ -387,7 +399,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         color: COLORS.primary,
-        marginTop: 24,
+        marginTop: 12,
         marginBottom: 12,
         fontFamily: 'PoppinsSemiBold',
     },
@@ -478,6 +490,38 @@ const styles = StyleSheet.create({
         borderTopColor: COLORS.border,
         fontFamily: 'PoppinsRegular',
         fontStyle: 'italic',
+    },
+
+    // header
+
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFF',
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
+        flex: 1,
     },
 });
 

@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, {useState, useMemo} from 'react';
 import {
     View,
     Text,
     ScrollView,
     TextInput,
     TouchableOpacity,
-    SafeAreaView,
     StatusBar,
     StyleSheet,
     Dimensions,
@@ -16,22 +15,22 @@ import {
     FontAwesome5,
     AntDesign,
 } from '@expo/vector-icons';
-import { faqData } from "../../../../../utils/Constant";
+import {faqData} from "../../../../../utils/Constant";
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
-const HelpCenter = () => {
+function HelpCenter() {
     const [activeTab, setActiveTab] = useState('FAQ');
     const [activeCategory, setActiveCategory] = useState('General');
     const [searchQuery, setSearchQuery] = useState('');
     const [expandedItems, setExpandedItems] = useState({});
 
     const contactOptions = [
-        { icon: 'headset', iconType: 'MaterialIcons', label: "Customer Service", color: "#3B82F6" },
-        { icon: 'logo-whatsapp', iconType: 'Ionicons', label: "WhatsApp", color: "#25D366" },
-        { icon: 'language', iconType: 'MaterialIcons', label: "Website", color: "#6B7280" },
-        { icon: 'twitter', iconType: 'AntDesign', label: "Twitter", color: "#1DA1F2" },
-        { icon: 'instagram', iconType: 'AntDesign', label: "Instagram", color: "#E4405F" }
+        {icon: 'headset', iconType: 'MaterialIcons', label: "Customer Service", color: "#3B82F6"},
+        {icon: 'logo-whatsapp', iconType: 'Ionicons', label: "WhatsApp", color: "#25D366"},
+        {icon: 'language', iconType: 'MaterialIcons', label: "Website", color: "#6B7280"},
+        // { icon: 'twitter', iconType: 'AntDesign', label: "Twitter", color: "#1DA1F2" },
+        // { icon: 'instagram', iconType: 'AntDesign', label: "Instagram", color: "#E4405F" }
     ];
 
     const categories = Object.keys(faqData);
@@ -55,7 +54,7 @@ const HelpCenter = () => {
     };
 
     const renderIcon = (iconName, iconType, size = 24, color = '#000') => {
-        const iconProps = { name: iconName, size, color };
+        const iconProps = {name: iconName, size, color};
 
         switch (iconType) {
             case 'Ionicons':
@@ -72,8 +71,7 @@ const HelpCenter = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <>
             {/* Tab Navigation */}
             <View style={styles.tabContainer}>
                 {['FAQ', 'Contact us'].map((tab) => (
@@ -91,7 +89,7 @@ const HelpCenter = () => {
                         ]}>
                             {tab}
                         </Text>
-                        {activeTab === tab && <View style={styles.tabIndicator} />}
+                        {activeTab === tab && <View style={styles.tabIndicator}/>}
                     </TouchableOpacity>
                 ))}
             </View>
@@ -127,7 +125,7 @@ const HelpCenter = () => {
                     {/* Search Bar */}
                     <View style={styles.searchContainer}>
                         <View style={styles.searchBar}>
-                            <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon} />
+                            <Ionicons name="search" size={20} color="#9CA3AF" style={styles.searchIcon}/>
                             <TextInput
                                 placeholder="Search for help..."
                                 value={searchQuery}
@@ -174,7 +172,6 @@ const HelpCenter = () => {
                     )}
                 </ScrollView>
             ) : (
-                /* Contact Us Tab */
                 <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                     <View style={styles.contactContainer}>
                         {contactOptions.map((option, index) => (
@@ -183,20 +180,19 @@ const HelpCenter = () => {
                                     {renderIcon(option.icon, option.iconType, 24, option.color)}
                                 </View>
                                 <Text style={styles.contactLabel}>{option.label}</Text>
-                                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                                <Ionicons name="chevron-forward" size={20} color="#9CA3AF"/>
                             </TouchableOpacity>
                         ))}
                     </View>
                 </ScrollView>
             )}
-        </SafeAreaView>
+        </>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
     },
     header: {
         backgroundColor: '#fff',
@@ -273,8 +269,8 @@ const styles = StyleSheet.create({
     },
     categoryText: {
         fontSize: 14,
-        fontWeight: '500',
         color: '#6B7280',
+        fontFamily: 'PoppinsMedium',
     },
     activeCategoryText: {
         color: '#fff',
@@ -372,7 +368,7 @@ const styles = StyleSheet.create({
     contactLabel: {
         flex: 1,
         fontSize: 16,
-        fontWeight: '500',
+        fontFamily: 'PoppinsRegular',
         color: '#111827',
     },
 });

@@ -1,3 +1,4 @@
+// components/Client/Account/Support/ChatScreen.jsx
 import React, {useState, useEffect, useRef} from 'react';
 import {
     View,
@@ -13,11 +14,11 @@ import {
     RefreshControl
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Send, ArrowLeft, AlertCircle, CheckCheck, Clock} from 'lucide-react-native';
-import DriverUtils from '../../../../utils/DriverUtilities';
-import socketClient from '../../../../lib/driver/SocketClient';
+import {Send, CheckCheck, Clock} from 'lucide-react-native';
 import {Ionicons} from "@expo/vector-icons";
-import { toast } from "sonner-native";
+import {toast} from "sonner-native";
+import ClientUtils from '../../../../utils/ClientUtilities';
+import clientSocketManager from '../../../../lib/client/ClientSocketManager';
 
 const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
     // Validate userData
@@ -31,7 +32,7 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
     // Safe data extraction
     const conversation = conversationData?.conversation;
     const initialMessages = conversationData?.messages || [];
-    const otherUserInfo = conversationData?.adminInfo || conversationData?.clientInfo;
+    const otherUserInfo = conversationData?.adminInfo || conversationData?.driverInfo;
     const orderInfo = conversationData?.orderInfo || null;
 
     if (!conversation?._id) {
@@ -54,7 +55,7 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
 
     const flatListRef = useRef(null);
 
-    // Helpers: near-bottom detection + controlled autoscroll
+    // Helpers
     const isCloseToBottom = ({layoutMeasurement, contentOffset, contentSize}) => {
         const paddingToBottom = 60;
         return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
@@ -77,7 +78,7 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
         if (isNearBottom) scrollToBottom();
     };
 
-    // Send message with optimistic UI
+    // Send message
     const sendMessage = async () => {
         if (!inputText.trim() || isSending || !conversationId) return;
 
@@ -101,7 +102,7 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
         maybeScrollToBottom();
 
         try {
-            const response = await DriverUtils.sendMessage(conversationId, {
+            const response = await ClientUtils.sendMessage(conversationId, {
                 body: messageText,
                 kind: 'text'
             });
@@ -140,7 +141,6 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
     const renderMessage = ({item}) => {
         const currentUserIdStr = userData.id?.toString();
         const messageSenderIdStr = item.senderId?.toString();
-
         const isCurrentUser = currentUserIdStr === messageSenderIdStr;
         const isOptimistic = item.isOptimistic;
 
@@ -188,7 +188,7 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
     useEffect(() => {
         const initializeSocket = async () => {
             try {
-                await socketClient.connect();
+                await clientSocketManager.connect();
                 setIsConnected(true);
             } catch (error) {
                 console.log('❌ Failed to connect to socket:', error);
@@ -202,26 +202,26 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
         const handleConnection = () => setIsConnected(true);
         const handleDisconnection = () => setIsConnected(false);
 
-        socketClient.on('reconnected', handleConnection);
-        socketClient.on('disconnected', handleDisconnection);
+        clientSocketManager.on('reconnected', handleConnection);
+        clientSocketManager.on('disconnected', handleDisconnection);
 
         return () => {
-            socketClient.off('reconnected', handleConnection);
-            socketClient.off('disconnected', handleDisconnection);
+            clientSocketManager.off('reconnected', handleConnection);
+            clientSocketManager.off('disconnected', handleDisconnection);
         };
     }, []);
 
     // Join/leave conversation
     useEffect(() => {
         if (conversationId && isConnected) {
-            const joined = socketClient.joinConversation(conversationId);
+            const joined = clientSocketManager.joinConversation(conversationId);
             if (joined) {
-                // joined
+                console.log('✅ Joined conversation');
             }
         }
 
         return () => {
-            if (conversationId) socketClient.leaveConversation(conversationId);
+            if (conversationId) clientSocketManager.leaveConversation(conversationId);
         };
     }, [conversationId, isConnected]);
 
@@ -246,16 +246,15 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
             }
         };
 
-        socketClient.on('chat-message-received', handleNewMessage);
-        socketClient.on('chat:message:new', handleNewMessage);
+        clientSocketManager.on('chat-message-received', handleNewMessage);
+        clientSocketManager.on('chat:message:new', handleNewMessage);
 
         return () => {
-            socketClient.off('chat-message-received', handleNewMessage);
-            socketClient.off('chat:message:new', handleNewMessage);
+            clientSocketManager.off('chat-message-received', handleNewMessage);
+            clientSocketManager.off('chat:message:new', handleNewMessage);
         };
     }, [conversationId, isNearBottom]);
 
-    // Key extractor
     const keyExtractor = (item) => item._id;
 
     const handleRefresh = () => {
@@ -265,67 +264,69 @@ const ChatScreen = ({userData, conversationData, onBack, onRefresh}) => {
 
     return (
         <>
-                {/* Header */}
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={onBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={22} color="#FFF"/>
-                    </TouchableOpacity>
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={22} color="#FFF"/>
+                </TouchableOpacity>
 
-                    <View style={styles.headerInfo}>
-                        <Text style={styles.headerTitle}>{otherUserInfo?.fullName || 'Support'}</Text>
-                        {orderInfo && <Text style={styles.orderRef}>Order: {orderInfo.orderRef}</Text>}
-                        <View style={styles.statusRow}>
-                            <View style={[styles.statusDot, isConnected && styles.statusDotOnline]}/>
-                            <Text style={styles.statusText}>{isConnected ? 'Online' : 'Connecting...'}</Text>
-                        </View>
+                <View style={styles.headerInfo}>
+                    <Text style={styles.headerTitle}>{otherUserInfo?.fullName || 'Support'}</Text>
+                    {orderInfo && <Text style={styles.orderRef}>Order: {orderInfo.orderRef}</Text>}
+                    <View style={styles.statusRow}>
+                        <View style={[styles.statusDot, isConnected && styles.statusDotOnline]}/>
+                        <Text style={styles.statusText}>{isConnected ? 'Online' : 'Connecting...'}</Text>
                     </View>
                 </View>
 
-                <FlatList
-                    ref={flatListRef}
-                    data={[...messages].reverse()}                 // newest first for inverted lists
-                    inverted                                      // bottom is the start
-                    keyExtractor={keyExtractor}
-                    renderItem={({item, index}) => renderMessage({item, index})}
-                    contentContainerStyle={styles.messagesList}
-                    showsVerticalScrollIndicator={false}
-                    keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-                    keyboardShouldPersistTaps="handled"
-                    onScroll={onListScroll}
-                    scrollEventThrottle={16}
-                    ListEmptyComponent={() => (
-                        <View style={styles.emptyState}>
-                            <Text style={styles.emptyStateText}>👋 Start a conversation</Text>
-                        </View>
-                    )}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>}
-                />
+            </View>
 
-                {/* Input (always visible). Only the input is wrapped in KAV. */}
-                <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                    keyboardVerticalOffset={Platform.OS === 'ios' ? (insets.bottom || 0) + 8 : 0}
-                >
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Type your message..."
-                            value={inputText}
-                            onChangeText={setInputText}
-                            multiline
-                            maxLength={1000}
-                            editable={!isSending}
-                        />
-                        <TouchableOpacity
-                            style={[styles.sendButton, (!inputText.trim() || isSending) && styles.sendButtonDisabled]}
-                            onPress={sendMessage}
-                            disabled={!inputText.trim() || isSending}
-                        >
-                            {isSending ? <ActivityIndicator size="small" color="#FFFFFF"/> :
-                                <Send color="#FFFFFF" size={20}/>}
-                        </TouchableOpacity>
+            {/* Messages list */}
+            <FlatList
+                ref={flatListRef}
+                data={[...messages].reverse()}
+                inverted
+                keyExtractor={keyExtractor}
+                renderItem={renderMessage}
+                contentContainerStyle={styles.messagesList}
+                showsVerticalScrollIndicator={false}
+                keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+                keyboardShouldPersistTaps="handled"
+                onScroll={onListScroll}
+                scrollEventThrottle={16}
+                ListEmptyComponent={() => (
+                    <View style={styles.emptyState}>
+                        <Text style={styles.emptyStateText}>👋 Start a conversation</Text>
                     </View>
-                </KeyboardAvoidingView>
+                )}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh}/>}
+            />
+
+            {/* Input */}
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? (insets.bottom || 0) + 8 : 0}
+            >
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Type your message..."
+                        value={inputText}
+                        onChangeText={setInputText}
+                        multiline
+                        maxLength={1000}
+                        editable={!isSending}
+                    />
+                    <TouchableOpacity
+                        style={[styles.sendButton, (!inputText.trim() || isSending) && styles.sendButtonDisabled]}
+                        onPress={sendMessage}
+                        disabled={!inputText.trim() || isSending}
+                    >
+                        {isSending ? <ActivityIndicator size="small" color="#FFFFFF"/> :
+                            <Send color="#FFFFFF" size={20}/>}
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
         </>
     );
 };
@@ -356,12 +357,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontFamily: 'PoppinsMedium',
         color: '#0F172A',
-        marginBottom: 4
-    },
-    orderRef: {
-        fontSize: 13,
-        color: '#64748B',
-        marginBottom: 4
     },
     statusRow: {
         flexDirection: 'row',
@@ -379,8 +374,8 @@ const styles = StyleSheet.create({
     },
     statusText: {
         fontSize: 13,
-        color: '#64748B',
         fontFamily: 'PoppinsMedium',
+        color: '#64748B'
     },
     messagesList: {
         padding: 16,
@@ -480,7 +475,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F8FAFC',
         borderRadius: 24,
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 14,
         fontSize: 15,
         maxHeight: 100,
         color: '#0F172A'

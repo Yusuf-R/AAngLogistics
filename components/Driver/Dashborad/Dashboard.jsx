@@ -11,7 +11,8 @@ import {
     Animated,
     Easing,
     ActivityIndicator,
-    RefreshControl // Add this import
+    RefreshControl,
+    StatusBar // Add this import
 } from 'react-native';
 import {Ionicons, MaterialCommunityIcons, FontAwesome5, AntDesign, FontAwesome6} from '@expo/vector-icons';
 import {useRouter} from "expo-router";
@@ -198,7 +199,9 @@ function DriverDashboard({userData}) {
     };
 
     return (
-        <View style={styles.container}>
+        <>
+            <StatusBar barStyle="dark-content" backgroundColor="FFF" />
+            <View style={styles.container}>
             {/* HEADER */}
             <View style={styles.headerContainer}>
                 <Image
@@ -337,14 +340,14 @@ function DriverDashboard({userData}) {
                     <View style={styles.sectionHeader}>
                         <View style={styles.titleContainer}>
                             <Text style={styles.sectionTitle}>Why AAngLogistics</Text>
-                            <FontAwesome6 name="thumbs-up" size={20} color="green" />
+                            <FontAwesome6 name="thumbs-up" size={20} color="green"/>
                         </View>
                         <TouchableOpacity
                             onPress={() => router.push('/driver/account/support/faq')}
                         >
                             <View style={styles.titleContainer}>
                                 {/*<Text style={styles.sectionLink}>Learn More</Text>*/}
-                                <Ionicons name="open" size={22} color="blue" />
+                                <Ionicons name="open" size={22} color="blue"/>
                             </View>
 
                         </TouchableOpacity>
@@ -358,7 +361,7 @@ function DriverDashboard({userData}) {
                 {/* Delivery History - Uses TanStack Query */}
                 <DeliveryHistory userData={userData}/>
             </ScrollView>
-        </View>
+        </View></>
     );
 }
 

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Animated as RNAnimated, Pressable } from 'react-native';
 import { useLinkBuilder, useTheme } from '@react-navigation/native';
-import { Ionicons, AntDesign, FontAwesome5 } from "@expo/vector-icons";
+import { Ionicons, AntDesign, FontAwesome5, FontAwesome6 } from "@expo/vector-icons";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -201,7 +201,7 @@ export function TabNavigation({ state, descriptors, navigation, canAccess }) {
                         return isFocused ? (
                             <FontAwesome5 name="box-open" size={22} color={iconColor} />
                         ) : (
-                            <AntDesign name="CodeSandbox" size={22} color={iconColor} />
+                            <FontAwesome6 name="boxes-stacked" size={22} color={iconColor} />
                         );
                     }
 

@@ -6,9 +6,9 @@ import {
     StyleSheet,
     TouchableOpacity,
     SafeAreaView,
-    Dimensions,
+    Dimensions, Pressable,
 } from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 
 import Logo from '../../../../../assets/svg/AAng.svg';
 import {useSessionStore} from "../../../../../store/useSessionStore";
@@ -18,7 +18,7 @@ import ClientUtils from "../../../../../utils/ClientUtilities";
 import {router} from "expo-router";
 import SessionManager from "../../../../../lib/SessionManager";
 import SecureStorage from "../../../../../lib/SecureStorage";
-import { sections } from "../../../../../utils/Constant"
+import {sections} from "../../../../../utils/Constant"
 
 const TermsAndConditions = () => {
     const userData = useSessionStore((state) => state.user);
@@ -41,7 +41,6 @@ const TermsAndConditions = () => {
             [sectionId]: !prev[sectionId]
         }));
     };
-
 
 
     const handleAcceptTerms = () => {
@@ -109,18 +108,25 @@ const TermsAndConditions = () => {
         );
     };
 
-    return (
-        <SafeAreaView style={styles.container}>
+    const onBackPress = () => {
+        router.back();
+    };
 
+    return (
+
+        <>
             {/* Company Info Banner */}
             <View style={styles.companyBanner}>
+                <View style={styles.headerIconBox}>
+                    <Pressable onPress={onBackPress}>
+                        <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                    </Pressable>
+                </View>
                 <View style={styles.companyInfo}>
                     <Text style={styles.companyName}>AAng Logistics</Text>
                     <Text style={styles.lastUpdated}>Last Updated: May 04, 2025</Text>
                 </View>
                 <Logo width={70} height={70}/>
-
-                {/*<Ionicons name="business-outline" size={40} color="#2C5AA0" />*/}
             </View>
 
             <ScrollView
@@ -241,7 +247,7 @@ const TermsAndConditions = () => {
                 message={modalMessage}
                 onClose={() => setModalVisible(false)}
             />
-        </SafeAreaView>
+        </>
     );
 };
 
@@ -296,13 +302,14 @@ const styles = StyleSheet.create({
     },
     companyName: {
         fontSize: 24,
-        fontWeight: '700',
         color: '#2C5AA0',
+        fontFamily: 'PoppinsMedium',
         marginBottom: 4,
     },
     lastUpdated: {
         fontSize: 14,
         color: '#64748B',
+        fontFamily: 'PoppinsMedium',
     },
     scrollView: {
         flex: 1,
@@ -314,13 +321,14 @@ const styles = StyleSheet.create({
     },
     introTitle: {
         fontSize: 20,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#1E293B',
-        marginBottom: 10,
+        marginBottom: 5,
     },
     introText: {
         fontSize: 16,
         color: '#64748B',
+        fontFamily: 'PoppinsMedium',
         lineHeight: 24,
     },
     sectionContainer: {
@@ -362,7 +370,7 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#1E293B',
         marginLeft: 10,
     },
@@ -373,6 +381,7 @@ const styles = StyleSheet.create({
     sectionContent: {
         fontSize: 15,
         color: '#475569',
+        fontFamily: 'PoppinsRegular',
         lineHeight: 24,
     },
     definitionsContainer: {
@@ -387,13 +396,14 @@ const styles = StyleSheet.create({
     },
     definitionTerm: {
         fontSize: 16,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#2C5AA0',
         marginBottom: 5,
     },
     definitionText: {
-        fontSize: 15,
+        fontSize: 14,
         color: '#475569',
+        fontFamily: 'PoppinsMono',
         lineHeight: 22,
     },
     contactSection: {
@@ -403,12 +413,13 @@ const styles = StyleSheet.create({
     },
     contactTitle: {
         fontSize: 18,
-        fontWeight: '600',
+        fontFamily: 'PoppinsMedium',
         color: '#1E293B',
         marginBottom: 10,
     },
     contactText: {
         fontSize: 15,
+        fontFamily: 'PoppinsMedium',
         color: '#64748B',
         marginBottom: 20,
     },
@@ -419,6 +430,7 @@ const styles = StyleSheet.create({
     },
     contactItemText: {
         fontSize: 15,
+        fontFamily: 'PoppinsMedium',
         color: '#475569',
         marginLeft: 15,
         flex: 1,
@@ -458,6 +470,7 @@ const styles = StyleSheet.create({
     },
     checkboxText: {
         fontSize: 15,
+        fontFamily: 'PoppinsMedium',
         color: '#475569',
         flex: 1,
         lineHeight: 22,
@@ -478,6 +491,16 @@ const styles = StyleSheet.create({
     },
     proceedButtonTextActive: {
         color: '#FFFFFF',
+    },
+
+    headerIconBox: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
     },
 });
 

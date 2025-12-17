@@ -13,9 +13,9 @@ import {
     Platform,
     Animated,
     RefreshControl,
-    Dimensions
+    Dimensions, Pressable
 } from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
+import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {Controller, useForm} from 'react-hook-form';
 import {yupResolver} from '@hookform/resolvers/yup';
@@ -323,26 +323,25 @@ function Locations({userData}) {
         </View>
     );
 
+    const onBackPress = () => {
+        router.replace('/client/profile')
+    };
+
     return (
         <>
-            <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerRow}>
-                    <TouchableOpacity
-                        onPress={() => router.replace('/client/profile')}
-                        style={styles.backButton}
-                    >
-                        <Ionicons name="arrow-back" size={24} color={COLORS.dark}/>
-                    </TouchableOpacity>
-                    <View style={styles.titleWrapper}>
+            <View style={styles.container}>
+                <View style={styles.headerTitleContainer}>
+                    <View style={styles.headerIconBox}>
+                        <Pressable onPress={onBackPress}>
+                            <MaterialCommunityIcons name="arrow-left-bold-circle" size={28} color="#fff"/>
+                        </Pressable>
+                    </View>
+                    <View style={styles.headerTextContainer}>
                         <Text style={styles.headerTitle}>Saved Locations</Text>
+                        <Text style={styles.headerSubtitle}>Manage your frequently delivery locations</Text>
                     </View>
                 </View>
-                <Text style={styles.headerSubtitle}>
-                    Manage your frequently delivery locations
-                </Text>
-            </View>
 
             {/* Location List */}
             <FlatList
@@ -422,17 +421,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flex: 1,
     },
-    headerTitle: {
-        fontFamily: 'PoppinsSemiBold',
-        fontSize: 20,
-        color: COLORS.text,
-    },
-    headerSubtitle: {
-        fontSize: 13,
-        fontFamily: 'PoppinsRegular',
-        color: COLORS.muted,
-        marginTop: 4,
-    },
+    // headerTitle: {
+    //     fontFamily: 'PoppinsSemiBold',
+    //     fontSize: 20,
+    //     color: COLORS.text,
+    // },
+    // headerSubtitle: {
+    //     fontSize: 13,
+    //     fontFamily: 'PoppinsRegular',
+    //     color: COLORS.muted,
+    //     marginTop: 4,
+    // },
     listContainer: {
         padding: 20,
         flexGrow: 1,
@@ -771,6 +770,38 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: 'white',
+    },
+
+
+    // header
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: '#FFF',
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 12,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
+        flex: 1,
     },
 });
 

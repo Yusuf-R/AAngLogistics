@@ -1153,6 +1153,165 @@ class ClientUtils {
     }
 
 
+    // Tickets and Chats
+
+    static async sendMessage(conversationId, messageData) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/user/support/chat/message/send`,
+                data: {
+                    conversationId,
+                    messageData
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.log('Send message error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async markChatAsRead(conversationId, lastReadSeq) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/user/support/chat/message/read`,
+                data: {
+                    conversationId,
+                    lastReadSeq
+                }
+            });
+
+            return response.data;
+        } catch (error) {
+            console.log('mark chat as read error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async createConversation(targetUserId, targetRole, orderId = null) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/user/support/chat/create`,
+                data: {
+                    targetUserId,
+                    targetRole,
+                    orderId,
+                }
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Creat conversation error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async getOrCreateClientSupportConversation() {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/user/support/chat/get-or-create`,
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    /**
+     * Create support ticket
+     */
+    static async createSupportTicket(ticketData) {
+        try {
+            const response = await axiosPrivate({
+                method: 'POST',
+                url: `/user/support/ticket/create`,
+                data: ticketData,
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    /**
+     * Get user's tickets
+     */
+    static async getSupportTickets(status) {
+        const params = {};
+        if (status) {
+            params.status = status;
+        }
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/user/support/ticket/all`,
+                params: params,
+                data: status,
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    /**
+     * Get ticket details
+     */
+    static async getTicketById(ticketId) {
+
+        try {
+            const response = await axiosPrivate({
+                method: 'GET',
+                url: `/user/support/ticket/get`,
+                prams: ticketId,
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Get-Create error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async deleteSupportTicket(ticketId) {
+        try {
+            const response = await axiosPrivate({
+                method: 'DELETE',
+                url: `/user/support/ticket/delete`,
+                data: {ticketId}
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Delete error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    static async updateSupportTicket(ticketId, ticketData) {
+        try {
+            const response = await axiosPrivate({
+                method: 'PUT',
+                url: `/user/support/ticket/update`,
+                params: ticketId,
+                data: ticketData,
+            });
+            return response.data;
+        } catch (error) {
+            console.log('Update error:', error);
+            return {success: false, error: error.message};
+        }
+    }
+
+    // chat
+
+
+
 }
 
 export default ClientUtils;

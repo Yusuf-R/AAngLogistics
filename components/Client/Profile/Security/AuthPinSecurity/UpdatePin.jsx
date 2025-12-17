@@ -293,6 +293,10 @@ function UpdatePin({userData}) {
         };
     }, []);
 
+    const onBackPress = () => {
+        router.back();
+    };
+
     return (
         <>
             <View className="flex-1">
