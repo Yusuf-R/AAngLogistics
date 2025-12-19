@@ -15,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import {useVideoPlayer, VideoView} from 'expo-video'
 import {LinearGradient} from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import useMediaStore from '../../../store/useMediaStore';
 import ClientUtils from "../../../utils/ClientUtilities";
 

@@ -14,20 +14,28 @@ export const useOrderStore = create((set, get) => ({
     trackingOrder: null,
     liveTrackingData: new Map(), // orderId -> real-time data
     driverLocations: new Map(),
+    isResumeMode: false,
 
     // --- Actions ---
 
     // Initialize the store with full order payload
-    initDraft: (data) =>
-        set({ orderData: data || {}, currentStep: 0 }),
+    initDraft: (data, isResume = false) =>
+        set({
+            orderData: data || {},
+            currentStep: isResume ? (data?.metadata?.draftProgress?.step || 0) : 0,
+            isResumeMode: isResume // NEW
+        }),
 
     // Resume an existing draft into the same store
-    resumeDraft: (order) =>
+    resumeDraft: (order) => {
+        const resumeStep = order?.metadata?.draftProgress?.step || 0;
         set({
-            selectedOrder: order,
             orderData: order,
-            currentStep: order?.metadata?.draftProgress?.step || 0,
-        }),
+            currentStep: resumeStep,
+            isResumeMode: true,
+            selectedOrder: order
+        });
+    },
 
     setSelectedOrder: (order) =>
         set({ selectedOrder: order }),

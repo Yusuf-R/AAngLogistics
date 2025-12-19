@@ -19,7 +19,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import useMediaStore from '../../../store/useMediaStore';
 import ClientUtils from "../../../utils/ClientUtilities";
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const {width: screenWidth} = Dimensions.get('window');
 

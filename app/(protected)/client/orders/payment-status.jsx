@@ -1,4 +1,4 @@
-// (protected)/client/order/payment-status.js
+// (protected)/client/order/payment-status.jsx
 import React from 'react';
 import PaymentStatusScreen from '../../../../components/Client/Orders/PaymentStatusScreen';
 

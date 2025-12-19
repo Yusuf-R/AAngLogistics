@@ -23,7 +23,7 @@ import {
     AlertCircle,
     ArrowDownRight,
     Calendar,
-    TrendingUp
+    TrendingUp, ArrowUp, ArrowUpRight
 } from 'lucide-react-native';
 import TopUpModal from './TopUpModal';
 import TransactionDetailsModal from './TransactionDetailsModal';
@@ -31,12 +31,15 @@ import TransactionDetailsModal from './TransactionDetailsModal';
 function TopUpTab({
                       topUpHistory,
                       topUpPagination,
+                      fStats,
                       userData,
                       walletBalance,
                       isLoading,
                       dataRefresh,
                       currentFilter,
-                      onFilterChange
+                      onFilterChange,
+                      currentTransactionType,
+                      onTransactionTypeChange
                   }) {
     const [refreshing, setRefreshing] = useState(false);
     const [topUpModal, setTopUpModal] = useState(false);
@@ -125,6 +128,7 @@ function TopUpTab({
     const stats = calculateStats();
 
     const renderTopUpItem = ({ item, index }) => {
+        const isDeduction = item.transactionType === 'wallet_deduction';
         const statusConfig = getStatusConfig(item.status);
         const StatusIcon = statusConfig.icon;
 
@@ -139,11 +143,19 @@ function TopUpTab({
             >
                 <View style={styles.topUpHeader}>
                     <View style={styles.topUpHeaderLeft}>
-                        <View style={[styles.statusIconContainer, { backgroundColor: statusConfig.bg }]}>
-                            <StatusIcon size={20} color={statusConfig.iconColor} />
+                        <View style={[styles.statusIconContainer, {
+                            backgroundColor: isDeduction ? 'rgba(239, 68, 68, 0.1)' : statusConfig.bg
+                        }]}>
+                            {isDeduction ? (
+                                <ArrowUpRight size={20} color="#ef4444" />
+                            ) : (
+                                <StatusIcon size={20} color={statusConfig.iconColor} />
+                            )}
                         </View>
                         <View style={styles.topUpHeaderText}>
-                            <Text style={styles.topUpTitle}>Wallet Top-Up</Text>
+                            <Text style={styles.topUpTitle}>
+                                {isDeduction ? 'Wallet Payment' : 'Wallet Top-Up'}
+                            </Text>
                             <Text style={styles.topUpSubtitle}>
                                 {item.gateway?.reference || item._id}
                             </Text>
@@ -164,9 +176,14 @@ function TopUpTab({
 
                 <View style={styles.amountSection}>
                     <View style={styles.amountRow}>
-                        <Text style={styles.amountLabel}>Deposited</Text>
-                        <Text style={styles.amountValue}>
-                            {formatCurrency(item.amount.gross || 0)}
+                        <Text style={styles.amountLabel}>
+                            {isDeduction ? 'Amount Paid' : 'Amount Deposited'}
+                        </Text>
+                        <Text style={[
+                            styles.amountValue,
+                            isDeduction && styles.deductionAmountValue
+                        ]}>
+                            {isDeduction ? '-' : ''}{formatCurrency(item.amount.gross || 0)}
                         </Text>
                     </View>
                     {item.amount.fees > 0 && (
@@ -179,9 +196,14 @@ function TopUpTab({
                     )}
                     <View style={styles.amountDivider}>
                         <View style={styles.amountTotal}>
-                            <Text style={styles.amountTotalLabel}>Credited</Text>
-                            <Text style={styles.amountTotalValue}>
-                                {formatCurrency(item.amount.net || 0)}
+                            <Text style={styles.amountTotalLabel}>
+                                {isDeduction ? 'Total Deducted' : 'Total Credited'}
+                            </Text>
+                            <Text style={[
+                                styles.amountTotalValue,
+                                isDeduction && styles.deductionTotalValue
+                            ]}>
+                                {isDeduction ? '-' : ''}{formatCurrency(item.amount.net || 0)}
                             </Text>
                         </View>
                     </View>
@@ -193,9 +215,21 @@ function TopUpTab({
                         <Text style={styles.topUpDateText}>{formatDate(item.createdAt)}</Text>
                     </View>
                     {item.status === 'completed' && (
-                        <View style={styles.successTag}>
-                            <CheckCircle2 size={14} color="#10b981" />
-                            <Text style={styles.successTagText}>Success</Text>
+                        <View style={[
+                            styles.successTag,
+                            isDeduction && styles.deductionTag
+                        ]}>
+                            {isDeduction ? (
+                                <ArrowUpRight size={14} color="#ef4444" />
+                            ) : (
+                                <CheckCircle2 size={14} color="#10b981" />
+                            )}
+                            <Text style={[
+                                styles.successTagText,
+                                isDeduction && styles.deductionTagText
+                            ]}>
+                                {isDeduction ? 'Paid' : 'Success'}
+                            </Text>
                         </View>
                     )}
                 </View>
@@ -242,37 +276,44 @@ function TopUpTab({
                 </View>
 
                 {/* Stats Cards */}
-                <View style={styles.statsSection}>
-                    <View style={styles.summaryCard}>
-                        <View style={styles.summaryHeader}>
-                            <View style={styles.summaryIconContainer}>
-                                <ArrowDownRight size={20} color="#10b981" />
-                            </View>
-                            <Text style={styles.summaryTitle}>Total Deposited</Text>
-                        </View>
-                        <Text style={styles.summaryAmount}>
-                            {formatCurrency(stats.totalDeposited)}
-                        </Text>
-                        <Text style={styles.summarySubtext}>
-                            {stats.completed} successful {stats.completed === 1 ? 'deposit' : 'deposits'}
-                        </Text>
-                    </View>
-
-                    <View style={styles.statsRow}>
-                        <View style={[styles.statCard, styles.statCardOrange]}>
-                            <View style={styles.statIconOrange}>
-                                <Clock size={14} color="#f59e0b" />
-                            </View>
-                            <Text style={styles.statLabelOrange}>Pending</Text>
-                            <Text style={styles.statValueOrange}>{stats.pending}</Text>
+                <View style={styles.compactStatsSection}>
+                    <View style={styles.compactStatsRow}>
+                        <View style={styles.compactStat}>
+                            <ArrowDownRight size={14} color="#10b981" />
+                            <Text style={styles.compactStatLabel}>Deposited</Text>
+                            <Text style={styles.compactStatValue}>
+                                {formatCurrency(stats.totalDeposited)}
+                            </Text>
                         </View>
 
-                        <View style={[styles.statCard, styles.statCardRed]}>
-                            <View style={styles.statIconRed}>
-                                <XCircle size={14} color="#ef4444" />
-                            </View>
-                            <Text style={styles.statLabelRed}>Failed</Text>
-                            <Text style={styles.statValueRed}>{stats.failed}</Text>
+                        <View style={styles.compactDivider} />
+
+                        <View style={styles.compactStat}>
+                            <ArrowUpRight size={14} color="#ef4444" />
+                            <Text style={styles.compactStatLabel}>Payments</Text>
+                            <Text style={[styles.compactStatValue, styles.compactStatValueRed]}>
+                                {formatCurrency(fStats.walletDeductions.totalDeductions)}
+                            </Text>
+                        </View>
+
+                        <View style={styles.compactDivider} />
+
+                        <View style={styles.compactStat}>
+                            <Clock size={14} color="#f59e0b" />
+                            <Text style={styles.compactStatLabel}>Pending</Text>
+                            <Text style={[styles.compactStatValue, styles.compactStatValueOrange]}>
+                                {stats.pending}
+                            </Text>
+                        </View>
+
+                        <View style={styles.compactDivider} />
+
+                        <View style={styles.compactStat}>
+                            <XCircle size={14} color="#ef4444" />
+                            <Text style={styles.compactStatLabel}>Failed</Text>
+                            <Text style={[styles.compactStatValue, styles.compactStatValueRed]}>
+                                {stats.failed}
+                            </Text>
                         </View>
                     </View>
                 </View>
@@ -285,6 +326,31 @@ function TopUpTab({
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.filterScrollContent}
                 >
+                    {/* Transaction Type Filters */}
+                    {[
+                        { value: 'all_wallet', label: 'All' },
+                        { value: 'wallet_deposit', label: 'TopUp' },
+                        { value: 'wallet_deduction', label: 'Payments' },
+
+                    ].map((type) => (
+                        <TouchableOpacity
+                            key={type.value}
+                            onPress={() => onTransactionTypeChange(type.value)}
+                            style={[
+                                styles.filterChip,
+                                currentTransactionType === type.value && styles.filterChipActive
+                            ]}
+                        >
+                            <Text style={[
+                                styles.filterChipText,
+                                currentTransactionType === type.value && styles.filterChipTextActive
+                            ]}>
+                                {type.label}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+
+                    {/* Status Filters */}
                     {['all', 'completed', 'pending', 'failed', 'abandoned', 'cancelled'].map((status) => {
                         const count = status === 'all' ? stats.total : stats[status] || 0;
                         const isActive = currentFilter === status;
@@ -407,6 +473,21 @@ function TopUpTab({
 }
 
 const styles = StyleSheet.create({
+    //
+    deductionAmountValue: {
+        color: '#ef4444',
+    },
+    deductionTotalValue: {
+        color: '#ef4444',
+    },
+    deductionTag: {
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    },
+    deductionTagText: {
+        color: '#ef4444',
+    },
+
+    //
     container: {
         flex: 1,
         backgroundColor: '#f9fafb',
@@ -518,6 +599,7 @@ const styles = StyleSheet.create({
     statsSection: {
         gap: 12,
         flexDirection: 'row',
+        marginBottom: 10
     },
     summaryCard: {
         backgroundColor: '#ffffff',
@@ -869,6 +951,48 @@ const styles = StyleSheet.create({
         fontFamily: 'PoppinsSemiBold',
         fontSize: 16,
         fontWeight: '600',
+    },
+    //
+    compactStatsSection: {
+        backgroundColor: '#ffffff',
+        borderRadius: 12,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#f3f4f6',
+    },
+    compactStatsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    compactStat: {
+        flex: 1,
+        alignItems: 'center',
+        paddingHorizontal: 4,
+    },
+    compactDivider: {
+        width: 1,
+        height: 24,
+        backgroundColor: '#f3f4f6',
+    },
+    compactStatLabel: {
+        fontSize: 11,
+        color: '#6b7280',
+        fontFamily: 'PoppinsSemiBold',
+        marginTop: 4,
+        marginBottom: 2,
+        textAlign: 'center',
+    },
+    compactStatValue: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#10b981',
+    },
+    compactStatValueRed: {
+        color: '#ef4444',
+    },
+    compactStatValueOrange: {
+        color: '#f59e0b',
     },
 });
 

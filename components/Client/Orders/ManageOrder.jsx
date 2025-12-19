@@ -35,6 +35,7 @@ function ManageOrder({allOrderData, onRefreshData}) {
         onRetry: null
     });
     const [selectedActionOrder, setSelectedActionOrder] = useState(null)
+    const [spinningActions, setSpinningActions] = useState({});
 
     // Zustand store
     const {
@@ -81,21 +82,34 @@ function ManageOrder({allOrderData, onRefreshData}) {
     };
 
     const handleResumeOrder = (order) => {
-        console.log('To be determined')
+        router.push(`/(protected)/client/orders/resume/${order._id}`);
     };
 
     // delete order operations
     const handleDeleteOrder = (order) => {
+        const actionKey = `${order._id}-trash-bin-sharp`;
+        setSpinningActions(prev => ({ ...prev, [actionKey]: true }));
+
         setSelectedActionOrder(order);
         setModalConfig({
             status: 'confirm',
             title: 'Delete Order',
             message: `Are you sure you want to delete order ${order.orderRef}?`,
-            onConfirm: () => confirmDelete(order._id),
-            onCancel: () => setModalVisible(false)
+            onConfirm: () => {
+                confirmDelete(order._id);
+                // Stop spinning when modal is confirmed
+                setSpinningActions(prev => ({ ...prev, [actionKey]: false }));
+            },
+            onCancel: () => {
+                setModalVisible(false);
+                // Stop spinning when modal is cancelled
+                setSpinningActions(prev => ({ ...prev, [actionKey]: false }));
+            }
         });
         setModalVisible(true);
     };
+
+
     const confirmDelete = async (orderId) => {
         setModalConfig(prev => ({
             ...prev,
@@ -133,16 +147,26 @@ function ManageOrder({allOrderData, onRefreshData}) {
 
     // cancel order operations
     const handleCancelOrder = (order) => {
+        const actionKey = `${order._id}-close-circle-outline`;
+        setSpinningActions(prev => ({ ...prev, [actionKey]: true }));
+
         setSelectedActionOrder(order);
         setModalConfig({
             status: 'confirm',
             title: 'Cancel Order',
             message: `Are you sure you want to cancel order ${order.orderRef}?`,
-            onConfirm: () => confirmCancel(order),
-            onCancel: () => setModalVisible(false)
+            onConfirm: () => {
+                confirmCancel(order);
+                setSpinningActions(prev => ({ ...prev, [actionKey]: false }));
+            },
+            onCancel: () => {
+                setModalVisible(false);
+                setSpinningActions(prev => ({ ...prev, [actionKey]: false }));
+            }
         });
         setModalVisible(true);
     };
+
     const confirmCancel = async (order) => {
         setModalConfig(prev => ({
             ...prev,
@@ -175,16 +199,26 @@ function ManageOrder({allOrderData, onRefreshData}) {
 
     // retry order operations
     const handleRetryOrder = (order) => {
+        const actionKey = `${order._id}-refresh-outline`;
+        setSpinningActions(prev => ({ ...prev, [actionKey]: true }));
+
         setSelectedActionOrder(order);
         setModalConfig({
             status: 'confirm',
             title: 'Retry Order',
             message: 'Create a new order with the same details?',
-            onConfirm: () => handleReorder(order),
-            onCancel: () => setModalVisible(false)
+            onConfirm: () => {
+                handleReorder(order);
+                setSpinningActions(prev => ({ ...prev, [actionKey]: false }));
+            },
+            onCancel: () => {
+                setModalVisible(false);
+                setSpinningActions(prev => ({ ...prev, [actionKey]: false }));
+            }
         });
         setModalVisible(true);
     };
+
     const handleReorder = (order) => {
         setSelectedOrder(order);
         router.push({
@@ -390,20 +424,54 @@ function ManageOrder({allOrderData, onRefreshData}) {
                     </Text>
 
                     <View style={styles.actionButtons}>
-                        {actions.map((action, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[styles.actionButton, {backgroundColor: `${action.color}15`}]}
-                                onPress={action.onPress}
-                                activeOpacity={0.7}
-                            >
-                                <Ionicons
-                                    name={action.icon}
-                                    size={20}
-                                    color={action.color}
-                                />
-                            </TouchableOpacity>
-                        ))}
+                        {actions.map((action, index) => {
+                            const actionKey = `${order._id}-${action.icon}`;
+                            const isSpinning = spinningActions[actionKey];
+
+                            return (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.actionButton, {backgroundColor: `${action.color}15`}]}
+                                    onPress={() => {
+                                        // Set spinning for this specific action
+                                        setSpinningActions(prev => ({
+                                            ...prev,
+                                            [actionKey]: true
+                                        }));
+
+                                        // Execute the action
+                                        action.onPress();
+
+                                        // Stop spinning after action completes (or after timeout for modals)
+                                        setTimeout(() => {
+                                            setSpinningActions(prev => ({
+                                                ...prev,
+                                                [actionKey]: false
+                                            }));
+                                        }, 1000);
+                                    }}
+                                    activeOpacity={0.7}
+                                    disabled={isSpinning}
+                                >
+                                    {isSpinning ? (
+                                        <View style={styles.spinningContainer}>
+                                            <Ionicons
+                                                name="reload-circle-sharp"
+                                                size={20}
+                                                color={action.color}
+                                                style={styles.spinningIcon}
+                                            />
+                                        </View>
+                                    ) : (
+                                        <Ionicons
+                                            name={action.icon}
+                                            size={20}
+                                            color={action.color}
+                                        />
+                                    )}
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
             </View>
@@ -849,6 +917,15 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 14,
         fontFamily: 'PoppinsBold',
+    },
+    spinningContainer: {
+        width: 20,
+        height: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    spinningIcon: {
+        transform: [{rotate: '0deg'}],
     },
 });
 

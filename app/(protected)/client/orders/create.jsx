@@ -1,5 +1,7 @@
+// app/(protected)/client/orders/create.jsx
 import { useEffect } from "react";
-import {ActivityIndicator, SafeAreaView, Text, StyleSheet, Pressable} from "react-native";
+import {ActivityIndicator,  Text, StyleSheet, Pressable} from "react-native";
+import {SafeAreaView} from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import ClientUtils from "../../../../utils/ClientUtilities";
 import SessionManager from "../../../../lib/SessionManager";
@@ -7,7 +9,6 @@ import OrderCreationFlow from "../../../../components/Client/Orders/OrderCreatio
 import {useOrderStore} from "../../../../store/useOrderStore";
 
 function CreateOrder() {
-
     const {
         data,
         isSuccess,
@@ -60,9 +61,9 @@ function CreateOrder() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <>
             <OrderCreationFlow/>
-        </SafeAreaView>
+        </>
     );
 }
 

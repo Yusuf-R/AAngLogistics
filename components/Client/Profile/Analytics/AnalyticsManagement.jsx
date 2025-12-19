@@ -21,6 +21,8 @@ function AnalyticsManagement({analytics, orders, wallet, refetch, userData}) {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedPeriod, setSelectedPeriod] = useState('week');
 
+    console.log({wallet})
+
     const onRefresh = async () => {
         setRefreshing(true);
         await refetch?.();

@@ -21,6 +21,14 @@ export default function OrdersLayout() {
                         headerShown: false
                     }}
                 />
+
+                <Stack.Screen
+                    name="resume"
+                    options={{
+                        headerShown: false
+                    }}
+                />
+
                 <Stack.Screen
                     name="create"
                     options={{

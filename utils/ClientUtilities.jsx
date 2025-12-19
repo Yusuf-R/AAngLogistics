@@ -688,6 +688,24 @@ class ClientUtils {
         }
     }
 
+    static async ResumeDraftOrder(orderId) {
+        try {
+            const response = await axiosPrivate({
+                method: "GET",
+                url: '/order/draft/resume',
+                params: {orderId},
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.error);
+            }
+        } catch (error) {
+            console.log({error});
+            throw new Error(error);
+        }
+    }
+
     static async SubmitOrder(obj) {
         try {
             const response = await axiosPrivate({
@@ -766,6 +784,60 @@ class ClientUtils {
         } catch (error) {
             console.log({error});
             throw new Error(error);
+        }
+    }
+
+    static async processWalletPayment(paymentData) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/order/payment/wallet-only',
+                data: paymentData
+            });
+
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                throw new Error(response.data.error || 'Payment failed');
+            }
+        } catch (error) {
+            console.error('Wallet payment error:', error);
+            throw new Error(error.response?.data?.error || error.message || 'Payment failed');
+        }
+    }
+
+    static async InitializeHybridPayment(paymentData) {
+        try {
+            const response = await axiosPrivate({
+                method: "POST",
+                url: '/order/payment/hybrid',
+                data: paymentData
+            });
+
+            if (response.status === 201) {
+                return response.data;
+            } else {
+                throw new Error(response.data.error || 'Payment initialization failed');
+            }
+        } catch (error) {
+            console.error('Hybrid payment initialization error:', error);
+
+            // Handle cooldown error specifically
+            if (error.response?.status === 409) {
+                const errorData = error.response.data;
+                const customError = new Error(errorData.error || 'Payment in progress');
+                customError.code = 409;
+                customError.timeToWait = errorData.timeToWait;
+                customError.existingReference = errorData.reference;
+                customError.authorizationUrl = errorData.authorizationUrl;
+                throw customError;
+            }
+
+            throw new Error(
+                error.response?.data?.error ||
+                error.message ||
+                'Failed to initialize hybrid payment'
+            );
         }
     }
 
@@ -942,7 +1014,8 @@ class ClientUtils {
                 params: {
                     status: params.status || 'all',
                     page: params.page || 1,
-                    limit: params.limit || 20
+                    limit: params.limit || 20,
+                    transactionType: params.filter,
                 }
             });
             return response.data;

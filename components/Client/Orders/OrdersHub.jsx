@@ -78,6 +78,7 @@ const OrdersHub = ({
         message: '',
     });
     const [navigationLoading, setNavigationLoading] = useState(null);
+    const spinValue = useRef({});
 
     const {
         setTrackingOrder,
@@ -197,7 +198,7 @@ const OrdersHub = ({
 
         setTimeout(() => {
             setIsLoading(false);
-            router.push('/client/orders/track'); // No params needed — Zustand has the data
+            router.push('/client/orders/track');
         }, 500);
     };
 
@@ -219,15 +220,64 @@ const OrdersHub = ({
         if (navigationLoading) return;
         setNavigationLoading(loadingKey);
 
+        // Start spinning animation for this key
+        if (spinValue.current[loadingKey]) {
+            Animated.loop(
+                Animated.timing(spinValue.current[loadingKey], {
+                    toValue: 1,
+                    duration: 1000,
+                    useNativeDriver: true,
+                })
+            ).start();
+        }
+
         if (hapticFeedback) {
             await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
 
         setTimeout(() => {
             navigationAction();
-            setTimeout(() => setNavigationLoading(null), 300);
+            setTimeout(() => {
+                setNavigationLoading(null);
+                // Stop spinning animation
+                if (spinValue.current[loadingKey]) {
+                    spinValue.current[loadingKey].stopAnimation();
+                    Animated.timing(spinValue.current[loadingKey], {
+                        toValue: 0,
+                        duration: 0,
+                        useNativeDriver: true,
+                    }).start();
+                }
+            }, 300);
         }, 150);
     };
+
+    useEffect(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) setGreeting('Good morning');
+        else if (hour < 17) setGreeting('Good afternoon');
+        else setGreeting('Good evening');
+
+        // Initialize spin values for all cards
+        quickActionCards.forEach(card => {
+            spinValue.current[card.id] = new Animated.Value(0);
+        });
+        spinValue.current['create-order'] = new Animated.Value(0);
+
+        // Entrance animation
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 1000,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
 
     return (
         <>
@@ -399,19 +449,55 @@ const OrdersHub = ({
                             {quickActionCards.map((card, index) => {
                                 const IconComponent = card.icon;
                                 const isActive = activeCard === card.id;
+                                const isSpinning = navigationLoading === card.id;
+
+                                // Initialize spin value for each card
+                                if (!spinValue.current[card.id]) {
+                                    spinValue.current[card.id] = new Animated.Value(0);
+                                }
+
+                                // Create spinning animation
+                                const spin = spinValue.current[card.id].interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: ['0deg', '360deg']
+                                });
+
+                                // Start spinning when loading
+                                if (isSpinning) {
+                                    Animated.loop(
+                                        Animated.timing(spinValue.current[card.id], {
+                                            toValue: 1,
+                                            duration: 1000,
+                                            useNativeDriver: true,
+                                        })
+                                    ).start();
+                                } else {
+                                    Animated.timing(spinValue.current[card.id], {
+                                        toValue: 0,
+                                        duration: 0,
+                                        useNativeDriver: true,
+                                    }).start();
+                                }
 
                                 return (
                                     <Pressable
                                         key={card.id}
                                         onPress={() => handleCardPress(card.id, card.action)}
                                         style={[styles.quickActionItem, isActive && styles.activeActionItem]}
+                                        disabled={isSpinning}
                                     >
                                         <View style={styles.actionIconContainer}>
                                             <LinearGradient
                                                 colors={card.colors}
                                                 style={styles.actionIconGradient}
                                             >
-                                                <IconComponent size={24} color="#ffffff"/>
+                                                {isSpinning ? (
+                                                    <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                                                        <IconComponent size={24} color="#ffffff" />
+                                                    </Animated.View>
+                                                ) : (
+                                                    <IconComponent size={24} color="#ffffff" />
+                                                )}
                                             </LinearGradient>
                                         </View>
                                         <Text style={styles.actionTitle}>{card.title}</Text>
@@ -669,7 +755,20 @@ const OrdersHub = ({
                             style={styles.fabGradient}
                         >
                             {navigationLoading === 'create-order' ? (
-                                <ActivityIndicator size="small" color="#ffffff" />
+                                <Animated.View style={{
+                                    transform: [
+                                        {
+                                            rotate: spinValue.current['create-order']
+                                                ? spinValue.current['create-order'].interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: ['0deg', '360deg']
+                                                })
+                                                : '0deg'
+                                        }
+                                    ]
+                                }}>
+                                    <Plus size={24} color="#ffffff"/>
+                                </Animated.View>
                             ) : (
                                 <Plus size={24} color="#ffffff"/>
                             )}

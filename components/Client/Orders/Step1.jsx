@@ -34,6 +34,7 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [showCategorySelection, setShowCategorySelection] = useState(true);
     const {images, video} = useMediaStore();
+    const isResumeMode = useOrderStore((state) => state.isResumeMode);
 
     const {control, handleSubmit, watch, setValue, formState: {errors}} = useForm({
         defaultValues: {
@@ -156,6 +157,24 @@ const Step1 = forwardRef(({defaultValues}, ref) => {
     useEffect(() => {
         setValue('package.video', video, {shouldValidate: true});
     }, [video, setValue]);
+
+    useEffect(() => {
+        if (isResumeMode && orderData?.package) {
+            const {images: savedImages, video: savedVideo} = orderData.package;
+
+            // Preload images
+            if (savedImages && savedImages.length > 0) {
+                useMediaStore.getState().setImages(savedImages);
+                console.log(`✅ Preloaded ${savedImages.length} images from draft`);
+            }
+
+            // Preload video
+            if (savedVideo) {
+                useMediaStore.getState().setVideo(savedVideo);
+                console.log('✅ Preloaded video from draft');
+            }
+        }
+    }, [isResumeMode, orderData]);
 
     return (
         <>

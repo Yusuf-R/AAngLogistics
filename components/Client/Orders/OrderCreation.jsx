@@ -10,12 +10,14 @@ import {
     StyleSheet,
     Text,
     View,
-    AppState
+    AppState,
+    Pressable,
 } from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import {BlurView} from 'expo-blur';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useRouter} from "expo-router";
+import {MaterialCommunityIcons} from '@expo/vector-icons';
 
 // Import utilities
 import {ORDER_STEPS} from '../../../utils/Constant'
@@ -33,10 +35,9 @@ import CustomAlert from "./CustomAlert";
 import {useOrderStore} from "../../../store/useOrderStore";
 import useMediaStore from "../../../store/useMediaStore";
 import ExitOrderModal from "./ExitOrderModal";
-import ClientUtils from "../../../utils/ClientUtilities";
-import {useSessionStore} from "../../../store/useSessionStore";
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+
 // Payment status constants
 
 function OrderCreationFlow() {
@@ -45,6 +46,7 @@ function OrderCreationFlow() {
         currentStep,
         updateOrderData,
         saveDraft,
+        isResumeMode,
         goNext,
         goPrevious,
         clearDraft
@@ -66,17 +68,54 @@ function OrderCreationFlow() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    const handlePaymentNavigation = useCallback(async () => {
+    const handlePaymentNavigation = useCallback(async (paymentMethod) => {
         try {
-            // Navigate to payment status screen
-            router.push({
-                pathname: '/(protected)/client/orders/payment-status',
-                params: {
-                    orderId: orderData._id,
-                    orderRef: orderData.orderRef,
-                    amount: orderData.pricing.totalAmount
-                }
-            });
+            const walletBalance = orderData?.metadata?.walletBalance || 0;
+            const totalAmount = orderData?.pricing?.totalAmount || 0;
+
+            // Determine payment routing based on method
+            if (paymentMethod === 'wallet_only') {
+                // This is handled directly in Payment.jsx
+                // Should never reach here, but just in case
+                console.log('Wallet-only payment should be handled in Payment.jsx');
+                return;
+            }
+
+            if (paymentMethod === 'wallet_card') {
+                // HYBRID PAYMENT - Use wallet + card
+                const walletAmount = Math.min(walletBalance, totalAmount);
+                const cardAmount = totalAmount - walletAmount;
+
+                console.log('🔄 Initiating hybrid payment:', {
+                    total: totalAmount,
+                    wallet: walletAmount,
+                    card: cardAmount
+                });
+
+                // Navigate to payment status with hybrid flag
+                router.push({
+                    pathname: '/(protected)/client/orders/payment-status',
+                    params: {
+                        orderId: orderData._id,
+                        orderRef: orderData.orderRef,
+                        amount: totalAmount,
+                        paymentType: 'hybrid',
+                        walletAmount: walletAmount,
+                        cardAmount: cardAmount
+                    }
+                });
+            } else {
+                // CARD-ONLY PAYMENT (existing flow)
+                router.push({
+                    pathname: '/(protected)/client/orders/payment-status',
+                    params: {
+                        orderId: orderData._id,
+                        orderRef: orderData.orderRef,
+                        amount: totalAmount,
+                        paymentType: 'card'
+                    }
+                });
+            }
         } catch (error) {
             console.log('Navigation error:', error);
             showAlert('error', 'Error', 'Unable to proceed to payment. Please try again.');
@@ -162,16 +201,19 @@ function OrderCreationFlow() {
 
     // Back press handler
     const handleBackPress = useCallback(() => {
-        // Prevent exit during payment processing
         setShowExitModal(true);
     }, [setShowExitModal]);
 
     // Enhanced exit confirmation
     const confirmExit = useCallback(() => {
-        clearDraft();
-        resetMedia();
-        setShowExitModal(false);
-        router.back();
+        if (isResumeMode) {
+            router.back();
+        } else {
+            clearDraft();
+            resetMedia();
+            setShowExitModal(false);
+            router.back();
+        }
     }, [clearDraft, resetMedia, router]);
 
     const saveCurrentProgress = useCallback(async () => {
@@ -242,18 +284,34 @@ function OrderCreationFlow() {
         useMediaStore.getState().setVideo(video || null);
     }, []);
 
-    const isPaymentStep = currentStep === 4;
+    const headerTitle = isResumeMode ? "Resume Order" : "New Order";
 
     return (
         <>
             <View style={styles.container}>
                 <StatusBar barStyle="dark-content" translucent/>
 
+                <View style={styles.headerTitleContainer}>
+                    <View style={styles.headerIconBox}>
+                        <Pressable onPress={handleBackPress}>
+                            <MaterialCommunityIcons name="arrow-left-bold-circle" size={24} color="#fff"/>
+                        </Pressable>
+                    </View>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.headerTitle}>{headerTitle}</Text>
+                        {/*{isResumeMode && (*/}
+                        {/*    <Text style={styles.headerSubtitle}>*/}
+                        {/*        Ref: {orderData?.orderRef}*/}
+                        {/*    </Text>*/}
+                        {/*)}*/}
+                    </View>
+                </View>
+
                 {/* Header */}
-                <CustomHeader
-                    title="Create Order"
-                    onBackPress={handleBackPress}
-                />
+                {/*<CustomHeader*/}
+                {/*    title="Create Order"*/}
+                {/*    onBackPress={handleBackPress}*/}
+                {/*/>*/}
 
                 {/* Alert */}
                 {alertVisible && (
@@ -318,6 +376,38 @@ function OrderCreationFlow() {
 }
 
 const styles = StyleSheet.create({
+    headerTitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        backgroundColor: '#FFF',
+    },
+    headerIconBox: {
+        width: 35,
+        height: 35,
+        borderRadius: 10,
+        padding: 5,
+        backgroundColor: '#3B82F6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitle: {
+        fontSize: 20,
+        fontFamily: 'PoppinsSemiBold',
+        color: '#111827',
+        textAlign: 'center',
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        fontFamily: 'PoppinsRegular',
+        color: '#6B7280',
+    },
+    headerTextContainer: {
+        flex: 1,
+    },
+
+
     container: {
         flex: 1,
         backgroundColor: '#F8FAFC',

@@ -18,19 +18,7 @@ export default function NotificationLayout() {
                     headerShown: false
                 }}
             />
-            {/*<Stack.Screen*/}
-            {/*    name="details"*/}
-            {/*    options={{*/}
-            {/*        headerTitle: 'Notification Details',*/}
-            {/*        headerBackTitleVisible: false,*/}
-            {/*        headerTitleAlign: 'center',*/}
-            {/*        headerLeft: () => (*/}
-            {/*            <TouchableOpacity onPress={() => router.back()} >*/}
-            {/*                <Ionicons name="arrow-back" size={24} color="#111827" />*/}
-            {/*            </TouchableOpacity>*/}
-            {/*        ),*/}
-            {/*    }}*/}
-            {/*/>*/}
+
             <Stack.Screen
                 name="details"
                 options={{

@@ -12,6 +12,7 @@ import ClientUtils from "../../../../../utils/ClientUtilities";
 
 function TopUpTabScreen({ userData }) {
     const [statusFilter, setStatusFilter] = useState('all');
+    const [transactionTypeFilter, setTransactionTypeFilter] = useState('wallet_deposit');
 
     // Fetch top-up history
     const {
@@ -21,7 +22,7 @@ function TopUpTabScreen({ userData }) {
         refetch: refetchTopUp
     } = useQuery({
         queryKey: ['ClientTopUpHistory'],
-        queryFn: () => ClientUtils.getTopUpHistory({ status: statusFilter }),
+        queryFn: () => ClientUtils.getTopUpHistory({ status: statusFilter,  filter: transactionTypeFilter }),
         retry: 3,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
@@ -76,8 +77,12 @@ function TopUpTabScreen({ userData }) {
         );
     }
 
+    const handleTransactionTypeChange = (type) => {
+        setTransactionTypeFilter(type);
+    };
     const topUpHistory = topUpData?.topUps || topUpData || [];
     const topUpPagination = topUpData?.pagination || {};
+    const stats = topUpData?.stats || {};
     const walletBalance = walletData?.balance || userData?.wallet?.balance || 0;
 
     return (
@@ -85,11 +90,14 @@ function TopUpTabScreen({ userData }) {
             topUpHistory={topUpHistory}
             topUpPagination={topUpPagination}
             userData={userData}
+            fStats={stats}
             walletBalance={walletBalance}
             isLoading={topUpLoading}
             dataRefresh={handleRefresh}
             currentFilter={statusFilter}
             onFilterChange={handleFilterChange}
+            currentTransactionType={transactionTypeFilter}
+            onTransactionTypeChange={handleTransactionTypeChange}
         />
     );
 }

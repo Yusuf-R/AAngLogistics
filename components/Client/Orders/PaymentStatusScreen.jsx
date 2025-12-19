@@ -1,4 +1,4 @@
-// PaymentStatusScreen.js - Enhanced with state reset and duplicate payment protection
+// PaymentStatusScreen.jsx - Enhanced with state reset and duplicate payment protection
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View,
@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import { useRouter } from 'expo-router';
+import {useLocalSearchParams, useRouter} from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOrderStore } from '../../../store/useOrderStore';
@@ -21,10 +21,8 @@ import { useSessionStore } from '../../../store/useSessionStore';
 import useMediaStore from '../../../store/useMediaStore';
 import ClientUtils from '../../../utils/ClientUtilities';
 import CustomHeader from '../../CustomHeader';
-import SessionManager from "../../../lib/SessionManager";
-
-import ClientUtilities from "../../../utils/ClientUtilities";
 import {queryClient} from "../../../lib/queryClient";
+import { invalidateClientFinanceQueries, invalidateFinanceQueries } from '../../../lib/queryUtils';
 
 const STATES = {
     CHECKING_EXISTING: 'checking_existing',
@@ -38,6 +36,7 @@ const STATES = {
 };
 
 const PaymentStatusScreen = () => {
+    const searchParams = useLocalSearchParams();
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { orderData, clearDraft } = useOrderStore();
@@ -98,7 +97,12 @@ const PaymentStatusScreen = () => {
     // Payment initialization
     const paymentMutation = useMutation({
         mutationKey: ['InitializePayment'],
-        mutationFn: ClientUtils.InitializePayment,
+        mutationFn: async (payload) => {
+            if (payload.paymentType === 'hybrid') {
+                return await ClientUtils.InitializeHybridPayment(payload);
+            }
+            return await ClientUtils.InitializePayment(payload);
+        },
         retry: false,
     });
 
@@ -176,10 +180,70 @@ const PaymentStatusScreen = () => {
                 throw new Error('Invalid order data for payment');
             }
 
+
+            const paymentType = searchParams.paymentType || 'card';
+            const walletAmount = parseFloat(searchParams.walletAmount || 0);
+            const cardAmount = parseFloat(searchParams.cardAmount || 0);
+            const totalAmount = orderData.pricing.totalAmount;
+
+            // ============================================
+            // HYBRID PAYMENT INITIALIZATION
+            // ============================================
+            if (paymentType === 'hybrid') {
+                console.log('🔄 Initializing hybrid payment:', {
+                    total: totalAmount,
+                    wallet: walletAmount,
+                    card: cardAmount
+                });
+
+                const payload = {
+                    orderId: orderData._id,
+                    orderRef: orderData.orderRef,
+                    totalAmount: totalAmount,
+                    walletAmount: walletAmount,
+                    cardAmount: cardAmount,
+                    email: userData.email,
+                    attemptId: Date.now().toString()
+                };
+
+                const response = await paymentMutation.mutateAsync({
+                    ...payload,
+                    paymentType: 'hybrid'
+                });
+
+                if (!response?.authorizationUrl || !response?.reference) {
+                    throw new Error('Invalid payment response');
+                }
+
+                console.log('💳 Hybrid payment initialized:', response.reference);
+                setPaymentReference(response.reference);
+                setCurrentState(STATES.BROWSER_OPEN);
+
+                manualCheckTimeoutRef.current = setTimeout(() => {
+                    setShowManualCheck(true);
+                }, 30000);
+
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                console.log('🌐 Opening browser for card payment (₦' + cardAmount + ')...');
+                const result = await WebBrowser.openBrowserAsync(response.authorizationUrl, {
+                    presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
+                    showTitle: true,
+                    toolbarColor: '#3B82F6',
+                    controlsColor: '#ffffff',
+                });
+
+                console.log('🌐 Browser result:', result.type);
+                return;
+            }
+
+            // ============================================
+            // REGULAR CARD-ONLY PAYMENT (Existing logic)
+            // ============================================
             const payload = {
                 id: orderData._id,
                 orderRef: orderData.orderRef,
-                amount: orderData.pricing.totalAmount,
+                amount: totalAmount,
                 currency: "NGN",
                 email: userData.email,
                 attemptId: Date.now().toString()
@@ -245,6 +309,8 @@ const PaymentStatusScreen = () => {
 
             if (result.status === 'paid') {
                 await queryClient.invalidateQueries({ queryKey: ["GetAllClientOrder"] })
+                await invalidateClientFinanceQueries();
+                await invalidateFinanceQueries();
                 setCurrentState(STATES.SUCCESS);
                 startSuccessCountdown();
             } else {
